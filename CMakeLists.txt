@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.9)
+cmake_policy(SET CMP0042 NEW)
+set (CMAKE_CXX_STANDARD 11)
 
 # Name of the project (will be the name of the plugin)
 project(addon)
@@ -27,3 +29,5 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_JS_INC} ${NODE_ADDON_
 # You should add this line in every CMake.js based project
 target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB})
 
+# define NPI_VERSION
+add_definitions(-DNAPI_VERSION=3)
