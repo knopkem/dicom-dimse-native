@@ -1,0 +1,2284 @@
+#include "dimseImpl.h"
+#include "dataSetImpl.h"
+#include "../include/imebra/definitions.h"
+#include "../include/imebra/exceptions.h"
+#include "dataHandlerImpl.h"
+
+namespace imebra
+{
+
+namespace  implementation
+{
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// dimseCommandBase
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+dimseCommandBase::dimseCommandBase(const std::string& abstractSyntax,
+                                   std::shared_ptr<dataSet> pPayload):
+    associationMessage(abstractSyntax, std::make_shared<dataSet>("1.2.840.10008.1.2", charsetsList_t()), pPayload)
+{
+    // Set the "payload present" flag
+    m_pCommand->setUnsignedLong(0x0, 0, 0x0800, 0, m_pPayload == nullptr ? 0x101 : 0x0);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+dimseCommandBase::dimseCommandBase(const std::string& abstractSyntax, std::shared_ptr<dataSet> pCommand, std::shared_ptr<dataSet> pPayload):
+    associationMessage(abstractSyntax, pCommand, pPayload)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Destructor
+//
+//////////////////////////////////////////////////////////////////
+dimseCommandBase::~dimseCommandBase()
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// dimseNCommand
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+dimseNCommand::dimseNCommand(const std::string& abstractSyntax,
+                           dimseCommandType_t command,
+                           std::uint16_t messageID):
+    dimseNCommand(abstractSyntax, command, messageID, nullptr)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+dimseNCommand::dimseNCommand(const std::string& abstractSyntax,
+                           dimseCommandType_t command,
+                           std::uint16_t messageID,
+                           std::shared_ptr<dataSet> pPayload):
+    dimseCommandBase(abstractSyntax, pPayload)
+{
+    // Set the command type
+    m_pCommand->setUnsignedLong(0x0, 0, 0x0100, 0, (std::uint16_t)command);
+
+    // Set the message ID
+    m_pCommand->setUnsignedLong(0x0, 0, 0x0110, 0, messageID);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+dimseNCommand::dimseNCommand(std::shared_ptr<const associationMessage> pMessage):
+    dimseCommandBase(pMessage->getAbstractSyntax(), pMessage->getCommandDataSet(), pMessage->getPayloadDataSetNoThrow())
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Get the command ID
+//
+//////////////////////////////////////////////////////////////////
+std::uint16_t dimseNCommand::getID() const
+{
+    return (std::uint16_t)m_pCommand->getUnsignedLong(0x0, 0, 0x0110, 0, 0);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Get the command type
+//
+//////////////////////////////////////////////////////////////////
+dimseCommandType_t dimseNCommand::getCommandType() const
+{
+    return (dimseCommandType_t)(getCommandDataSet()->getUnsignedLong(0x0, 0, 0x0100, 0, 0));
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Return the affected SOP instance UID
+//
+//////////////////////////////////////////////////////////////////
+std::string dimseCommandBase::getAffectedSopInstanceUid() const
+{
+    return m_pCommand->getString(0x0, 0, 0x1000, 0, 0);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Return the affected SOP class UID
+//
+//////////////////////////////////////////////////////////////////
+std::string dimseCommandBase::getAffectedSopClassUid() const
+{
+    return m_pCommand->getString(0x0, 0, 0x0002, 0, 0);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Return the requested SOP instance UID
+//
+//////////////////////////////////////////////////////////////////
+std::string dimseCommandBase::getRequestedSopInstanceUid() const
+{
+    return m_pCommand->getString(0x0, 0, 0x1001, 0, 0);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Return the requested SOP class UID
+//
+//////////////////////////////////////////////////////////////////
+std::string dimseCommandBase::getRequestedSopClassUid() const
+{
+    return m_pCommand->getString(0x0, 0, 0x0003, 0, 0);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Validate the N-COMMAND
+//
+//////////////////////////////////////////////////////////////////
+void dimseNCommand::validate() const
+{
+    getID();
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// dimseCCommand
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+dimseCCommand::dimseCCommand(const std::string& abstractSyntax,
+                           dimseCommandType_t command,
+                           dimseCommandPriority_t priority,
+                           std::uint16_t messageID):
+    dimseCCommand(abstractSyntax, command, priority, messageID, nullptr)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+dimseCCommand::dimseCCommand(const std::string& abstractSyntax,
+                           dimseCommandType_t command,
+                           dimseCommandPriority_t priority,
+                           std::uint16_t messageID,
+                           std::shared_ptr<dataSet> pPayload):
+    dimseNCommand(abstractSyntax, command, messageID, pPayload)
+{
+    // Set the priority
+    m_pCommand->setUnsignedLong(0x0, 0, 0x0700, 0, (std::uint16_t)priority);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+dimseCCommand::dimseCCommand(std::shared_ptr<const associationMessage> pMessage):
+    dimseNCommand(pMessage)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Get the command priority
+//
+//////////////////////////////////////////////////////////////////
+dimseCommandPriority_t dimseCCommand::getPriority() const
+{
+    IMEBRA_FUNCTION_START();
+
+    std::uint32_t priority(m_pCommand->getUnsignedLong(0x0, 0, 0x0700, 0, 0));
+    switch(priority)
+    {
+    case (std::uint32_t)dimseCommandPriority_t::high:
+        return dimseCommandPriority_t::high;
+    case (std::uint32_t)dimseCommandPriority_t::medium:
+        return dimseCommandPriority_t::medium;
+    case (std::uint32_t)dimseCommandPriority_t::low:
+        return dimseCommandPriority_t::low;
+    default:
+        IMEBRA_THROW(DimseInvalidCommand, "The message's priority is not valid");
+    }
+
+    IMEBRA_FUNCTION_END();
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Validate the C command
+//
+//////////////////////////////////////////////////////////////////
+void dimseCCommand::validate() const
+{
+    dimseNCommand::validate();
+
+    getPriority();
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// dimseResponse
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+dimseResponse::dimseResponse(std::shared_ptr<dimseNCommand> pCommand, dimseStatusCode_t responseCode):
+    dimseResponse(pCommand, responseCode, nullptr)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+dimseResponse::dimseResponse(std::shared_ptr<dimseNCommand> pCommand, dimseStatusCode_t responseCode, std::shared_ptr<dataSet> pPayload):
+    dimseCommandBase(pCommand->getAbstractSyntax(), pPayload)
+{
+    // Set the response type
+    m_pCommand->setUnsignedLong(0x0, 0, 0x0100, 0, pCommand->getCommandDataSet()->getUnsignedLong(0x0, 0, 0x0100, 0, 0) | (std::uint16_t)dimseCommandType_t::response);
+
+    // Set message ID being responded to
+    m_pCommand->setUnsignedLong(0x0, 0, 0x0120, 0, pCommand->getID());
+
+    // Set the status code
+    m_pCommand->setUnsignedLong(0x0, 0, 0x0900, 0, (std::uint16_t)responseCode);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+dimseResponse::dimseResponse(std::shared_ptr<const associationMessage> pMessage):
+    dimseCommandBase(pMessage->getAbstractSyntax(), pMessage->getCommandDataSet(), pMessage->getPayloadDataSetNoThrow())
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Return the ID of the message being responded to
+//
+//////////////////////////////////////////////////////////////////
+std::uint16_t dimseResponse::getMessageBeingRespondedID() const
+{
+    return (std::uint16_t)(m_pCommand->getUnsignedLong(0x0, 0, 0x0120, 0, 0));
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Return the status (success, failure, pending, ...)
+//
+//////////////////////////////////////////////////////////////////
+dimseStatus_t dimseResponse::getStatus() const
+{
+    std::uint16_t code(getStatusCode());
+
+    if(code == (std::uint16_t)dimseStatusCode_t::success)
+    {
+        return dimseStatus_t::success;
+    }
+    if(code == (std::uint16_t)dimseStatusCode_t::canceled)
+    {
+        return dimseStatus_t::cancel;
+    }
+    if(code == (std::uint16_t)dimseStatusCode_t::unsupportedOptionalAttributes || (code & 0xf000) == 0xb000)
+    {
+        return dimseStatus_t::warning;
+    }
+    if((code & 0xfff0) == 0xff00)
+    {
+        return dimseStatus_t::pending;
+    }
+    return dimseStatus_t::failure;
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Return the status code
+//
+//////////////////////////////////////////////////////////////////
+std::uint16_t dimseResponse::getStatusCode() const
+{
+    return (std::uint16_t)getCommandDataSet()->getUnsignedLong(0x0, 0, 0x0900, 0, 0);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Validate the response
+//
+//////////////////////////////////////////////////////////////////
+void dimseResponse::validate() const
+{
+    getStatusCode();
+    getMessageBeingRespondedID();
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// cPartialResponse
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cPartialResponse::cPartialResponse(
+        std::shared_ptr<dimseCCommand> pCommand,
+        dimseStatusCode_t responseCode,
+        std::uint32_t remainingSubOperations,
+        std::uint32_t completedSubOperations,
+        std::uint32_t failedSubOperations,
+        std::uint32_t warningSubOperations):
+    cPartialResponse(pCommand, responseCode, remainingSubOperations, completedSubOperations, failedSubOperations, warningSubOperations, nullptr)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cPartialResponse::cPartialResponse(
+        std::shared_ptr<dimseCCommand> pCommand,
+        dimseStatusCode_t responseCode,
+        std::uint32_t remainingSubOperations,
+        std::uint32_t completedSubOperations,
+        std::uint32_t failedSubOperations,
+        std::uint32_t warningSubOperations,
+        std::shared_ptr<dataSet> pIdentifier):
+    dimseResponse(
+        pCommand, responseCode, pIdentifier)
+{
+    dimseStatus_t responseStatus(getStatus());
+    if(responseStatus == dimseStatus_t::pending || responseStatus == dimseStatus_t::cancel)
+    {
+        m_pCommand->setUnsignedLong(0x0, 0, 0x1020, 0, remainingSubOperations);
+    }
+    m_pCommand->setUnsignedLong(0x0, 0, 0x1021, 0, completedSubOperations);
+    m_pCommand->setUnsignedLong(0x0, 0, 0x1022, 0, failedSubOperations);
+    m_pCommand->setUnsignedLong(0x0, 0, 0x1023, 0, warningSubOperations);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cPartialResponse::cPartialResponse(std::shared_ptr<const associationMessage> pMessage):
+    dimseResponse(pMessage)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Return the number of remaining sub operations
+//
+//////////////////////////////////////////////////////////////////
+std::uint32_t cPartialResponse::getRemainingSubOperations() const
+{
+    return m_pCommand->getUnsignedLong(0x0, 0, 0x1020, 0, 0);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Return the number of completed sub operations
+//
+//////////////////////////////////////////////////////////////////
+std::uint32_t cPartialResponse::getCompletedSubOperations() const
+{
+    return m_pCommand->getUnsignedLong(0x0, 0, 0x1021, 0, 0);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Return the number of failed sub operations
+//
+//////////////////////////////////////////////////////////////////
+std::uint32_t cPartialResponse::getFailedSubOperations() const
+{
+    return m_pCommand->getUnsignedLong(0x0, 0, 0x1022, 0, 0);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Return the number of warning sub operations
+//
+//////////////////////////////////////////////////////////////////
+std::uint32_t cPartialResponse::getWarningSubOperations() const
+{
+    return m_pCommand->getUnsignedLong(0x0, 0, 0x1023, 0, 0);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Validate the partial response
+//
+//////////////////////////////////////////////////////////////////
+void cPartialResponse::validate() const
+{
+    IMEBRA_FUNCTION_START();
+
+    dimseResponse::validate();
+
+    try
+    {
+        if(getStatus() == dimseStatus_t::pending)
+        {
+            getRemainingSubOperations();
+            getCompletedSubOperations();
+            getFailedSubOperations();
+            getWarningSubOperations();
+        }
+    }
+    catch(const MissingDataElementError& e)
+    {
+        IMEBRA_THROW(DimseInvalidCommand, "Cannot validate the response. (" << e.what() << ")");
+    }
+
+    IMEBRA_FUNCTION_END();
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// dimseResponse
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cStoreCommand::cStoreCommand(
+        const std::string& abstractSyntax,
+        uint16_t messageID,
+        dimseCommandPriority_t priority,
+        const std::string& affectedSopClassUid,
+        const std::string& affectedSopInstanceUid,
+        const std::string &originatorAET,
+        uint16_t originatorMessageID,
+        std::shared_ptr<dataSet> pPayload):
+    dimseCCommand(abstractSyntax, dimseCommandType_t::cStore, priority, messageID, pPayload)
+{
+    // Set the affected SOP instance UID
+    m_pCommand->setString(0x0, 0, 0x1000, 0, affectedSopInstanceUid);
+
+    // Set the affected SOP class UID
+    m_pCommand->setString(0x0, 0, 0x0002, 0, affectedSopClassUid);
+
+    // Move originator AET
+    m_pCommand->setString(0x0, 0, 0x1030, 0, originatorAET);
+
+    // Move originator command ID
+    m_pCommand->setUnsignedLong(0x0, 0, 0x1031, 0, originatorMessageID);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cStoreCommand::cStoreCommand(std::shared_ptr<const associationMessage> pMessage):
+    dimseCCommand(pMessage)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Validate the C-STORE command
+//
+//////////////////////////////////////////////////////////////////
+void cStoreCommand::validate() const
+{
+    dimseCCommand::validate();
+    try
+    {
+        getAffectedSopInstanceUid();
+        getAffectedSopClassUid();
+        getOriginatorAET();
+        getOriginatorMessageID();
+        getPayloadDataSet();
+    }
+    catch(const MissingDataElementError& e)
+    {
+        IMEBRA_THROW(DimseInvalidCommand, "Cannot validate the C-STORE command. (" << e.what() << ")");
+    }
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Get the originator AET
+//
+//////////////////////////////////////////////////////////////////
+std::string cStoreCommand::getOriginatorAET() const
+{
+    return m_pCommand->getString(0x0, 0, 0x1030, 0, 0, "");
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Get the originator message ID
+//
+//////////////////////////////////////////////////////////////////
+std::uint16_t cStoreCommand::getOriginatorMessageID() const
+{
+    return (std::uint16_t)m_pCommand->getUnsignedLong(0x0, 0, 0x1031, 0, 0, 0);
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// dimseResponse
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cStoreResponse::cStoreResponse(std::shared_ptr<cStoreCommand> pCommand, dimseStatusCode_t responseCode):
+    dimseResponse(pCommand, responseCode)
+{
+    // Set the affected SOP instance UID
+    m_pCommand->setString(0x0, 0, 0x1000, 0, pCommand->getAffectedSopInstanceUid());
+
+    // Set the affected SOP class UID
+    m_pCommand->setString(0x0, 0, 0x0002, 0, pCommand->getAffectedSopClassUid());
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cStoreResponse::cStoreResponse(std::shared_ptr<const associationMessage> pMessage):
+    dimseResponse(pMessage)
+{
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// cGetCommand
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cGetCommand::cGetCommand(
+        const std::string& abstractSyntax,
+        uint16_t messageID,
+        dimseCommandPriority_t priority,
+        const std::string& affectedSopClassUid,
+        std::shared_ptr<dataSet> pIdentifier):
+    dimseCCommand(abstractSyntax, dimseCommandType_t::cGet, priority, messageID, pIdentifier)
+{
+    // Set the affected SOP class UID
+    m_pCommand->setString(0x0, 0, 0x0002, 0, affectedSopClassUid);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cGetCommand::cGetCommand(std::shared_ptr<const associationMessage> pMessage):
+    dimseCCommand(pMessage)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Validate the C-GET
+//
+//////////////////////////////////////////////////////////////////
+void cGetCommand::validate() const
+{
+    dimseCCommand::validate();
+
+    getAffectedSopClassUid();
+    getPayloadDataSet();
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// cGetResponse
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cGetResponse::cGetResponse(
+        std::shared_ptr<cGetCommand> pCommand,
+        dimseStatusCode_t responseCode,
+        std::uint32_t remainingSubOperations,
+        std::uint32_t completedSubOperations,
+        std::uint32_t failedSubOperations,
+        std::uint32_t warningSubOperations,
+        std::shared_ptr<dataSet> pIdentifier):
+    cPartialResponse(pCommand, responseCode, remainingSubOperations, completedSubOperations, failedSubOperations, warningSubOperations, pIdentifier)
+{
+    m_pCommand->setString(0x0, 0, 0x0002, 0, pCommand->getAffectedSopClassUid());
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cGetResponse::cGetResponse(
+        std::shared_ptr<cGetCommand> pCommand,
+        dimseStatusCode_t responseCode,
+        std::uint32_t remainingSubOperations,
+        std::uint32_t completedSubOperations,
+        std::uint32_t failedSubOperations,
+        std::uint32_t warningSubOperations):
+    cPartialResponse(pCommand, responseCode, remainingSubOperations, completedSubOperations, failedSubOperations, warningSubOperations, nullptr)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cGetResponse::cGetResponse(std::shared_ptr<const associationMessage> pMessage):
+    cPartialResponse(pMessage)
+{
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// cFindCommand
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cFindCommand::cFindCommand(
+        const std::string& abstractSyntax,
+        std::uint16_t messageID,
+        dimseCommandPriority_t priority,
+        const std::string& affectedSopClassUid,
+        std::shared_ptr<dataSet> pIdentifier):
+    dimseCCommand(abstractSyntax, dimseCommandType_t::cFind, priority, messageID, pIdentifier)
+{
+    // Set the affected SOP class UID
+    m_pCommand->setString(0x0, 0, 0x0002, 0, affectedSopClassUid);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cFindCommand::cFindCommand(std::shared_ptr<const associationMessage> pMessage):
+    dimseCCommand(pMessage)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Validate C-FIND
+//
+//////////////////////////////////////////////////////////////////
+void cFindCommand::validate() const
+{
+    dimseCCommand::validate();
+
+    getAffectedSopClassUid();
+    getPayloadDataSet();
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// cFindResponse
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cFindResponse::cFindResponse(
+        std::shared_ptr<cFindCommand> pReceivedCommand,
+        std::shared_ptr<dataSet> pIdentifier):
+    dimseResponse(pReceivedCommand, dimseStatusCode_t::pending, pIdentifier)
+{
+    m_pCommand->setString(0x0, 0, 0x0002, 0, pReceivedCommand->getAffectedSopClassUid());
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cFindResponse::cFindResponse(
+        std::shared_ptr<cFindCommand> pReceivedCommand,
+        dimseStatusCode_t responseCode):
+    dimseResponse(pReceivedCommand, responseCode, nullptr)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cFindResponse::cFindResponse(std::shared_ptr<const associationMessage> pMessage):
+    dimseResponse(pMessage)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Valudate the C-FIND response
+//
+//////////////////////////////////////////////////////////////////
+void cFindResponse::validate() const
+{
+    dimseResponse::validate();
+    if(getStatusCode() == (std::uint16_t)dimseStatusCode_t::pending)
+    {
+        getPayloadDataSet();
+    }
+}
+
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// cMoveCommand
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cMoveCommand::cMoveCommand(
+        const std::string& abstractSyntax,
+        std::uint16_t messageID,
+        dimseCommandPriority_t priority,
+        const std::string& affectedSopClassUid,
+        const std::string& destinationAET,
+        std::shared_ptr<dataSet> pIdentifier):
+    dimseCCommand(abstractSyntax, dimseCommandType_t::cMove, priority, messageID, pIdentifier)
+{
+    // Set the affected SOP class UID
+    m_pCommand->setString(0x0, 0, 0x0002, 0, affectedSopClassUid);
+    m_pCommand->setString(0x0, 0, 0x0600, 0, destinationAET);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cMoveCommand::cMoveCommand(std::shared_ptr<const associationMessage> pMessage):
+    dimseCCommand(pMessage)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Get the destination AET
+//
+//////////////////////////////////////////////////////////////////
+std::string cMoveCommand::getDestinationAET() const
+{
+    return m_pCommand->getString(0x0, 0, 0x0600, 0, 0);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Validate
+//
+//////////////////////////////////////////////////////////////////
+void cMoveCommand::validate() const
+{
+    dimseCCommand::validate();
+
+    getAffectedSopClassUid();
+    getPayloadDataSet();
+    getDestinationAET();
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// cMoveResponse
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cMoveResponse::cMoveResponse(
+        std::shared_ptr<cMoveCommand> pReceivedCommand,
+        dimseStatusCode_t responseCode,
+        std::uint32_t remainingSubOperations,
+        std::uint32_t completedSubOperations,
+        std::uint32_t failedSubOperations,
+        std::uint32_t warningSubOperations,
+        std::shared_ptr<dataSet> pIdentifier):
+    cPartialResponse(pReceivedCommand, responseCode, remainingSubOperations, completedSubOperations, failedSubOperations, warningSubOperations, pIdentifier)
+{
+    // Set the affected SOP class UID
+    m_pCommand->setString(0x0, 0, 0x0002, 0, pReceivedCommand->getAffectedSopClassUid());
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cMoveResponse::cMoveResponse(
+        std::shared_ptr<cMoveCommand> pReceivedCommand,
+        dimseStatusCode_t responseCode,
+        std::uint32_t remainingSubOperations,
+        std::uint32_t completedSubOperations,
+        std::uint32_t failedSubOperations,
+        std::uint32_t warningSubOperations):
+    cPartialResponse(pReceivedCommand, responseCode, remainingSubOperations, completedSubOperations, failedSubOperations, warningSubOperations, nullptr)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cMoveResponse::cMoveResponse(std::shared_ptr<const associationMessage> pMessage):
+    cPartialResponse(pMessage)
+{
+}
+
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// cEchoCommand
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cEchoCommand::cEchoCommand(
+        const std::string& abstractSyntax,
+        std::uint16_t messageID,
+        dimseCommandPriority_t priority,
+        const std::string& affectedSopClassUid):
+    dimseCCommand(abstractSyntax, dimseCommandType_t::cEcho, priority, messageID)
+{
+    // Set the affected SOP class UID
+    m_pCommand->setString(0x0, 0, 0x0002, 0, affectedSopClassUid);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cEchoCommand::cEchoCommand(std::shared_ptr<const associationMessage> pMessage):
+    dimseCCommand(pMessage)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+void cEchoCommand::validate() const
+{
+    m_pCommand->getString(0x0, 0, 0002, 0, 0);
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// cEchoResponse
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cEchoResponse::cEchoResponse(
+        std::shared_ptr<cEchoCommand> pCommand,
+        dimseStatusCode_t responseCode):
+    dimseResponse(pCommand, responseCode)
+{
+    // Set the affected SOP class UID
+    m_pCommand->setString(0x0, 0, 0x0002, 0, pCommand->getAffectedSopClassUid());
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cEchoResponse::cEchoResponse(std::shared_ptr<const associationMessage> pMessage):
+    dimseResponse(pMessage)
+{
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// cCancelCommand
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cCancelCommand::cCancelCommand(
+        const std::string& abstractSyntax,
+        std::uint16_t messageID,
+        dimseCommandPriority_t priority,
+        std::uint16_t cancelMessageID):
+    dimseCCommand(abstractSyntax, dimseCommandType_t::cCancel, priority, messageID)
+{
+    m_pCommand->setUnsignedLong(0x0, 0, 0x0120, 0, cancelMessageID);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+cCancelCommand::cCancelCommand(std::shared_ptr<const associationMessage> pMessage):
+    dimseCCommand(pMessage)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Get the ID of the canceled command
+//
+//////////////////////////////////////////////////////////////////
+std::uint16_t cCancelCommand::getCancelMessageID() const
+{
+    return (std::uint16_t)m_pCommand->getUnsignedLong(0x0, 0, 0x0120, 0, 0);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Validate C-CANCEL
+//
+//////////////////////////////////////////////////////////////////
+void cCancelCommand::validate() const
+{
+    dimseCCommand::validate();
+    getCancelMessageID();
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// nEventReportCommand
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nEventReportCommand::nEventReportCommand(
+        const std::string& abstractSyntax,
+        std::uint16_t messageID,
+        const std::string& affectedSopClassUid,
+        const std::string& affectedSopInstanceUid,
+        std::uint16_t eventID
+        ):
+    nEventReportCommand(abstractSyntax, messageID, affectedSopClassUid, affectedSopInstanceUid, eventID, nullptr)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nEventReportCommand::nEventReportCommand(
+        const std::string& abstractSyntax,
+        std::uint16_t messageID,
+        const std::string& affectedSopClassUid,
+        const std::string& affectedSopInstanceUid,
+        std::uint16_t eventID,
+        std::shared_ptr<dataSet> pEventInformation
+        ):
+    dimseNCommand(abstractSyntax, dimseCommandType_t::nEventReport, messageID, pEventInformation)
+{
+    m_pCommand->setString(0x0, 0, 0x0002, 0, affectedSopClassUid);
+    m_pCommand->setString(0x0, 0, 0x1000, 0, affectedSopInstanceUid);
+    m_pCommand->setUnsignedLong(0x0, 0, 0x1002, 0, eventID);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nEventReportCommand::nEventReportCommand(std::shared_ptr<const associationMessage> pMessage):
+    dimseNCommand(pMessage)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Validate N-EVENT-REPORT
+//
+//////////////////////////////////////////////////////////////////
+void nEventReportCommand::validate() const
+{
+    dimseNCommand::validate();
+
+    getEventID();
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Get event ID
+//
+//////////////////////////////////////////////////////////////////
+std::uint16_t nEventReportCommand::getEventID() const
+{
+    return (std::uint16_t)(m_pCommand->getUnsignedLong(0x0, 0, 0x1002, 0, 0, 0));
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// nEventReportResponse
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nEventReportResponse::nEventReportResponse(
+        std::shared_ptr<nEventReportCommand> pCommand,
+        std::shared_ptr<dataSet> pEventReply
+        ):
+    dimseResponse(pCommand, dimseStatusCode_t::success, pEventReply)
+{
+    m_pCommand->setString(0x0, 0, 0x0002, 0, pCommand->getAffectedSopClassUid());
+    m_pCommand->setUnsignedLong(0x0, 0, 0x1002, 0, pCommand->getEventID());
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nEventReportResponse::nEventReportResponse(
+        std::shared_ptr<nEventReportCommand> pCommand,
+        dimseStatusCode_t responseCode
+        ):
+    dimseResponse(pCommand, responseCode)
+{
+    m_pCommand->setString(0x0, 0, 0x0002, 0, pCommand->getAffectedSopClassUid());
+    m_pCommand->setUnsignedLong(0x0, 0, 0x1002, 0, pCommand->getEventID());
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nEventReportResponse::nEventReportResponse(std::shared_ptr<const associationMessage> pMessage):
+    dimseResponse(pMessage)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Get the event ID
+//
+//////////////////////////////////////////////////////////////////
+std::uint16_t nEventReportResponse::getEventID() const
+{
+    return (std::uint16_t)(m_pCommand->getUnsignedLong(0x0, 0, 0x1002, 0, 0, 0));
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// attributeIdentifierCommand
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Get list of attributes
+//
+//////////////////////////////////////////////////////////////////
+attributeIdentifierList_t attributeIdentifierCommand::getAttributeList(std::shared_ptr<const dataSet> pDataSet)
+{
+    attributeIdentifierList_t attributeIdentifierList;
+
+    try
+    {
+        std::shared_ptr<handlers::readingDataHandler> attributesHandler(pDataSet->getReadingDataHandler(0x0, 0, 0x1005, 0));
+        for(size_t scanAttributeIdentifier(0); scanAttributeIdentifier != attributesHandler->getSize(); ++scanAttributeIdentifier)
+        {
+            attributeIdentifierList.push_back((tagId_t)attributesHandler->getUnsignedLong(scanAttributeIdentifier));
+        }
+        return attributeIdentifierList;
+    }
+    catch(const MissingDataElementError&)
+    {
+        return attributeIdentifierList;
+    }
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Set list of attributes
+//
+//////////////////////////////////////////////////////////////////
+void attributeIdentifierCommand::setAttributeIdentifierList(
+        const attributeIdentifierList_t& attributeIdentifierList,
+        std::shared_ptr<dataSet> pDestinationDataSet)
+{
+    std::shared_ptr<handlers::writingDataHandler> attributesHandler(pDestinationDataSet->getWritingDataHandler(0x0, 0, 0x1005, 0));
+    attributesHandler->setSize(attributeIdentifierList.size());
+    size_t index(0);
+    for(const tagId_t tagId: attributeIdentifierList)
+    {
+        attributesHandler->setUnsignedLong(index++, (std::uint32_t)tagId);
+    }
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// nGetCommand
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nGetCommand::nGetCommand(
+        const std::string& abstractSyntax,
+        std::uint16_t messageID,
+        const std::string& requestedSopClassUid,
+        const std::string& requestedSopInstanceUid,
+        const attributeIdentifierList_t& attributeIdentifierList
+        ):
+    dimseNCommand(abstractSyntax, dimseCommandType_t::nGet, messageID)
+{
+    m_pCommand->setString(0x0, 0, 0x0003, 0, requestedSopClassUid);
+    m_pCommand->setString(0x0, 0, 0x1001, 0, requestedSopInstanceUid);
+
+    setAttributeIdentifierList(attributeIdentifierList, m_pCommand);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nGetCommand::nGetCommand(std::shared_ptr<const associationMessage> pMessage):
+    dimseNCommand(pMessage)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Validate
+//
+//////////////////////////////////////////////////////////////////
+void nGetCommand::validate() const
+{
+    dimseNCommand::validate();
+
+    getRequestedSopClassUid();
+    getRequestedSopInstanceUid();
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Get list of attributes
+//
+//////////////////////////////////////////////////////////////////
+attributeIdentifierList_t nGetCommand::getAttributeList() const
+{
+    return attributeIdentifierCommand::getAttributeList(m_pCommand);
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// nGetResponse
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nGetResponse::nGetResponse(
+        std::shared_ptr<nGetCommand> pCommand,
+        dimseStatusCode_t responseCode,
+        std::shared_ptr<dataSet> pAttributeList
+        ):
+    dimseResponse(pCommand, responseCode, pAttributeList)
+{
+    m_pCommand->setString(0x0, 0, 0x0002, 0, pCommand->getRequestedSopClassUid());
+    m_pCommand->setString(0x0, 0, 0x1000, 0, pCommand->getRequestedSopInstanceUid());
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nGetResponse::nGetResponse(
+        std::shared_ptr<nGetCommand> pCommand,
+        dimseStatusCode_t responseCode
+        ):
+    nGetResponse(pCommand, responseCode, nullptr)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nGetResponse::nGetResponse(std::shared_ptr<const associationMessage> pMessage):
+    dimseResponse(pMessage)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Validate
+//
+//////////////////////////////////////////////////////////////////
+void nGetResponse::validate() const
+{
+    dimseResponse::validate();
+
+    if(getStatus() == dimseStatus_t::success)
+    {
+        getPayloadDataSet();
+    }
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// nSetCommand
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nSetCommand::nSetCommand(
+        const std::string& abstractSyntax,
+        std::uint16_t messageID,
+        const std::string& requestedSopClassUid,
+        const std::string& requestedSopInstanceUid,
+        std::shared_ptr<dataSet> pModificationList
+        ):
+    dimseNCommand(abstractSyntax, dimseCommandType_t::nSet, messageID, pModificationList)
+{
+    m_pCommand->setString(0x0, 0, 0x0003, 0, requestedSopClassUid);
+    m_pCommand->setString(0x0, 0, 0x1001, 0, requestedSopInstanceUid);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nSetCommand::nSetCommand(std::shared_ptr<const associationMessage> pMessage):
+    dimseNCommand(pMessage)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Validate
+//
+//////////////////////////////////////////////////////////////////
+void nSetCommand::validate() const
+{
+    dimseNCommand::validate();
+    getRequestedSopClassUid();
+    getRequestedSopInstanceUid();
+    getPayloadDataSet();
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// nSetResponse
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nSetResponse::nSetResponse(
+        std::shared_ptr<nSetCommand> pCommand,
+        attributeIdentifierList_t modifiedAttributes
+        ):
+    dimseResponse(pCommand, dimseStatusCode_t::success)
+{
+    m_pCommand->setString(0x0, 0, 0x0002, 0, pCommand->getRequestedSopClassUid());
+    m_pCommand->setString(0x0, 0, 0x1000, 0, pCommand->getRequestedSopInstanceUid());
+    setAttributeIdentifierList(modifiedAttributes, m_pCommand);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nSetResponse::nSetResponse(
+        std::shared_ptr<nSetCommand> pCommand,
+        dimseStatusCode_t responseCode):
+    dimseResponse(pCommand, responseCode)
+{
+    m_pCommand->setString(0x0, 0, 0x0002, 0, pCommand->getRequestedSopClassUid());
+    m_pCommand->setString(0x0, 0, 0x1000, 0, pCommand->getRequestedSopInstanceUid());
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nSetResponse::nSetResponse(std::shared_ptr<const associationMessage> pMessage):
+    dimseResponse(pMessage)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Get list of modified attributes
+//
+//////////////////////////////////////////////////////////////////
+attributeIdentifierList_t nSetResponse::getModifiedAttributes() const
+{
+    return attributeIdentifierCommand::getAttributeList(m_pCommand);
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// nActionCommand
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nActionCommand::nActionCommand(
+        const std::string& abstractSyntax,
+        std::uint16_t messageID,
+        const std::string& requestedSopClassUid,
+        const std::string& requestedSopInstanceUid,
+        std::uint16_t actionID,
+        std::shared_ptr<dataSet> pActionInformation
+        ):
+    dimseNCommand(abstractSyntax, dimseCommandType_t::nAction, messageID, pActionInformation)
+{
+    m_pCommand->setUnsignedLong(0x0, 0, 0x1008, 0, actionID);
+    m_pCommand->setString(0x0, 0, 0x0003, 0, requestedSopClassUid);
+    m_pCommand->setString(0x0, 0, 0x1001, 0, requestedSopInstanceUid);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nActionCommand::nActionCommand(
+        const std::string& abstractSyntax,
+        std::uint16_t messageID,
+        const std::string& requestedSopClassUid,
+        const std::string& requestedSopInstanceUid,
+        std::uint16_t actionID
+        ):
+    nActionCommand(abstractSyntax, messageID, requestedSopClassUid, requestedSopInstanceUid, actionID, nullptr)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nActionCommand::nActionCommand(std::shared_ptr<const associationMessage> pMessage):
+    dimseNCommand(pMessage)
+{
+}
+
+void nActionCommand::validate() const
+{
+    dimseNCommand::validate();
+    getRequestedSopClassUid();
+    getRequestedSopInstanceUid();
+    getActionID();
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Get action ID
+//
+//////////////////////////////////////////////////////////////////
+std::uint16_t nActionCommand::getActionID() const
+{
+    return (std::uint16_t)(m_pCommand->getUnsignedLong(0x0, 0, 0x1008, 0, 0));
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// nActionResponse
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nActionResponse::nActionResponse(
+        std::shared_ptr<nActionCommand> pCommand,
+        std::shared_ptr<dataSet> pActionReply
+        ):
+    dimseResponse(pCommand, dimseStatusCode_t::success, pActionReply)
+{
+    m_pCommand->setUnsignedLong(0x0, 0, 0x1008, 0, pCommand->getActionID());
+    m_pCommand->setString(0x0, 0, 0x0002, 0, pCommand->getRequestedSopClassUid());
+    m_pCommand->setString(0x0, 0, 0x1000, 0, pCommand->getRequestedSopInstanceUid());
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nActionResponse::nActionResponse(
+        std::shared_ptr<nActionCommand> pCommand,
+        dimseStatusCode_t responseCode
+        ):
+    dimseResponse(pCommand, responseCode)
+{
+    m_pCommand->setUnsignedLong(0x0, 0, 0x1008, 0, pCommand->getActionID());
+    m_pCommand->setString(0x0, 0, 0x0002, 0, pCommand->getRequestedSopClassUid());
+    m_pCommand->setString(0x0, 0, 0x1000, 0, pCommand->getRequestedSopInstanceUid());
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nActionResponse::nActionResponse(std::shared_ptr<const associationMessage> pMessage):
+    dimseResponse(pMessage)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Get action ID
+//
+//////////////////////////////////////////////////////////////////
+std::uint16_t nActionResponse::getActionID() const
+{
+    return (std::uint16_t)(m_pCommand->getUnsignedLong(0x0, 0, 0x1008, 0, 0));
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// nCreateCommand
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nCreateCommand::nCreateCommand(
+        const std::string& abstractSyntax,
+        std::uint16_t messageID,
+        const std::string& affectedSopClassUid,
+        const std::string& affectedSopInstanceUid,
+        std::shared_ptr<dataSet> pAttributeList
+        ):
+    dimseNCommand(abstractSyntax, dimseCommandType_t::nCreate, messageID, pAttributeList)
+{
+    m_pCommand->setString(0x0, 0, 0x0002, 0, affectedSopClassUid);
+    m_pCommand->setString(0x0, 0, 0x1000, 0, affectedSopInstanceUid);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nCreateCommand::nCreateCommand(
+        const std::string& abstractSyntax,
+        std::uint16_t messageID,
+        const std::string& affectedSopClassUid,
+        const std::string& affectedSopInstanceUid
+        ):
+    nCreateCommand(abstractSyntax, messageID, affectedSopClassUid, affectedSopInstanceUid, nullptr)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nCreateCommand::nCreateCommand(std::shared_ptr<const associationMessage> pMessage):
+    dimseNCommand(pMessage)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Validate
+//
+//////////////////////////////////////////////////////////////////
+void nCreateCommand::validate() const
+{
+    dimseNCommand::validate();
+    getAffectedSopClassUid();
+    getAffectedSopInstanceUid();
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// nCreateResponse
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nCreateResponse::nCreateResponse(
+        std::shared_ptr<nCreateCommand> pCommand,
+        std::shared_ptr<dataSet> pAttributeList
+        ):
+    dimseResponse(pCommand, dimseStatusCode_t::success, pAttributeList)
+{
+    m_pCommand->setString(0x0, 0, 0x0002, 0, pCommand->getAffectedSopClassUid());
+    m_pCommand->setString(0x0, 0, 0x1000, 0, pCommand->getAffectedSopInstanceUid());
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nCreateResponse::nCreateResponse(
+        std::shared_ptr<nCreateCommand> pCommand,
+        const std::string& affectedSopInstanceUid,
+        std::shared_ptr<dataSet> pAttributeList
+        ):
+    dimseResponse(pCommand, dimseStatusCode_t::success, pAttributeList)
+{
+    m_pCommand->setString(0x0, 0, 0x0002, 0, pCommand->getAffectedSopClassUid());
+    m_pCommand->setString(0x0, 0, 0x1000, 0, affectedSopInstanceUid);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nCreateResponse::nCreateResponse(
+        std::shared_ptr<nCreateCommand> pCommand,
+        dimseStatusCode_t responseCode
+        ):
+    dimseResponse(pCommand, responseCode)
+{
+    m_pCommand->setString(0x0, 0, 0x0002, 0, pCommand->getAffectedSopClassUid());
+    if(responseCode == dimseStatusCode_t::success)
+    {
+        m_pCommand->setString(0x0, 0, 0x1000, 0, pCommand->getAffectedSopInstanceUid());
+    }
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nCreateResponse::nCreateResponse(
+        std::shared_ptr<nCreateCommand> pCommand,
+        const std::string& affectedSopInstanceUid
+        ):
+    dimseResponse(pCommand, dimseStatusCode_t::success)
+{
+    m_pCommand->setString(0x0, 0, 0x0002, 0, pCommand->getAffectedSopClassUid());
+    m_pCommand->setString(0x0, 0, 0x1000, 0, affectedSopInstanceUid);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nCreateResponse::nCreateResponse(std::shared_ptr<const associationMessage> pMessage):
+    dimseResponse(pMessage)
+{
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// nDeleteCommand
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nDeleteCommand::nDeleteCommand(
+        const std::string& abstractSyntax,
+        std::uint16_t messageID,
+        const std::string& requestedSopClassUid,
+        const std::string& requestedSopInstanceUid
+        ):
+    dimseNCommand(abstractSyntax, dimseCommandType_t::nDelete, messageID)
+{
+    m_pCommand->setString(0x0, 0, 0x0003, 0, requestedSopClassUid);
+    m_pCommand->setString(0x0, 0, 0x1001, 0, requestedSopInstanceUid);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nDeleteCommand::nDeleteCommand(std::shared_ptr<const associationMessage> pMessage):
+    dimseNCommand(pMessage)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Validate
+//
+//////////////////////////////////////////////////////////////////
+void nDeleteCommand::validate() const
+{
+    dimseNCommand::validate();
+    getRequestedSopClassUid();
+    getRequestedSopInstanceUid();
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// nDeleteResponse
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nDeleteResponse::nDeleteResponse(
+        std::shared_ptr<nDeleteCommand> pCommand,
+        dimseStatusCode_t responseCode
+        ):
+    dimseResponse(pCommand, responseCode)
+{
+    m_pCommand->setString(0x0, 0, 0x0002, 0, pCommand->getRequestedSopClassUid());
+    m_pCommand->setString(0x0, 0, 0x1000, 0, pCommand->getRequestedSopInstanceUid());
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+nDeleteResponse::nDeleteResponse(std::shared_ptr<const associationMessage> pMessage):
+    dimseResponse(pMessage)
+{
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//
+// dimseService
+//
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////
+//
+// Constructor
+//
+//////////////////////////////////////////////////////////////////
+dimseService::dimseService(std::shared_ptr<associationBase> pAssociation):
+    m_messageID(0), m_pAssociation(pAssociation)
+{
+
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Get the transfer syntax for a specific abstract syntax
+//
+//////////////////////////////////////////////////////////////////
+std::string dimseService::getTransferSyntax(const std::string &abstractSyntax) const
+{
+    return m_pAssociation->getPresentationContextTransferSyntax(abstractSyntax);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Get an ID to use for the next command
+//
+//////////////////////////////////////////////////////////////////
+std::uint16_t dimseService::getNextCommandID()
+{
+    return m_messageID.fetch_add(1);
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Get the next command
+//
+//////////////////////////////////////////////////////////////////
+std::shared_ptr<dimseNCommand> dimseService::getCommand()
+{
+    IMEBRA_FUNCTION_START();
+
+    std::shared_ptr<associationMessage> pMessage(m_pAssociation->getCommand());
+
+    std::shared_ptr<dimseNCommand> pCommand;
+    std::uint16_t commandType((std::uint16_t)pMessage->getCommandDataSet()->getUnsignedLong(0x0, 0, 0x0100, 0, 0));
+    switch( (dimseCommandType_t)commandType )
+    {
+    case dimseCommandType_t::cStore:
+        pCommand = std::make_shared<cStoreCommand>(pMessage);
+        IMEBRA_LOG_INFO("Received C-STORE command. ID = " << pCommand->getID() << " Abstract syntax = " << pCommand->getAbstractSyntax());
+        break;
+    case dimseCommandType_t::cGet:
+        pCommand = std::make_shared<cGetCommand>(pMessage);
+        IMEBRA_LOG_INFO("Received C-GET command. ID = " << pCommand->getID() << " Abstract syntax = " << pCommand->getAbstractSyntax());
+        break;
+    case dimseCommandType_t::cMove:
+        pCommand = std::make_shared<cMoveCommand>(pMessage);
+        IMEBRA_LOG_INFO("Received C-MOVE command. ID = " << pCommand->getID() << " Abstract syntax = " << pCommand->getAbstractSyntax());
+        break;
+    case dimseCommandType_t::cFind:
+        pCommand = std::make_shared<cFindCommand>(pMessage);
+        IMEBRA_LOG_INFO("Received C-FIND command. ID = " << pCommand->getID() << " Abstract syntax = " << pCommand->getAbstractSyntax());
+        break;
+    case dimseCommandType_t::cEcho:
+        pCommand = std::make_shared<cEchoCommand>(pMessage);
+        IMEBRA_LOG_INFO("Received C-ECHO command. ID = " << pCommand->getID() << " Abstract syntax = " << pCommand->getAbstractSyntax());
+        break;
+    case dimseCommandType_t::cCancel:
+        pCommand = std::make_shared<cCancelCommand>(pMessage);
+        IMEBRA_LOG_INFO("Received C-CANCEL command. ID = " << pCommand->getID() << " Abstract syntax = " << pCommand->getAbstractSyntax());
+        break;
+    case dimseCommandType_t::nAction:
+        pCommand = std::make_shared<nActionCommand>(pMessage);
+        IMEBRA_LOG_INFO("Received N-ACTION command. ID = " << pCommand->getID() << " Abstract syntax = " << pCommand->getAbstractSyntax());
+        break;
+    case dimseCommandType_t::nEventReport:
+        pCommand = std::make_shared<nEventReportCommand>(pMessage);
+        IMEBRA_LOG_INFO("Received N-EVENTREPORT command. ID = " << pCommand->getID() << " Abstract syntax = " << pCommand->getAbstractSyntax());
+        break;
+    case dimseCommandType_t::nGet:
+        pCommand = std::make_shared<nGetCommand>(pMessage);
+        IMEBRA_LOG_INFO("Received N-GET command. ID = " << pCommand->getID() << " Abstract syntax = " << pCommand->getAbstractSyntax());
+        break;
+    case dimseCommandType_t::nSet:
+        pCommand = std::make_shared<nSetCommand>(pMessage);
+        IMEBRA_LOG_INFO("Received N-SET command. ID = " << pCommand->getID() << " Abstract syntax = " << pCommand->getAbstractSyntax());
+        break;
+    case dimseCommandType_t::nCreate:
+        pCommand = std::make_shared<nCreateCommand>(pMessage);
+        IMEBRA_LOG_INFO("Received N-CREATE command. ID = " << pCommand->getID() << " Abstract syntax = " << pCommand->getAbstractSyntax());
+        break;
+    case dimseCommandType_t::nDelete:
+        pCommand = std::make_shared<nDeleteCommand>(pMessage);
+        IMEBRA_LOG_INFO("Received N-DELETE command. ID = " << pCommand->getID() << " Abstract syntax = " << pCommand->getAbstractSyntax());
+        break;
+    default:
+        IMEBRA_THROW(DimseInvalidCommand, "Invalid command code " << commandType);
+    }
+
+    pCommand->validate();
+
+    return pCommand;
+
+    IMEBRA_FUNCTION_END();
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Get a response for the specific command ID
+//
+//////////////////////////////////////////////////////////////////
+std::shared_ptr<dimseResponse> dimseService::getResponse(std::uint16_t commandID)
+{
+    IMEBRA_FUNCTION_START();
+
+    std::shared_ptr<associationMessage> pMessage(m_pAssociation->getResponse(commandID));
+
+    std::uint16_t commandType((std::uint16_t)pMessage->getCommandDataSet()->getUnsignedLong(0x0, 0, 0x100, 0, 0));
+
+    if((commandType & 0x8000) == 0)
+    {
+        IMEBRA_THROW(DimseInvalidCommand, "Was expecting a response but received a command " << commandType);
+    }
+
+    std::shared_ptr<dimseResponse> pResponse;
+    switch( (dimseCommandType_t)(commandType & 0x7fff) )
+    {
+    case dimseCommandType_t::cStore:
+        pResponse = std::make_shared<cStoreResponse>(pMessage);
+        IMEBRA_LOG_INFO("Received C-STORE response. Command ID = " << pResponse->getMessageBeingRespondedID() << " Abstract syntax = " << pResponse->getAbstractSyntax());
+        break;
+    case dimseCommandType_t::cMove:
+        pResponse = std::make_shared<cMoveResponse>(pMessage);
+        IMEBRA_LOG_INFO("Received C-MOVE response. Command ID = " << pResponse->getMessageBeingRespondedID() << " Abstract syntax = " << pResponse->getAbstractSyntax());
+        break;
+    case dimseCommandType_t::cGet:
+        pResponse = std::make_shared<cGetResponse>(pMessage);
+        IMEBRA_LOG_INFO("Received C-GET response. Command ID = " << pResponse->getMessageBeingRespondedID() << " Abstract syntax = " << pResponse->getAbstractSyntax());
+        break;
+    case dimseCommandType_t::cFind:
+        pResponse = std::make_shared<cFindResponse>(pMessage);
+        IMEBRA_LOG_INFO("Received C-FIND response. Command ID = " << pResponse->getMessageBeingRespondedID() << " Abstract syntax = " << pResponse->getAbstractSyntax());
+        break;
+    case dimseCommandType_t::cEcho:
+        pResponse = std::make_shared<cEchoResponse>(pMessage);
+        IMEBRA_LOG_INFO("Received C-ECHO response. Command ID = " << pResponse->getMessageBeingRespondedID() << " Abstract syntax = " << pResponse->getAbstractSyntax());
+        break;
+    case dimseCommandType_t::nAction:
+        pResponse = std::make_shared<nActionResponse>(pMessage);
+        IMEBRA_LOG_INFO("Received N-ACTION response. Command ID = " << pResponse->getMessageBeingRespondedID() << " Abstract syntax = " << pResponse->getAbstractSyntax());
+        break;
+    case dimseCommandType_t::nEventReport:
+        pResponse = std::make_shared<nEventReportResponse>(pMessage);
+        IMEBRA_LOG_INFO("Received N-EVENTREPORT response. Command ID = " << pResponse->getMessageBeingRespondedID() << " Abstract syntax = " << pResponse->getAbstractSyntax());
+        break;
+    case dimseCommandType_t::nGet:
+        pResponse = std::make_shared<nGetResponse>(pMessage);
+        IMEBRA_LOG_INFO("Received N-GET response. Command ID = " << pResponse->getMessageBeingRespondedID() << " Abstract syntax = " << pResponse->getAbstractSyntax());
+        break;
+    case dimseCommandType_t::nSet:
+        pResponse = std::make_shared<nSetResponse>(pMessage);
+        IMEBRA_LOG_INFO("Received N-SET response. Command ID = " << pResponse->getMessageBeingRespondedID() << " Abstract syntax = " << pResponse->getAbstractSyntax());
+        break;
+    case dimseCommandType_t::nCreate:
+        pResponse = std::make_shared<nCreateResponse>(pMessage);
+        IMEBRA_LOG_INFO("Received N-CREATE response. Command ID = " << pResponse->getMessageBeingRespondedID() << " Abstract syntax = " << pResponse->getAbstractSyntax());
+        break;
+    case dimseCommandType_t::nDelete:
+        pResponse = std::make_shared<nDeleteResponse>(pMessage);
+        IMEBRA_LOG_INFO("Received N-DELETE response. Command ID = " << pResponse->getMessageBeingRespondedID() << " Abstract syntax = " << pResponse->getAbstractSyntax());
+        break;
+    default:
+        IMEBRA_THROW(DimseInvalidCommand, "Invalid response command code " << commandType);
+    }
+
+    pResponse->validate();
+
+    return pResponse;
+
+    IMEBRA_FUNCTION_END();
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Get the response for a specific command
+//
+//////////////////////////////////////////////////////////////////
+std::shared_ptr<dimseResponse> dimseService::getResponse(std::shared_ptr<dimseNCommand> pCommand)
+{
+    return getResponse(pCommand->getID());
+}
+
+
+//////////////////////////////////////////////////////////////////
+//
+// Send a command or a response
+//
+//////////////////////////////////////////////////////////////////
+void dimseService::sendCommandOrResponse(std::shared_ptr<dimseCommandBase> pCommand)
+{
+    m_pAssociation->sendMessage(pCommand);
+}
+
+
+} // namespace implementation
+
+} // namespace imebra

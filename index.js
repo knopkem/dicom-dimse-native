@@ -1,1 +1,1 @@
-module.exports = require('bindings')('addon.node');
+module.exports = require('bindings')('imebra.node');
