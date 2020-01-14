@@ -1,28 +1,9 @@
 #include <napi.h>
 
 #include "DataProcessingAsyncWorker.h"
-#include "json.h"
-
-using json = nlohmann::json;
+#include "FindAsyncWorker.h"
 
 using namespace Napi;
-
-namespace ns {
-     // a simple struct to model a person
-    struct tag {
-        std::string key;
-        std::string value;
-    };
-
-    void to_json(json& j, const tag& p) {
-        j = json{{"key", p.key}, {"value", p.value}};
-    }
-
-    void from_json(const json& j, tag& p) {
-        j.at("key").get_to(p.key);
-        j.at("value").get_to(p.value);
-    }
-} // namespace ns
 
 void ProcessData(const CallbackInfo& info) {
     Buffer<uint8_t> data = info[0].As<Buffer<uint8_t>>();
@@ -33,18 +14,11 @@ void ProcessData(const CallbackInfo& info) {
 }
 
 void DoFind(const CallbackInfo& info) {
-    Env env = info.Env();
-    String input = info[0].As<String>();
-    String output;
-
-    auto j = json::parse(input.Utf8Value());
-    for (json::iterator it = j.begin(); it != j.end(); ++it) {
-        auto p2 = (*it).get<ns::tag>();
-        output = String::New(env, p2.key + " | " + p2.value);
-    }
-
+    std::string input = info[0].As<String>().Utf8Value();
     Function cb = info[1].As<Function>();
-    cb.Call(env.Global(), {output});
+
+    FindAsyncWorker * worker = new FindAsyncWorker(input, cb);
+    worker->Queue();
 }
 
 Object Init(Env env, Object exports) {
