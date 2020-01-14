@@ -18,15 +18,20 @@ addon.processData(buf, () => {
     console.timeEnd('Program runtime');
 });
 */
+
 const j = {
     "tags" : [
         {
             "key": "00100010", 
-            "value": "hello world",
+            "value": "",
         },
         {
             "key": "0020000D", 
             "value": "1.3.46.670589.11.0.1.1996082307380006",
+        },
+        {
+            "key": "00080052", 
+            "value": "STUDY",
         },
     ]
 };
