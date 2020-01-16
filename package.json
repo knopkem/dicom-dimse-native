@@ -1,10 +1,10 @@
 {
   "name": "dicom-dimse-native",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "native addon using imebra dicom toolkit",
   "main": "module.js",
   "scripts": {
-    "install": "npx cmake-js compile",
+    "install": "npx prebuild-install || npx cmake-js compile",
     "test": "mocha"
   },
   "keywords": [
@@ -21,7 +21,8 @@
   "license": "GPL-3.0-or-later",
   "dependencies": {
     "bindings": "^1.5.0",
-    "node-addon-api": "^2.0.0"
+    "node-addon-api": "^2.0.0",
+    "prebuild-install": "^5.3.3"
   },
   "devDependencies": {
     "cmake-js": "^6.0.0",
