@@ -9,57 +9,63 @@
 
 using namespace Napi;
 
-void DoEcho(const CallbackInfo& info) {
+Value DoEcho(const CallbackInfo& info) {
     std::string input = info[0].As<String>().Utf8Value();
     Function cb = info[1].As<Function>();
 
     EchoAsyncWorker * worker = new EchoAsyncWorker(input, cb);
     worker->Queue();
+    return info.Env().Undefined();
 }
 
-void DoFind(const CallbackInfo& info) {
+Value DoFind(const CallbackInfo& info) {
     std::string input = info[0].As<String>().Utf8Value();
     Function cb = info[1].As<Function>();
 
     FindAsyncWorker * worker = new FindAsyncWorker(input, cb);
     worker->Queue();
+    return info.Env().Undefined();
 }
 
-void DoMove(const CallbackInfo& info) {
+Value DoMove(const CallbackInfo& info) {
     std::string input = info[0].As<String>().Utf8Value();
     Function cb = info[1].As<Function>();
 
     MoveAsyncWorker * worker = new MoveAsyncWorker(input, cb);
     worker->Queue();
+    return info.Env().Undefined();
 }
 
-void DoGet(const CallbackInfo& info) {
+Value DoGet(const CallbackInfo& info) {
     std::string input = info[0].As<String>().Utf8Value();
     Function cb = info[1].As<Function>();
 
     GetAsyncWorker * worker = new GetAsyncWorker(input, cb);
     worker->Queue();
+    return info.Env().Undefined();
 }
 
-void DoStore(const CallbackInfo& info) {
+Value DoStore(const CallbackInfo& info) {
     std::string input = info[0].As<String>().Utf8Value();
     Function cb = info[1].As<Function>();
 
     StoreAsyncWorker * worker = new StoreAsyncWorker(input, cb);
     worker->Queue();
+    return info.Env().Undefined();
 }
 
-void StartScp(const CallbackInfo& info) {
+Value StartScp(const CallbackInfo& info) {
     std::string input = info[0].As<String>().Utf8Value();
     Function cb = info[1].As<Function>();
 
     ServerAsyncWorker * worker = new ServerAsyncWorker(input, cb);
     worker->Queue();
+    return info.Env().Undefined();
 }
 
 Object Init(Env env, Object exports) {
     exports.Set(String::New(env, "echoScu"),
-                Function::New(env, DoFind));
+                Function::New(env, DoEcho));
     exports.Set(String::New(env, "findScu"),
                 Function::New(env, DoFind));
     exports.Set(String::New(env, "moveScu"),

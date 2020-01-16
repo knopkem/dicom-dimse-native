@@ -28,8 +28,26 @@ FindAsyncWorker::FindAsyncWorker(std::string data, Function &callback) : AsyncWo
 
 void FindAsyncWorker::Execute()
 {
+	json jsonInput = json::parse(_input);
+    auto tags = jsonInput["tags"];
+	std::string source_aet = jsonInput["source"]["aet"];
+	std::string source_port = jsonInput["source"]["port"];
+	std::string target_aet = jsonInput["target"]["aet"];
+	std::string target_ip = jsonInput["target"]["ip"];
+	std::string target_port = jsonInput["target"]["port"];
+
+	if (source_port.empty() || source_aet.empty()) {
+		SetError("Source not set");
+		return;
+	}
+
+	if (target_ip.empty() || target_port.empty() || target_aet.empty()) {
+		SetError("Target not set");
+		return;
+	}
+
 	// Allocate a TCP stream that connects to the DICOM SCP
-	imebra::TCPStream tcpStream(TCPActiveAddress("localhost", "5678"));
+	imebra::TCPStream tcpStream(TCPActiveAddress(target_ip, target_port));
 
 	// Allocate a stream reader and a writer that use the TCP stream.
 	// If you need a more complex stream (e.g. a stream that uses your
@@ -48,7 +66,7 @@ void FindAsyncWorker::Execute()
 
 	// The AssociationSCU constructor will negotiate a connection through
 	// the readSCU and writeSCU stream reader and writer
-	imebra::AssociationSCU scu("IMEBRA", "CONQUESTSRV1", 1, 1, presentationContexts, readSCU, writeSCU, 10);
+	imebra::AssociationSCU scu(source_aet, target_aet, 1, 1, presentationContexts, readSCU, writeSCU, 10);
 
 	// The DIMSE service will use the negotiated association to send and receive
 	// DICOM commands
@@ -56,9 +74,7 @@ void FindAsyncWorker::Execute()
 
 	// Let's prepare a dataset to store on the SCP
 	imebra::MutableDataSet payload; // We will use the negotiated transfer syntax
-    json js = json::parse(_input);
-    auto j = js["tags"];
-    for (json::iterator it = j.begin(); it != j.end(); ++it) {
+    for (json::iterator it = tags.begin(); it != tags.end(); ++it) {
         auto tag = (*it).get<ns::tag>();
     	payload.setString(TagId((tagId_t)std::stoi(tag.key, 0, 16)), tag.value);
     }
@@ -98,10 +114,12 @@ void FindAsyncWorker::Execute()
 			}
 			catch (std::exception & e)
 			{
+				SetError("Exception: " + std::string(e.what()));
 			}
 		}
 		else
 		{
+			SetError("Find-scu request failed");
 			break;
 		}
 		}
@@ -110,11 +128,13 @@ void FindAsyncWorker::Execute()
 	catch (const StreamEOFError & error)
 	{
 		// The association has been closed
+		SetError("Association was closed: " + std::string(error.what()));
 	}
 }
 
 void FindAsyncWorker::OnOK()
 {
-        String output = String::New(Env(), _output);
-        Callback().Call({output});
+	HandleScope scope(Env());
+	String output = String::New(Env(), _output);
+	Callback().Call({output});
 }
