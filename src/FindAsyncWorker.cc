@@ -11,46 +11,15 @@
 #include "../library/include/imebra/streamReader.h"
 #include "../library/include/imebra/streamWriter.h"
 
-
-/*
-#if defined(WIN32) || defined(WIN64)
-#include <process.h>
-#else
-#include <spawn.h>
-#include <sys/wait.h>
-#endif
-*/
-
 #include <iostream>
 #include <sstream>
 #include <memory>
 #include <list>
+#include "json.h"
+#include "Utils.h"
 
 using namespace imebra;
-
-
-#include "json.h"
-
 using json = nlohmann::json;
-
-
-namespace ns {
-     // a simple struct to model a person
-    struct tag {
-        std::string key;
-        std::string value;
-    };
-
-    void to_json(json& j, const tag& p) {
-        j = json{{"key", p.key}, {"value", p.value}};
-    }
-
-    void from_json(const json& j, tag& p) {
-        j.at("key").get_to(p.key);
-        j.at("value").get_to(p.value);
-    }
-} // namespace ns
-
 
 FindAsyncWorker::FindAsyncWorker(std::string data, Function &callback) : AsyncWorker(callback),
                                                                            _input(data)
@@ -87,11 +56,6 @@ void FindAsyncWorker::Execute()
 
 	// Let's prepare a dataset to store on the SCP
 	imebra::MutableDataSet payload; // We will use the negotiated transfer syntax
-    /*
-	payload.setString(TagId(imebra::tagId_t::QueryRetrieveLevel_0008_0052), "STUDY", imebra::tagVR_t::CS);
-	payload.setString(TagId(tagId_t::StudyInstanceUID_0020_000D), "1.3.46.670589.11.0.1.1996082307380006", imebra::tagVR_t::UI);
-	payload.setString(TagId(tagId_t::PatientName_0010_0010), "", imebra::tagVR_t::PN);
-    */
     json js = json::parse(_input);
     auto j = js["tags"];
     for (json::iterator it = j.begin(); it != j.end(); ++it) {
