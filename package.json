@@ -6,7 +6,13 @@
   "scripts": {
     "install": "npx cmake-js compile"
   },
-  "keywords": [],
+  "keywords": [
+    "DICOM",
+    "DIMSE",
+    "IMEBRA",
+    "NETWORK",
+    "NATIVE"
+    ],
   "author": "Michael Knopke",
   "license": "GPLV3",
   "dependencies": {
