@@ -1,6 +1,5 @@
 const addon = require('./module');
 
-
 const j = {
     "source": {
         "aet": "IMEBRA",
