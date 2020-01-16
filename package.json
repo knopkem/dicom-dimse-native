@@ -4,7 +4,8 @@
   "description": "native addon using imebra dicom toolkit",
   "main": "module.js",
   "scripts": {
-    "install": "npx cmake-js compile"
+    "install": "npx cmake-js compile",
+    "test": "mocha"
   },
   "keywords": [
     "DICOM",
@@ -24,13 +25,23 @@
   },
   "devDependencies": {
     "cmake-js": "^6.0.0",
-    "node-cmake": "^2.5.1"
+    "node-cmake": "^2.5.1",
+    "babel-eslint": "8.2.6",
+    "chai": "4.2.0",
+    "eslint": "5.16.0",
+    "eslint-config-airbnb": "17.1.0",
+    "eslint-plugin-import": "2.17.2",
+    "eslint-plugin-jsx-a11y": "6.2.1",
+    "mocha": "5.2.0",
+    "npm-check": "5.9.0"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/knopkem/dicom-dimse-native"
   },
   "binary": {
-    "napi_versions": [3]
+    "napi_versions": [
+      3
+    ]
   }
 }
