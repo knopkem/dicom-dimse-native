@@ -28,6 +28,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://https://github.com/knopkem/dicom-dimse-native"
+    "url": "https://github.com/knopkem/dicom-dimse-native"
+  },
+  "binary": {
+    "napi_versions": [3]
   }
 }
