@@ -1,1 +1,19 @@
 language: node_js
+
+sudo: required
+
+matrix:
+  include:
+    - os: linux
+      node_js: 10
+
+before_install:
+  - sudo apt-get update
+  # install cmake
+  - wget http://www.cmake.org/files/v3.4/cmake-3.4.1.tar.gz
+  - tar -xvzf cmake-3.4.1.tar.gz
+  - cd cmake-3.4.1/
+  - ./configure
+  - make
+  - cd ..
+  - cmake --version
