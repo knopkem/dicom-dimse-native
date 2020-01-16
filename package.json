@@ -2,7 +2,7 @@
   "name": "dicom-dimse-native",
   "version": "0.0.2",
   "description": "native addon using imebra dicom toolkit",
-  "main": "index.js",
+  "main": "module.js",
   "scripts": {
     "install": "npx cmake-js compile"
   },

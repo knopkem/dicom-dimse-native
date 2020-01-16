@@ -9,7 +9,7 @@ node js native addon for dimse services using IMEBRA (attention: see license!)
 ```npm i -s dicom-native-addon```
 
 ## How to use
-```const addon = require('./module');```
+```const addon = require('dicom-dimse-native');```
 
 ### C-Echo
 ```
