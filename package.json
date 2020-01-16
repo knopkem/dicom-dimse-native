@@ -9,9 +9,12 @@
   "keywords": [
     "DICOM",
     "DIMSE",
+    "NATIVE",
+    "DICOM-DIMSE"
+    "DICOM-DIMSE-NATIVE"
     "IMEBRA",
     "NETWORK",
-    "NATIVE"
+    "DICOMJS"
     ],
   "author": "Michael Knopke",
   "license": "GPLV3",
@@ -23,4 +26,8 @@
     "cmake-js": "^6.0.0",
     "node-cmake": "^2.5.1"
   }
+  "repository": {
+    "type": "git",
+    "url": "git+https://https://github.com/knopkem/dicom-dimse-native"
+  },
 }
