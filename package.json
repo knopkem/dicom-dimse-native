@@ -1,6 +1,6 @@
 {
   "name": "dicom-dimse-native",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "native addon using imebra dicom toolkit",
   "main": "index.js",
   "scripts": {
