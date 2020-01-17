@@ -8,11 +8,11 @@ matrix:
       node_js: 10
 
 before_install:
-  - sudo apt-get update
+  #- sudo apt-get update
   - sudo apt-get install gobjc++
   # install cmake
-  - wget http://www.cmake.org/files/v3.4/cmake-3.4.1.tar.gz
-  - tar -xvzf cmake-3.4.1.tar.gz
+  - wget http://www.cmake.org/files/v3.16/cmake-3.16.0.tar.gz
+  - tar -xf cmake-3.16.0.tar.gz
   - cd cmake-3.4.1/
   - ./configure
   - make
