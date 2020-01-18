@@ -72,8 +72,8 @@ void FindAsyncWorker::Execute()
 	// syntaxes for each abstract syntax (the pair abstract/transfer syntax is
 	// called "presentation context")
 	imebra::PresentationContext context(abstractSyntax);
-	context.addTransferSyntax("1.2.840.10008.1.2"); // Implicit VR little endian
-	context.addTransferSyntax("1.2.840.10008.1.2.1"); // Explicit VR little endian
+	context.addTransferSyntax(imebra::uidImplicitVRLittleEndian_1_2_840_10008_1_2);
+	context.addTransferSyntax(imebra::uidExplicitVRLittleEndian_1_2_840_10008_1_2_1);
 	imebra::PresentationContexts presentationContexts;
 	presentationContexts.addPresentationContext(context);
 

@@ -32,13 +32,23 @@ namespace ns {
         }
     };
 
+    inline std::string toString(const json& in, const std::string& key) {
+        try {
+            return in.at(key).get<std::string>();
+        }
+        catch(json::exception&) {
+
+        }
+        return "";
+    }
+
     inline void to_json(json& j, const sTag& p) {
         j = json{{"key", p.key}, {"value", p.value}};
     }
 
     inline void from_json(const json& j, sTag& p) {
-        j.at("key").get_to(p.key);
-        j.at("value").get_to(p.value);
+        p.key = toString(j, "key");
+        p.value = toString(j, "value");
     }
 
     inline void to_json(json& j, const sIdent& p) {
@@ -46,23 +56,29 @@ namespace ns {
     }
 
     inline void from_json(const json& j, sIdent& p) {
-        j.at("aet").get_to(p.aet);
-        j.at("ip").get_to(p.ip);
-        j.at("port").get_to(p.port);
+        p.aet = toString(j, "aet");
+        p.ip = toString(j, "ip");
+        p.port = toString(j, "port");
     }
 
 
     inline sInput parseInputJson(const std::string& _input) {
-       	json jsonInput = json::parse(_input);
+       	json j = json::parse(_input);
         sInput in;
-        in.source = jsonInput["source"].get<sIdent>();
-        in.target = jsonInput["target"].get<sIdent>();
-        in.destination = jsonInput["destination"].get<std::string>();
-        auto tags = jsonInput["tags"];
-        for (json::iterator it = tags.begin(); it != tags.end(); ++it) {
-            sTag tag = (*it).get<sTag>();
-            in.tags.push_back(tag);
-        }
+        try {
+            in.source = j.at("source").get<sIdent>();
+        } catch(...) {}
+        try {
+            in.target = j.at("target").get<sIdent>();
+        } catch(...) {}
+        in.destination = toString(j, "destination");
+        try {
+            auto tags = j.at("tags");
+            for (json::iterator it = tags.begin(); it != tags.end(); ++it) {
+                sTag tag = (*it).get<sTag>();
+                in.tags.push_back(tag);
+            }
+        } catch(...) {}
         return in;
     }
 

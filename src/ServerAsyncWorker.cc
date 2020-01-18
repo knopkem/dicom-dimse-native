@@ -219,7 +219,7 @@ void ServerAsyncWorker::Execute()
 			dimse.sendCommandOrResponse(CStoreResponse(command, dimseStatusCode_t::success));
 		}
 	}
-	catch(const StreamEOFError& error)
+	catch(const StreamEOFError&)
 	{
 		// The association has been closed
 		// SetError("assoc closed");
