@@ -11,15 +11,27 @@
 #include "../library/include/imebra/streamReader.h"
 #include "../library/include/imebra/streamWriter.h"
 
+#include "json.h"
+#include "Utils.h"
+
 #include <iostream>
 #include <sstream>
 #include <memory>
 #include <list>
-#include "json.h"
-#include "Utils.h"
+#include <iomanip>
 
 using namespace imebra;
 using json = nlohmann::json;
+
+namespace {
+	std::string int_to_hex( uint16_t i )
+	{
+	std::stringstream stream;
+	stream  << std::setfill ('0') << std::setw(sizeof(uint16_t)*2) 
+			<< std::hex << i;
+	return stream.str();
+	}
+}
 
 FindAsyncWorker::FindAsyncWorker(std::string data, Function &callback) : AsyncWorker(callback),
                                                                            _input(data)
@@ -45,6 +57,8 @@ void FindAsyncWorker::Execute()
 		return;
 	}
 
+	const std::string abstractSyntax = uidStudyRootQueryRetrieveInformationModelFIND_1_2_840_10008_5_1_4_1_2_2_1;
+
 	// Allocate a TCP stream that connects to the DICOM SCP
 	imebra::TCPStream tcpStream(TCPActiveAddress(in.target.ip, in.target.port));
 
@@ -57,7 +71,7 @@ void FindAsyncWorker::Execute()
 	// Add all the abstract syntaxes and the supported transfer
 	// syntaxes for each abstract syntax (the pair abstract/transfer syntax is
 	// called "presentation context")
-	imebra::PresentationContext context(uidStudyRootQueryRetrieveInformationModelFIND_1_2_840_10008_5_1_4_1_2_2_1);
+	imebra::PresentationContext context(abstractSyntax);
 	context.addTransferSyntax("1.2.840.10008.1.2"); // Implicit VR little endian
 	context.addTransferSyntax("1.2.840.10008.1.2.1"); // Explicit VR little endian
 	imebra::PresentationContexts presentationContexts;
@@ -78,17 +92,17 @@ void FindAsyncWorker::Execute()
     	payload.setString(TagId((tagId_t)std::stoi(tag.key, 0, 16)), tag.value);
     }
 
-	const std::string abstractSyntax = uidStudyRootQueryRetrieveInformationModelFIND_1_2_840_10008_5_1_4_1_2_2_1;
 
 	imebra::CFindCommand command( abstractSyntax,
 		dimse.getNextCommandID(),
 		dimseCommandPriority_t::medium,
-		uidStudyRootQueryRetrieveInformationModelFIND_1_2_840_10008_5_1_4_1_2_2_1,
+		abstractSyntax,
 		payload);
 	dimse.sendCommandOrResponse(command);
 
 	try
 	{
+		json outJson = json::array();
 		for (;;)
 		{
 
@@ -107,7 +121,13 @@ void FindAsyncWorker::Execute()
                 for (imebra::tagsIds_t::iterator it = allTags.begin() ; it != allTags.end(); ++it) {
                     imebra::TagId tag(*it);
     				std::string value = data.getString(tag, 0);
-                    _output += value;
+					json v = json::object();
+					std::string keyName =  int_to_hex(tag.getGroupId()) + int_to_hex(tag.getTagId());
+					v[keyName] = { 
+						{"Value", {value}},
+						{"vr", "UN"}
+					};
+					outJson.push_back(v);
                 }
 
 			}
@@ -122,7 +142,7 @@ void FindAsyncWorker::Execute()
 			break;
 		}
 		}
-
+		_output = outJson.dump();
 	}
 	catch (const StreamEOFError & error)
 	{

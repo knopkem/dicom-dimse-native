@@ -24,7 +24,8 @@ const j = {
             "key": "00080052", 
             "value": "STUDY",
         },
-    ]
+    ],
+    "destination": "IMEBRA"
 };
 
 addon.findScu(JSON.stringify(j), (result) => {

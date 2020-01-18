@@ -25,6 +25,7 @@ namespace ns {
     struct sInput {
         sIdent source;
         sIdent target;
+        std::string destination;
         std::vector<sTag> tags;
         inline bool valid() {
             return source.valid() && target.valid();
@@ -56,6 +57,7 @@ namespace ns {
         sInput in;
         in.source = jsonInput["source"].get<sIdent>();
         in.target = jsonInput["target"].get<sIdent>();
+        in.destination = jsonInput["destination"].get<std::string>();
         auto tags = jsonInput["tags"];
         for (json::iterator it = tags.begin(); it != tags.end(); ++it) {
             sTag tag = (*it).get<sTag>();
