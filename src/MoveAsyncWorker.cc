@@ -48,6 +48,11 @@ void MoveAsyncWorker::Execute()
 		SetError("Target not set");
 		return;
 	}
+
+	if (in.destination.empty()) {
+		in.destination = in.source.aet;
+	}
+
 	const std::string abstractSyntax = uidStudyRootQueryRetrieveInformationModelMOVE_1_2_840_10008_5_1_4_1_2_2_2;
 
 	// Allocate a TCP stream that connects to the DICOM SCP
