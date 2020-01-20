@@ -185,7 +185,7 @@ void ServerAsyncWorker::Execute()
     // syntaxes for each abstract syntax (the pair abstract/transfer syntax is
     // called "presentation context")
     imebra::PresentationContexts presentationContexts;
-        for (int j = 0; j < numberOfDcmLongSCUStorageSOPClassUIDs; j++)
+    for (int j = 0; j < numberOfDcmLongSCUStorageSOPClassUIDs; j++)
     {
         imebra::PresentationContext context(dcmLongSCUStorageSOPClassUIDs[j], true, true);
         context.addTransferSyntax(imebra::uidImplicitVRLittleEndian_1_2_840_10008_1_2);
@@ -200,7 +200,7 @@ void ServerAsyncWorker::Execute()
     // DICOM commands
     imebra::DimseService dimse(scp);
 
-        try
+    try
     {
         // Receive commands until the association is closed
         for(;;)

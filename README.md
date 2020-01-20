@@ -7,6 +7,7 @@ node js native addon for dimse services using IMEBRA DICOM toolkit
 Attention: watch license restrictions coming from IMEBRA!
 
 # supported DIMSE services
+* C-Echo-scu 
 * C-Store-scp
 * C-Move-scu
 * C-Find-scu
@@ -14,7 +15,6 @@ Attention: watch license restrictions coming from IMEBRA!
 # in development
 * C-Store-scu
 * C-Get-scu
-* C-Echo-scu 
 
 ## How to install
 ```npm i -s dicom-native-addon```

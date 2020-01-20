@@ -109,7 +109,23 @@ void MoveAsyncWorker::Execute()
             }
             else if (response.getStatus() == imebra::dimseStatus_t::pending)
             {
-                // just continue for now
+                imebra::DataSet data  = response.getPayloadDataSet();
+                try
+                {
+                    int remainNum = data.getSignedLong(imebra::TagId(imebra::tagId_t::NumberOfRemainingSuboperations_0000_1020), 0);
+                    int completeNum = data.getSignedLong(imebra::TagId(imebra::tagId_t::NumberOfCompletedSuboperations_0000_1021), 0);
+                    int faileNum = data.getSignedLong(imebra::TagId(imebra::tagId_t::NumberOfFailedSuboperations_0000_1022), 0);
+                    // int warnNum = data.getSignedLong(imebra::TagId(imebra::tagId_t::NumberOfWarningSuboperations_0000_1023), 0);
+                    _output = "remaining: " + std::to_string(remainNum) + " completed: " + std::to_string(completeNum);
+                    if (faileNum > 0 ) {
+                        _output += " failed: " + std::to_string(remainNum);
+                    }
+                }
+                catch (std::exception &error)
+                {
+                    SetError("parse error: " + std::string(error.what()));
+                }
+
             }
             else {
                 SetError("Move-scu request failed: " + std::to_string(response.getStatusCode()));
