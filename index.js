@@ -34,12 +34,30 @@ setTimeout(function() {
                     "key": "00080052", 
                     "value": "STUDY",
                 },
-            ]
+            ],
+            "destination" : "IMEBRA"
         }
     ), (result) => {
-        console.log("result: ", result);
+        console.log("move result: ", result);
     });
 }, 3000);
+
+addon.echoScu(JSON.stringify(
+    {
+        "source": {
+            "aet": "IMEBRA",
+            "ip" : "127.0.0.1",
+            "port": "9999"
+        },
+        "target": {
+            "aet": "CONQUESTSRV1",
+            "ip" : "127.0.0.1",
+            "port": "5678"
+        }
+    }
+), (result) => {
+    console.log("echo result: ", result);
+});
 
 addon.findScu(JSON.stringify(
     {
@@ -69,6 +87,6 @@ addon.findScu(JSON.stringify(
         ]
     }
 ), (result) => {
-    console.log("result: ", result);
+    console.log("find result: ", result);
 });
 

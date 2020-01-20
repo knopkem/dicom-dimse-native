@@ -205,20 +205,24 @@ void ServerAsyncWorker::Execute()
         // Receive commands until the association is closed
         for(;;)
         {
-            // We assume we are going to receive a C-Store. Normally you should check the command type
-            // (using DimseCommand::getCommandType()) and then cast to the proper class.
-            imebra::CStoreCommand command(dimse.getCommand().getAsCStoreCommand());
+            // receive a C-Store
+            if (dimse.getCommand().getCommandType() == dimseCommandType_t::cStore) {
+                imebra::CStoreCommand command(dimse.getCommand().getAsCStoreCommand());
 
-            // The store command has a payload. We can do something with it, or we can
-            // use the methods in CStoreCommand to get other data sent by the peer
-            imebra::DataSet payload = command.getPayloadDataSet();
+                // The store command has a payload. We can do something with it, or we can
+                // use the methods in CStoreCommand to get other data sent by the peer
+                imebra::DataSet payload = command.getPayloadDataSet();
 
-            // Do something with the payload
-                        std::string sop = payload.getString(TagId(tagId_t::SOPClassUID_0008_0016), 0);
-            imebra::CodecFactory::save(payload, sop + std::string(".dcm"), imebra::codecType_t::dicom);
+                // Do something with the payload
+                std::string sop = payload.getString(TagId(tagId_t::SOPClassUID_0008_0016), 0);
+                imebra::CodecFactory::save(payload, sop + std::string(".dcm"), imebra::codecType_t::dicom);
 
-            // Send a response
-            dimse.sendCommandOrResponse(CStoreResponse(command, dimseStatusCode_t::success));
+                // Send a response
+                dimse.sendCommandOrResponse(CStoreResponse(command, dimseStatusCode_t::success));
+            } else {
+                SetError("Unsupported command type");
+                break;
+            }
         }
     }
     catch(const StreamEOFError&)
