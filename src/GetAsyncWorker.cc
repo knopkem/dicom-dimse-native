@@ -304,7 +304,7 @@ void GetAsyncWorker::Execute()
                 break;
             }
         }
-        storeProc.join();
+        // storeProc.join();
     }
     catch (const StreamEOFError & error)
     {
