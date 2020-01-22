@@ -26,7 +26,7 @@ Otherwise install will try to compile the sources for your platform, you will ne
 
 ## Examples
 ```
-const dimse = require('./module');
+const dimse = require('dicom-dimse-native');
 
 dimse.startScp(JSON.stringify(
     {
