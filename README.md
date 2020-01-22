@@ -3,8 +3,7 @@
 [![Greenkeeper badge](https://badges.greenkeeper.io/knopkem/dicom-dimse-native.svg)](https://greenkeeper.io/)
 
 # dicom-dimse-native
-node js native addon for dimse services using IMEBRA DICOM toolkit 
-Attention: watch license restrictions coming from IMEBRA!
+Nodejs native addon for DICOM DIMSE services using the IMEBRA DICOM c++ toolkit.
 
 # supported DIMSE services
 * C-Echo-scu 
@@ -17,13 +16,19 @@ Attention: watch license restrictions coming from IMEBRA!
 * C-Get-scu
 
 ## How to install
+This package uses prebuild to fetch precompiled binaries, so provided your platform is supported, all you need to do is:
 ```npm i -s dicom-native-addon```
+
+Otherwise install will try to compile the sources for your platform, you will need:
+* CMake installed and in path
+* a working c++ compiler
+* linux only: gobjc++ library installed (e.g for ubuntu: sudo apt-get install gobjc++)
 
 ## Examples
 ```
-const addon = require('./module');
+const dimse = require('./module');
 
-addon.startScp(JSON.stringify(
+dimse.startScp(JSON.stringify(
     {
         "source": {
             "aet": "IMEBRA",
@@ -35,7 +40,7 @@ addon.startScp(JSON.stringify(
         console.log(result);
 });
 
-addon.moveScu(JSON.stringify(
+dimse.moveScu(JSON.stringify(
     {
         "source": {
             "aet": "IMEBRA",
@@ -63,7 +68,7 @@ addon.moveScu(JSON.stringify(
     console.log("result: ", result);
 });
 
-addon.findScu(JSON.stringify(
+dimse.findScu(JSON.stringify(
     {
         "source": {
             "aet": "IMEBRA",
