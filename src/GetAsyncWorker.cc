@@ -265,7 +265,7 @@ void GetAsyncWorker::Execute()
     bool isActive = true;
 
     dimse.sendCommandOrResponse(command);
-    std::thread storeProc(StoreProc, &dimse, isActive);
+    // std::thread storeProc(StoreProc, &dimse, isActive);
 
     try
     {
