@@ -96,6 +96,7 @@ dimse.findScu(JSON.stringify(
         ]
     }
 ), (result) => {
-    console.log("result: ", result);
+    const json = JSON.parse(result);
+    console.log("result: ", json);
 });
 ```

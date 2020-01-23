@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../library/include/imebra/definitions.h"
 #include "json.h"
 using json = nlohmann::json;
 
@@ -81,6 +82,8 @@ namespace ns {
         } catch(...) {}
         return in;
     }
+
+    std::string tagVrName(imebra::tagVR_t tagVr);
 
 
 } // namespace ns

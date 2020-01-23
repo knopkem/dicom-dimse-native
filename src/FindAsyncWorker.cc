@@ -10,6 +10,8 @@
 #include "../library/include/imebra/tcpStream.h"
 #include "../library/include/imebra/streamReader.h"
 #include "../library/include/imebra/streamWriter.h"
+#include "../library/include/imebra/dicomDictionary.h"
+
 
 #include "json.h"
 #include "Utils.h"
@@ -118,18 +120,26 @@ void FindAsyncWorker::Execute()
             try
             {
                 imebra::tagsIds_t allTags = data.getTags();
+                json v = json::object();
                 for (imebra::tagsIds_t::iterator it = allTags.begin() ; it != allTags.end(); ++it) {
                     imebra::TagId tag(*it);
                     std::string value = data.getString(tag, 0);
-                    json v = json::object();
                     std::string keyName =  int_to_hex(tag.getGroupId()) + int_to_hex(tag.getTagId());
+                    imebra::tagVR_t tagVr = imebra::DicomDictionary::getTagType(tag);
+                    std::string vr = ns::tagVrName(tagVr);
+                    if (tagVr == imebra::tagVR_t::PN) {
+                    v[keyName] = { 
+                        {"Value", { {"Alphabetical", value} } },
+                        {"vr", vr}
+                    };
+                    } else {
                     v[keyName] = { 
                         {"Value", {value}},
-                        {"vr", "UN"}
+                        {"vr", vr}
                     };
-                    outJson.push_back(v);
+                    }
                 }
-
+                outJson.push_back(v);
             }
             catch (std::exception & e)
             {
