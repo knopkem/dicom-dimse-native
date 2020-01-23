@@ -129,12 +129,12 @@ void FindAsyncWorker::Execute()
                     std::string vr = ns::tagVrName(tagVr);
                     if (tagVr == imebra::tagVR_t::PN) {
                     v[keyName] = { 
-                        {"Value", { {"Alphabetical", value} } },
+                        {"Value", json::array({ json{{"Alphabetic", value}} }) },
                         {"vr", vr}
                     };
                     } else {
                     v[keyName] = { 
-                        {"Value", {value}},
+                        {"Value", json::array({value})},
                         {"vr", vr}
                     };
                     }
