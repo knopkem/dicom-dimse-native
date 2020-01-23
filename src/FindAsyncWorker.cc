@@ -26,12 +26,20 @@ using namespace imebra;
 using json = nlohmann::json;
 
 namespace {
+
+    std::string str_toupper(std::string s) {
+        std::transform(s.begin(), s.end(), s.begin(), 
+                    [](unsigned char c){ return std::toupper(c); }
+                    );
+        return s;
+    }
+
     std::string int_to_hex( uint16_t i )
     {
     std::stringstream stream;
     stream  << std::setfill ('0') << std::setw(sizeof(uint16_t)*2) 
             << std::hex << i;
-    return stream.str();
+    return str_toupper(stream.str());
     }
 }
 
