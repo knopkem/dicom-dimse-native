@@ -177,4 +177,4 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_JS_INC} ${NODE_ADDON_
 target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB})
 
 # define NPI_VERSION
-add_definitions(-DNAPI_VERSION=3)
+add_definitions(-DNAPI_VERSION=4)
