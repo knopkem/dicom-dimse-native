@@ -21,8 +21,7 @@ addon.getScu(JSON.stringify(
                 "key": "00080052", 
                 "value": "STUDY",
             },
-        ],
-        "destination" : "IMEBRA"
+        ]
     }
 ), (result) => {
     console.log("get result: ", result);

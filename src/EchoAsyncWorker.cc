@@ -101,6 +101,7 @@ void EchoAsyncWorker::Execute()
 
 void EchoAsyncWorker::OnOK()
 {
+        HandleScope scope(Env());
         String output = String::New(Env(), _output);
         Callback().Call({output});
 }

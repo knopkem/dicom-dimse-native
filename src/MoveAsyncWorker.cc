@@ -143,6 +143,7 @@ void MoveAsyncWorker::Execute()
 
 void MoveAsyncWorker::OnOK()
 {
+        HandleScope scope(Env());
         String output = String::New(Env(), _output);
         Callback().Call({output});
 }

@@ -118,6 +118,7 @@ void StoreAsyncWorker::Execute()
 
 void StoreAsyncWorker::OnOK()
 {
+        HandleScope scope(Env());
         String output = String::New(Env(), _output);
         Callback().Call({output});
 }
