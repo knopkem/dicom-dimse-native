@@ -169,6 +169,13 @@ void ServerAsyncWorker::Execute(const ExecutionProgress& progress)
         return;
     }
 
+{
+    std::string msg("starting c-store server: ");
+    msg.append(in.source.ip);
+    msg.append(" : ");
+    msg.append(in.source.port);
+    progress.Send(msg.c_str(), msg.length());
+}
     imebra::TCPListener tcpListener(TCPPassiveAddress(in.source.ip, in.source.port));
 
     // Wait until a connection arrives or terminate() is called on the tcpListener
@@ -199,13 +206,18 @@ void ServerAsyncWorker::Execute(const ExecutionProgress& progress)
     // DICOM commands
     imebra::DimseService dimse(scp);
 
+{
+    std::string msg("assoc received...");
+    progress.Send(msg.c_str(), msg.length());
+}
+
     try
     {
         // Receive commands until the association is closed
         for(;;)
         {
             // receive a C-Store
-            if (dimse.getCommand().getCommandType() == dimseCommandType_t::cStore) {
+            // if (dimse.getCommand().getCommandType() == dimseCommandType_t::cStore) {
                 imebra::CStoreCommand command(dimse.getCommand().getAsCStoreCommand());
 
                 // The store command has a payload. We can do something with it, or we can
@@ -217,37 +229,48 @@ void ServerAsyncWorker::Execute(const ExecutionProgress& progress)
                 imebra::CodecFactory::save(payload, sop + std::string(".dcm"), imebra::codecType_t::dicom);
 
                 std::string msg("storing file: ");
-                msg.append(msg);
+                msg.append(sop);
                 progress.Send(msg.c_str(), msg.length());
 
                 // Send a response
                 dimse.sendCommandOrResponse(CStoreResponse(command, dimseStatusCode_t::success));
+                /*
             } else {
                 std::string msg("Unsupported command type");
                 SetError(msg);
                 progress.Send(msg.c_str(), msg.length());
-                break;
+                // break;
             }
+            */
         }
     }
     catch(const StreamEOFError& e)
     {
         // The association has been closed
-        // SetError("assoc closed");
+        SetError("assoc closed");
         std::string msg("assoc closed, reason: ");
         msg.append(e.what());
         progress.Send(msg.c_str(), msg.length());
     }
+
+    {
+    std::string msg("shutting down...");
+    progress.Send(msg.c_str(), msg.length());
+    }
+
+
 }
 
 void ServerAsyncWorker::OnOK()
 {
+        HandleScope scope(Env());
         String output = String::New(Env(), _output);
         Callback().Call({output});
 }
 
 void ServerAsyncWorker::OnProgress(const char *data, size_t size)
 {
-    HandleScope scope(Env());
-    Callback().Call({Env().Null(), Env().Null(), String::New(Env(), data)});
+        HandleScope scope(Env());
+        String output = String::New(Env(), data);
+        Callback().Call({output});
 }
