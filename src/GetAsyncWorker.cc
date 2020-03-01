@@ -158,23 +158,19 @@ namespace {
                 try
                 {
 
-                // receive a C-Store
-                if (dimse->getCommand().getCommandType() == dimseCommandType_t::cStore) {
-                        imebra::CStoreCommand command(dimse->getCommand().getAsCStoreCommand());
+                    // receive a C-Store
+                    imebra::CStoreCommand command(dimse->getCommand().getAsCStoreCommand());
 
-                        // The store command has a payload. We can do something with it, or we can
-                        // use the methods in CStoreCommand to get other data sent by the peer
-                        imebra::DataSet payload = command.getPayloadDataSet();
+                    // The store command has a payload. We can do something with it, or we can
+                    // use the methods in CStoreCommand to get other data sent by the peer
+                    imebra::DataSet payload = command.getPayloadDataSet();
 
-                        // Do something with the payload
-                        std::string sop = payload.getString(TagId(tagId_t::SOPClassUID_0008_0016), 0);
-                        imebra::CodecFactory::save(payload, sop + std::string(".dcm"), imebra::codecType_t::dicom);
+                    // Do something with the payload
+                    std::string sop = payload.getString(TagId(tagId_t::SOPClassUID_0008_0016), 0);
+                    imebra::CodecFactory::save(payload, sop + std::string(".dcm"), imebra::codecType_t::dicom);
 
-                        // Send a response
-                        dimse->sendCommandOrResponse(CStoreResponse(command, dimseStatusCode_t::success));
-                } else {
-                        break;
-                }
+                    // Send a response
+                    dimse->sendCommandOrResponse(CStoreResponse(command, dimseStatusCode_t::success));
                 }
                 catch (std::exception)
                 {
@@ -265,7 +261,7 @@ void GetAsyncWorker::Execute()
     bool isActive = true;
 
     dimse.sendCommandOrResponse(command);
-    // std::thread storeProc(StoreProc, &dimse, isActive);
+    std::thread storeProc(StoreProc, &dimse, isActive);
 
     try
     {
@@ -304,7 +300,7 @@ void GetAsyncWorker::Execute()
                 break;
             }
         }
-        // storeProc.join();
+        storeProc.join();
     }
     catch (const StreamEOFError & error)
     {

@@ -1792,8 +1792,8 @@ void associationBase::sendMessage(std::shared_ptr<const associationMessage> mess
             break;
         }
         else {
-            std::cout << message->getAbstractSyntax() << " | " << scanPresentationContexts->second.first->m_abstractSyntax << std::endl;
-            std::cout << transferSyntax << " | " << scanPresentationContexts->second.second << std::endl;
+            // std::cout << message->getAbstractSyntax() << " | " << scanPresentationContexts->second.first->m_abstractSyntax << std::endl;
+            // std::cout << transferSyntax << " | " << scanPresentationContexts->second.second << std::endl;
         }
     }
 
