@@ -170,7 +170,7 @@ void ServerAsyncWorker::Execute(const ExecutionProgress& progress)
     }
 
 {
-    std::string msg("starting c-store server: ");
+    std::string msg("starting c-store scp: ");
     msg.append(in.source.ip);
     msg.append(" : ");
     msg.append(in.source.port);
@@ -206,11 +206,6 @@ void ServerAsyncWorker::Execute(const ExecutionProgress& progress)
     // DICOM commands
     imebra::DimseService dimse(scp);
 
-{
-    std::string msg("assoc received...");
-    progress.Send(msg.c_str(), msg.length());
-}
-
     try
     {
         // Receive commands until the association is closed
@@ -245,7 +240,7 @@ void ServerAsyncWorker::Execute(const ExecutionProgress& progress)
     }
 
     {
-    std::string msg("shutting down...");
+    std::string msg("shutting down scp...");
     progress.Send(msg.c_str(), msg.length());
     }
 
