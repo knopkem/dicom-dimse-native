@@ -7,13 +7,13 @@ Nodejs native addon for DICOM DIMSE services using the IMEBRA DICOM c++ toolkit.
 
 # supported DIMSE services
 * C-Echo-scu 
-* C-Store-scp
-* C-Move-scu
 * C-Find-scu
+* C-Move-scu
+* C-Get-scu
+* C-Store-scp
 
 # in development
 * C-Store-scu
-* C-Get-scu
 
 ## How to install
 This package uses prebuild to fetch precompiled binaries, so provided your platform is supported, all you need to do is:
