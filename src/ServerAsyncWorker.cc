@@ -262,6 +262,6 @@ void ServerAsyncWorker::OnOK()
 void ServerAsyncWorker::OnProgress(const char *data, size_t size)
 {
         HandleScope scope(Env());
-        String output = String::New(Env(), data);
+        String output = String::New(Env(), data, size);
         Callback().Call({output});
 }
