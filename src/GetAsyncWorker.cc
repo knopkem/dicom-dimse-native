@@ -158,6 +158,7 @@ namespace {
         {
                 try
                 {
+                    std::cout << "receiving data" << std::endl;
 
                     // receive a C-Store
                     imebra::CStoreCommand command(dimse->getCommand().getAsCStoreCommand());
@@ -167,15 +168,17 @@ namespace {
                     imebra::DataSet payload = command.getPayloadDataSet();
 
                     // Do something with the payload
-                    std::string sop = payload.getString(TagId(tagId_t::SOPClassUID_0008_0016), 0);
+                    std::string sop = payload.getString(TagId(tagId_t::SOPInstanceUID_0008_0018), 0);
                     imebra::CodecFactory::save(payload, sop + std::string(".dcm"), imebra::codecType_t::dicom);
+                    std::cout << "storing: " << sop << std::endl;
 
                     // Send a response
                     dimse->sendCommandOrResponse(CStoreResponse(command, dimseStatusCode_t::success));
                 }
-                catch (std::exception)
+                catch (std::exception e)
                 {
-                        break;
+                    std::cout << "exception: " << e.what() << std::endl;
+                    break;
                 }
         }    
         }
@@ -266,17 +269,22 @@ void GetAsyncWorker::Execute()
 
     try
     {
+
         for (;;)
         {
             imebra::DimseResponse response(dimse.getCGetResponse(command));
             if (response.getStatus() == imebra::dimseStatus_t::success)
             {
+                std::cout << "success" << std::endl;
+
                 _output = "Get-scu request succeeded";
                 isActive = false;
                 break;
             }
             else if (response.getStatus() == imebra::dimseStatus_t::pending)
             {
+                std::cout << "pending" << std::endl;
+                /*
                 imebra::DataSet data  = response.getPayloadDataSet();
                 try
                 {
@@ -293,7 +301,7 @@ void GetAsyncWorker::Execute()
                 {
                     SetError("parse error: " + std::string(error.what()));
                 }
-
+                */
             }
             else {
                 SetError("Get-scu request failed: " + response.getStatusCode());

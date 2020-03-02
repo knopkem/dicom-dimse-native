@@ -224,7 +224,7 @@ void ServerAsyncWorker::Execute(const ExecutionProgress& progress)
             imebra::DataSet payload = command.getPayloadDataSet();
 
             // Do something with the payload
-            std::string sop = payload.getString(TagId(tagId_t::SOPClassUID_0008_0016), 0);
+            std::string sop = payload.getString(TagId(tagId_t::SOPInstanceUID_0008_0018), 0);
             imebra::CodecFactory::save(payload, sop + std::string(".dcm"), imebra::codecType_t::dicom);
 
             std::string msg("storing file: ");
