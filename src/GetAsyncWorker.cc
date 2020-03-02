@@ -16,6 +16,8 @@
 #include <memory>
 #include <list>
 #include <thread>
+#include <future>
+#include <chrono>
 
 using namespace imebra;
 
@@ -152,9 +154,9 @@ namespace {
         const int numberOfDcmLongSCUStorageSOPClassUIDs = sizeof(dcmLongSCUStorageSOPClassUIDs) / sizeof(const char*) - 1;
 
 
-        void StoreProc(imebra::DimseService* dimse, bool isActive)
+        void StoreProc(imebra::DimseService* dimse, std::future<void> futureObj)
         {
-        while (isActive)
+        while (futureObj.wait_for(std::chrono::milliseconds(1)) == std::future_status::timeout)
         {
                 try
                 {
@@ -262,10 +264,14 @@ void GetAsyncWorker::Execute()
         abstractSyntax,
         payload);
 
-    bool isActive = true;
+    // Create a std::promise object
+	std::promise<void> exitSignal;
+ 
+	//Fetch std::future object associated with promise
+	std::future<void> futureObj = exitSignal.get_future();
 
     dimse.sendCommandOrResponse(command);
-    std::thread storeProc(StoreProc, &dimse, isActive);
+    std::thread storeProc(StoreProc, &dimse, std::move(futureObj));
 
     try
     {
@@ -278,7 +284,7 @@ void GetAsyncWorker::Execute()
                 std::cout << "success" << std::endl;
 
                 _output = "Get-scu request succeeded";
-                isActive = false;
+            	exitSignal.set_value();
                 break;
             }
             else if (response.getStatus() == imebra::dimseStatus_t::pending)
@@ -305,7 +311,7 @@ void GetAsyncWorker::Execute()
             }
             else {
                 SetError("Get-scu request failed: " + response.getStatusCode());
-                isActive = false;
+	            exitSignal.set_value();
                 break;
             }
         }
