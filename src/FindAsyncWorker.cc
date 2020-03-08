@@ -43,12 +43,11 @@ namespace {
     }
 }
 
-FindAsyncWorker::FindAsyncWorker(std::string data, Function &callback) : AsyncWorker(callback),
-                                                                           _input(data)
+FindAsyncWorker::FindAsyncWorker(std::string data, Function &callback) : BaseAsyncWorker(data, callback)
 {
 }
 
-void FindAsyncWorker::Execute()
+void FindAsyncWorker::Execute(const ExecutionProgress& progress)
 {
     ns::sInput in = ns::parseInputJson(_input);
 
@@ -167,11 +166,4 @@ void FindAsyncWorker::Execute()
         // The association has been closed
         SetError("Association was closed: " + std::string(error.what()));
     }
-}
-
-void FindAsyncWorker::OnOK()
-{
-    HandleScope scope(Env());
-    String output = String::New(Env(), _output);
-    Callback().Call({output});
 }

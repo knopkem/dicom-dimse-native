@@ -26,12 +26,11 @@ using json = nlohmann::json;
 
 
 
-StoreAsyncWorker::StoreAsyncWorker(std::string data, Function &callback) : AsyncWorker(callback),
-                                                                           _input(data)
+StoreAsyncWorker::StoreAsyncWorker(std::string data, Function &callback) : BaseAsyncWorker(data, callback)
 {
 }
 
-void StoreAsyncWorker::Execute()
+void StoreAsyncWorker::Execute(const ExecutionProgress& progress)
 {
     ns::sInput in = ns::parseInputJson(_input);
 
@@ -114,11 +113,4 @@ void StoreAsyncWorker::Execute()
         SetError("stream error: " + std::string(error.what()));
     }
 
-}
-
-void StoreAsyncWorker::OnOK()
-{
-        HandleScope scope(Env());
-        String output = String::New(Env(), _output);
-        Callback().Call({output});
 }

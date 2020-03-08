@@ -1,17 +1,14 @@
-#include <napi.h>
+#pragma once
+
+#include "BaseAsyncWorker.h"
 
 using namespace Napi;
 
-class FindAsyncWorker : public AsyncWorker
+class FindAsyncWorker : public BaseAsyncWorker
 {
     public:
         FindAsyncWorker(std::string data, Function &callback);
 
-        void Execute();
+        void Execute(const ExecutionProgress& progress);
 
-        void OnOK();
-
-    private:
-    std::string _input;
-    std::string _output;
 };

@@ -154,14 +154,12 @@ namespace {
         const int numberOfDcmLongSCUStorageSOPClassUIDs = sizeof(dcmLongSCUStorageSOPClassUIDs) / sizeof(const char*) - 1;
 
 
-        void StoreProc(imebra::DimseService* dimse, std::future<void> futureObj)
+        void StoreProc(imebra::DimseService* dimse, const AsyncProgressWorker<char>::ExecutionProgress& progress, std::future<void> futureObj)
         {
         while (futureObj.wait_for(std::chrono::milliseconds(1)) == std::future_status::timeout)
         {
                 try
                 {
-                    std::cout << "receiving data" << std::endl;
-
                     // receive a C-Store
                     imebra::CStoreCommand command(dimse->getCommand().getAsCStoreCommand());
 
@@ -172,7 +170,10 @@ namespace {
                     // Do something with the payload
                     std::string sop = payload.getString(TagId(tagId_t::SOPInstanceUID_0008_0018), 0);
                     imebra::CodecFactory::save(payload, sop + std::string(".dcm"), imebra::codecType_t::dicom);
-                    std::cout << "storing: " << sop << std::endl;
+                   
+                    std::string msg("storing: ");
+                    msg.append(sop);
+                    progress.Send(msg.c_str(), msg.length());
 
                     // Send a response
                     dimse->sendCommandOrResponse(CStoreResponse(command, dimseStatusCode_t::success));
@@ -186,13 +187,12 @@ namespace {
         }
 }
 
-GetAsyncWorker::GetAsyncWorker(std::string data, Function &callback) : AsyncWorker(callback),
-                                                                           _input(data)
+GetAsyncWorker::GetAsyncWorker(std::string data, Function &callback) : BaseAsyncWorker(data, callback)
 {
 }
 
 
-void GetAsyncWorker::Execute()
+void GetAsyncWorker::Execute(const ExecutionProgress& progress)
 {
     ns::sInput in = ns::parseInputJson(_input);
 
@@ -271,7 +271,7 @@ void GetAsyncWorker::Execute()
 	std::future<void> futureObj = exitSignal.get_future();
 
     dimse.sendCommandOrResponse(command);
-    std::thread storeProc(StoreProc, &dimse, std::move(futureObj));
+    std::thread storeProc(StoreProc, &dimse, progress, std::move(futureObj));
 
     try
     {
@@ -281,8 +281,6 @@ void GetAsyncWorker::Execute()
             imebra::DimseResponse response(dimse.getCGetResponse(command));
             if (response.getStatus() == imebra::dimseStatus_t::success)
             {
-                std::cout << "success" << std::endl;
-
                 _output = "Get-scu request succeeded";
             	exitSignal.set_value();
                 break;
@@ -322,11 +320,4 @@ void GetAsyncWorker::Execute()
         // The association has been closed
         SetError("stream error: " + std::string(error.what()));
     }
-}
-
-void GetAsyncWorker::OnOK()
-{
-        HandleScope scope(Env());
-        String output = String::New(Env(), _output);
-        Callback().Call({output});
 }

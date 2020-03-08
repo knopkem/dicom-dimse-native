@@ -155,8 +155,7 @@ const int numberOfDcmLongSCUStorageSOPClassUIDs = sizeof(dcmLongSCUStorageSOPCla
 
 }
 
-ServerAsyncWorker::ServerAsyncWorker(std::string data, Function &callback) : AsyncProgressWorker<char>(callback),
-                                                                           _input(data)
+ServerAsyncWorker::ServerAsyncWorker(std::string data, Function &callback) : BaseAsyncWorker(data, callback)
 {
 }
 
@@ -245,18 +244,4 @@ void ServerAsyncWorker::Execute(const ExecutionProgress& progress)
     }
 
 
-}
-
-void ServerAsyncWorker::OnOK()
-{
-        HandleScope scope(Env());
-        String output = String::New(Env(), _output);
-        Callback().Call({output});
-}
-
-void ServerAsyncWorker::OnProgress(const char *data, size_t size)
-{
-        HandleScope scope(Env());
-        String output = String::New(Env(), data, size);
-        Callback().Call({output});
 }

@@ -25,12 +25,11 @@ using namespace imebra;
 
 using json = nlohmann::json;
 
-EchoAsyncWorker::EchoAsyncWorker(std::string data, Function &callback) : AsyncWorker(callback),
-                                                                           _input(data)
+EchoAsyncWorker::EchoAsyncWorker(std::string data, Function &callback) : BaseAsyncWorker(data, callback)
 {
 }
 
-void EchoAsyncWorker::Execute()
+void EchoAsyncWorker::Execute(const ExecutionProgress& progress)
 {
    ns::sInput in = ns::parseInputJson(_input);
 
@@ -97,11 +96,4 @@ void EchoAsyncWorker::Execute()
         SetError("stream error: " + std::string(error.what()));
     }
 
-}
-
-void EchoAsyncWorker::OnOK()
-{
-        HandleScope scope(Env());
-        String output = String::New(Env(), _output);
-        Callback().Call({output});
 }
