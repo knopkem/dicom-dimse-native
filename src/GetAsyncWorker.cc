@@ -45,8 +45,7 @@ namespace {
                     std::string sop = payload.getString(TagId(tagId_t::SOPInstanceUID_0008_0018), 0);
                     imebra::CodecFactory::save(payload, sop + std::string(".dcm"), imebra::codecType_t::dicom);
                    
-                    std::string msg("storing: ");
-                    msg.append(sop);
+                    std::string msg = ns::createJsonResponse(ns::PENDING, "storing: " + sop);
                     progress.Send(msg.c_str(), msg.length());
 
                     // Send a response
@@ -54,7 +53,7 @@ namespace {
                 }
                 catch (std::exception e)
                 {
-                    std::cout << "exception: " << e.what() << std::endl;
+                    std::cerr << "exception: " << e.what() << std::endl;
                     break;
                 }
         }    
@@ -71,17 +70,17 @@ void GetAsyncWorker::Execute(const ExecutionProgress& progress)
     ns::sInput in = ns::parseInputJson(_input);
 
     if (in.tags.empty()) {
-        SetError("Tags not set");
+        SetErrorJson("Tags not set");
         return;
     }
 
     if (!in.source.valid()) {
-        SetError("Source not set");
+        SetErrorJson("Source not set");
         return;
     }
 
     if (!in.target.valid()) {
-        SetError("Target not set");
+        SetErrorJson("Target not set");
         return;
     }
 
@@ -156,13 +155,12 @@ void GetAsyncWorker::Execute(const ExecutionProgress& progress)
             imebra::DimseResponse response(dimse.getCGetResponse(command));
             if (response.getStatus() == imebra::dimseStatus_t::success)
             {
-                _output = "Get-scu request succeeded";
+                _jsonOutput = {};
             	exitSignal.set_value();
                 break;
             }
             else if (response.getStatus() == imebra::dimseStatus_t::pending)
             {
-                std::cout << "pending" << std::endl;
                 /*
                 imebra::DataSet data  = response.getPayloadDataSet();
                 try
@@ -178,12 +176,12 @@ void GetAsyncWorker::Execute(const ExecutionProgress& progress)
                 } 
                 catch (std::exception &error)
                 {
-                    SetError("parse error: " + std::string(error.what()));
+                    SetErrorJson("parse error: " + std::string(error.what()));
                 }
                 */
             }
             else {
-                SetError("Get-scu request failed: " + response.getStatusCode());
+                SetErrorJson("Get-scu request failed: " + response.getStatusCode());
 	            exitSignal.set_value();
                 break;
             }
@@ -193,6 +191,6 @@ void GetAsyncWorker::Execute(const ExecutionProgress& progress)
     catch (const StreamEOFError & error)
     {
         // The association has been closed
-        SetError("stream error: " + std::string(error.what()));
+        SetErrorJson("stream error: " + std::string(error.what()));
     }
 }

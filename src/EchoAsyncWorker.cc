@@ -34,12 +34,12 @@ void EchoAsyncWorker::Execute(const ExecutionProgress& progress)
    ns::sInput in = ns::parseInputJson(_input);
 
     if (!in.source.valid()) {
-        SetError("Source not set");
+        SetErrorJson("Source not set");
         return;
     }
 
     if (!in.target.valid()) {
-        SetError("Target not set");
+        SetErrorJson("Target not set");
         return;
     }
 
@@ -84,16 +84,16 @@ void EchoAsyncWorker::Execute(const ExecutionProgress& progress)
 
         if (response.getStatus() == imebra::dimseStatus_t::success)
         {
-                _output = "Echo-scu succeeded";
+                _jsonOutput = {};
         }
         else
         {
-                SetError("Echo-scu request failed: " + std::to_string(response.getStatusCode()));
+                SetErrorJson("Echo-scu request failed: " + std::to_string(response.getStatusCode()));
         }
     }
     catch (std::exception &error)
     {
-        SetError("stream error: " + std::string(error.what()));
+        SetErrorJson("stream error: " + std::string(error.what()));
     }
 
 }

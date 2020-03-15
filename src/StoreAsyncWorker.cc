@@ -35,12 +35,12 @@ void StoreAsyncWorker::Execute(const ExecutionProgress& progress)
     ns::sInput in = ns::parseInputJson(_input);
 
     if (!in.source.valid()) {
-        SetError("Source not set");
+        SetErrorJson("Source not set");
         return;
     }
 
     if (!in.target.valid()) {
-        SetError("Target not set");
+        SetErrorJson("Target not set");
         return;
     }
     // TODO: read sop class from file(s)
@@ -94,7 +94,7 @@ void StoreAsyncWorker::Execute(const ExecutionProgress& progress)
             imebra::DimseResponse response(dimse.getCStoreResponse(command));
             if (response.getStatus() == imebra::dimseStatus_t::success)
             {
-                _output = "Store-scu request succeeded";
+                _jsonOutput = {};
                 break;
             }
             else if (response.getStatus() == imebra::dimseStatus_t::pending)
@@ -102,7 +102,7 @@ void StoreAsyncWorker::Execute(const ExecutionProgress& progress)
                 // just continue for now
             }
             else {
-                SetError("Store-scu request failed: " + std::to_string(response.getStatusCode()));
+                SetErrorJson("Store-scu request failed: " + std::to_string(response.getStatusCode()));
                 break;
             }
         }
@@ -110,7 +110,7 @@ void StoreAsyncWorker::Execute(const ExecutionProgress& progress)
     catch (const StreamEOFError & error)
     {
         // The association has been closed
-        SetError("stream error: " + std::string(error.what()));
+        SetErrorJson("stream error: " + std::string(error.what()));
     }
 
 }

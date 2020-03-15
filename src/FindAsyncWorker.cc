@@ -52,17 +52,17 @@ void FindAsyncWorker::Execute(const ExecutionProgress& progress)
     ns::sInput in = ns::parseInputJson(_input);
 
     if (in.tags.empty()) {
-        SetError("Tags not set");
+        SetErrorJson("Tags not set");
         return;
     }
 
     if (!in.source.valid()) {
-        SetError("Source not set");
+        SetErrorJson("Source not set");
         return;
     }
 
     if (!in.target.valid()) {
-        SetError("Target not set");
+        SetErrorJson("Target not set");
         return;
     }
 
@@ -150,20 +150,20 @@ void FindAsyncWorker::Execute(const ExecutionProgress& progress)
             }
             catch (std::exception & e)
             {
-                SetError("Exception: " + std::string(e.what()));
+                SetErrorJson("Exception: " + std::string(e.what()));
             }
         }
         else
         {
-            SetError("Find-scu request failed");
+            SetErrorJson("Find-scu request failed");
             break;
         }
         }
-        _output = outJson.dump();
+        _jsonOutput = outJson.dump();
     }
     catch (const StreamEOFError & error)
     {
         // The association has been closed
-        SetError("Association was closed: " + std::string(error.what()));
+        SetErrorJson("Association was closed: " + std::string(error.what()));
     }
 }

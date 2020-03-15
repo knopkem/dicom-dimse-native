@@ -34,7 +34,7 @@ void ServerAsyncWorker::Execute(const ExecutionProgress& progress)
     ns::sInput in = ns::parseInputJson(_input);
 
     if (!in.source.valid()) {
-        SetError("Source not set");
+        SetErrorJson("Source not set");
         return;
     }
 
@@ -43,7 +43,8 @@ void ServerAsyncWorker::Execute(const ExecutionProgress& progress)
     msg.append(in.source.ip);
     msg.append(" : ");
     msg.append(in.source.port);
-    progress.Send(msg.c_str(), msg.length());
+    std::string msg2 = ns::createJsonResponse(ns::PENDING, msg);
+    progress.Send(msg2.c_str(), msg2.length());
 }
     imebra::TCPListener tcpListener(TCPPassiveAddress(in.source.ip, in.source.port));
 
@@ -92,8 +93,7 @@ void ServerAsyncWorker::Execute(const ExecutionProgress& progress)
             std::string sop = payload.getString(TagId(tagId_t::SOPInstanceUID_0008_0018), 0);
             imebra::CodecFactory::save(payload, sop + std::string(".dcm"), imebra::codecType_t::dicom);
 
-            std::string msg("storing file: ");
-            msg.append(sop);
+            std::string msg = ns::createJsonResponse(ns::PENDING, "storing: " + sop);
             progress.Send(msg.c_str(), msg.length());
 
             // Send a response
@@ -103,14 +103,12 @@ void ServerAsyncWorker::Execute(const ExecutionProgress& progress)
     catch(const StreamEOFError& e)
     {
         // The association has been closed
-        // SetError("assoc closed");
-        std::string msg("assoc closed, reason: ");
-        msg.append(e.what());
+        std::string msg = ns::createJsonResponse(ns::FAILURE, "assoc closed, reason: " + std::string(e.what()));
         progress.Send(msg.c_str(), msg.length());
     }
 
     {
-    std::string msg("shutting down scp...");
+    std::string msg = ns::createJsonResponse(ns::PENDING, "shutting down scp...");
     progress.Send(msg.c_str(), msg.length());
     }
 

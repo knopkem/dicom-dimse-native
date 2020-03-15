@@ -24,5 +24,5 @@ addon.getScu(JSON.stringify(
         ]
     }
 ), (result) => {
-    console.log("get result: ", result);
+    console.log(JSON.parse(result));
 });

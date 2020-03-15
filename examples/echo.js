@@ -14,5 +14,5 @@ addon.echoScu(JSON.stringify(
         }
     }
 ), (result) => {
-    console.log("echo result: ", result);
+    console.log(JSON.parse(result));
 });

@@ -404,7 +404,7 @@ std::shared_ptr<image> jpegImageCodec::getImage(const std::string& transferSynta
 
                 pTag->readTag(*pSourceStream, &information, tagId);
             }
-            catch(const StreamEOFError& e)
+            catch(const StreamEOFError&)
             {
                 if(information.m_mcuProcessed == information.m_mcuNumberTotal && information.m_mcuNumberTotal != 0)
                 {

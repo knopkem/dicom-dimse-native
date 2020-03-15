@@ -9,7 +9,7 @@ addon.startScp(JSON.stringify(
         }
     }   
     ), (result) => {
-        console.log(result);
+        console.log(JSON.parse(result));
 });
 
 setTimeout(function() {
@@ -38,6 +38,6 @@ setTimeout(function() {
             "destination" : "IMEBRA"
         }
     ), (result) => {
-        console.log("move result: ", result);
+        console.log(JSON.parse(result));
     });
 }, 3000);

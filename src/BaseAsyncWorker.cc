@@ -10,15 +10,16 @@ BaseAsyncWorker::BaseAsyncWorker(std::string data, Function &callback) : AsyncPr
 void BaseAsyncWorker::OnOK()
 {
         HandleScope scope(Env());
-        String output = String::New(Env(), _output);
-        Callback().Call({output});
+        std::string msg = ns::createJsonResponse(ns::SUCCESS, "request succeeded", _jsonOutput);
+        String o = String::New(Env(), msg);
+        Callback().Call({o});
 }
 
 void BaseAsyncWorker::OnProgress(const char *data, size_t size)
 {
         HandleScope scope(Env());
-        String output = String::New(Env(), data, size);
-        Callback().Call({output});
+        String o = String::New(Env(), data, size);
+        Callback().Call({o});
 }
 
 void BaseAsyncWorker::SetErrorJson(const std::string& message)

@@ -34,17 +34,17 @@ void MoveAsyncWorker::Execute(const ExecutionProgress& progress)
     ns::sInput in = ns::parseInputJson(_input);
 
     if (in.tags.empty()) {
-        SetError("Tags not set");
+        SetErrorJson("Tags not set");
         return;
     }
 
     if (!in.source.valid()) {
-        SetError("Source not set");
+        SetErrorJson("Source not set");
         return;
     }
 
     if (!in.target.valid()) {
-        SetError("Target not set");
+        SetErrorJson("Target not set");
         return;
     }
 
@@ -103,11 +103,12 @@ void MoveAsyncWorker::Execute(const ExecutionProgress& progress)
             imebra::DimseResponse response(dimse.getCMoveResponse(command));
             if (response.getStatus() == imebra::dimseStatus_t::success)
             {
-                _output = "Move-scu request succeeded";
+                _jsonOutput = {};
                 break;
             }
             else if (response.getStatus() == imebra::dimseStatus_t::pending)
             {
+                /*
                 imebra::DataSet data  = response.getPayloadDataSet();
                 try
                 {
@@ -122,12 +123,12 @@ void MoveAsyncWorker::Execute(const ExecutionProgress& progress)
                 }
                 catch (std::exception &error)
                 {
-                    SetError("parse error: " + std::string(error.what()));
+                    SetErrorJson("parse error: " + std::string(error.what()));
                 }
-
+                */
             }
             else {
-                SetError("Move-scu request failed: " + std::to_string(response.getStatusCode()));
+                SetErrorJson("Move-scu request failed: " + std::to_string(response.getStatusCode()));
                 break;
             }
         }
@@ -135,7 +136,7 @@ void MoveAsyncWorker::Execute(const ExecutionProgress& progress)
     catch (const StreamEOFError & error)
     {
         // The association has been closed
-        SetError("stream error: " + std::string(error.what()));
+        SetErrorJson("stream error: " + std::string(error.what()));
     }
 
 }

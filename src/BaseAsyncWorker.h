@@ -3,6 +3,8 @@
 #include <napi.h>
 #include <iostream>
 
+#include "json.h"
+
 using namespace Napi;
 
 class BaseAsyncWorker : public AsyncProgressWorker<char>
@@ -19,5 +21,5 @@ class BaseAsyncWorker : public AsyncProgressWorker<char>
         void SetErrorJson(const std::string& message);
 
         std::string _input;
-        std::string _output;
+        nlohmann::json _jsonOutput;
 };
