@@ -15,6 +15,9 @@ class BaseAsyncWorker : public AsyncProgressWorker<char>
         virtual void OnProgress(const char *data, size_t size);
 
     protected:
+
+        void SetErrorJson(const std::string& message);
+
         std::string _input;
         std::string _output;
 };
