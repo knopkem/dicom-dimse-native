@@ -38,14 +38,14 @@ void ServerAsyncWorker::Execute(const ExecutionProgress& progress)
         return;
     }
 
-{
-    std::string msg("starting c-store scp: ");
-    msg.append(in.source.ip);
-    msg.append(" : ");
-    msg.append(in.source.port);
-    std::string msg2 = ns::createJsonResponse(ns::PENDING, msg);
-    progress.Send(msg2.c_str(), msg2.length());
-}
+    if (in.storagePath.empty()) {
+        in.storagePath = "./data";
+        SendInfo("storage path not set, defaulting to " + in.storagePath, progress);
+    }
+
+    std::string msg(std::string("starting c-store scp: ") + in.source.ip + " : " + in.source.port);
+    SendInfo(msg, progress);
+
     imebra::TCPListener tcpListener(TCPPassiveAddress(in.source.ip, in.source.port));
 
     // Wait until a connection arrives or terminate() is called on the tcpListener
@@ -91,10 +91,9 @@ void ServerAsyncWorker::Execute(const ExecutionProgress& progress)
 
             // Do something with the payload
             std::string sop = payload.getString(TagId(tagId_t::SOPInstanceUID_0008_0018), 0);
-            imebra::CodecFactory::save(payload, sop + std::string(".dcm"), imebra::codecType_t::dicom);
+            imebra::CodecFactory::save(payload, in.storagePath + std::string("/") + sop + std::string(".dcm"), imebra::codecType_t::dicom);
 
-            std::string msg = ns::createJsonResponse(ns::PENDING, "storing: " + sop);
-            progress.Send(msg.c_str(), msg.length());
+            SendInfo(std::string("storing: ") + sop, progress);
 
             // Send a response
             dimse.sendCommandOrResponse(CStoreResponse(command, dimseStatusCode_t::success));
@@ -102,15 +101,9 @@ void ServerAsyncWorker::Execute(const ExecutionProgress& progress)
     }
     catch(const StreamEOFError& e)
     {
-        // The association has been closed
-        std::string msg = ns::createJsonResponse(ns::FAILURE, "assoc closed, reason: " + std::string(e.what()));
-        progress.Send(msg.c_str(), msg.length());
+        // The association has been closed, do not abort
+        SendInfo("assoc closed, reason: " + std::string(e.what()), progress, ns::FAILURE);
     }
 
-    {
-    std::string msg = ns::createJsonResponse(ns::PENDING, "shutting down scp...");
-    progress.Send(msg.c_str(), msg.length());
-    }
-
-
+    SendInfo("shutting down scp...", progress);
 }

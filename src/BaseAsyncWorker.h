@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "json.h"
+#include "Utils.h"
 
 using namespace Napi;
 
@@ -19,6 +20,8 @@ class BaseAsyncWorker : public AsyncProgressWorker<char>
     protected:
 
         void SetErrorJson(const std::string& message);
+
+        void SendInfo(const std::string& msg, const ExecutionProgress& progress, ns::eStatus status = ns::PENDING);
 
         std::string _input;
         nlohmann::json _jsonOutput;

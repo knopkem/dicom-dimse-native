@@ -1,6 +1,7 @@
 build
 prebuilds
 .vscode
+*.dcm
 
 # Logs
 logs

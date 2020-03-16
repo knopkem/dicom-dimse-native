@@ -27,3 +27,9 @@ void BaseAsyncWorker::SetErrorJson(const std::string& message)
        std::string sError =  ns::createJsonResponse(ns::FAILURE, message);
        SetError(sError);
 }
+
+void BaseAsyncWorker::SendInfo(const std::string& msg, const ExecutionProgress& progress, ns::eStatus status)
+{
+    std::string msg2 = ns::createJsonResponse(status, msg);
+    progress.Send(msg2.c_str(), msg2.length());
+}

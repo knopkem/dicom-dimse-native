@@ -26,6 +26,7 @@ namespace ns {
     struct sInput {
         sIdent source;
         sIdent target;
+        std::string storagePath;
         std::string destination;
         std::vector<sTag> tags;
         inline bool valid() {
@@ -73,6 +74,7 @@ namespace ns {
             in.target = j.at("target").get<sIdent>();
         } catch(...) {}
         in.destination = toString(j, "destination");
+        in.storagePath = toString(j, "storagePath");
         try {
             auto tags = j.at("tags");
             for (json::iterator it = tags.begin(); it != tags.end(); ++it) {

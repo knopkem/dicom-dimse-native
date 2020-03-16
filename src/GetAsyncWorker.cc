@@ -28,7 +28,7 @@ using json = nlohmann::json;
 
 namespace {
 
-        void StoreProc(imebra::DimseService* dimse, const AsyncProgressWorker<char>::ExecutionProgress& progress, std::future<void> futureObj)
+        void StoreProc(imebra::DimseService* dimse, const AsyncProgressWorker<char>::ExecutionProgress& progress, std::string storagePath, std::future<void> futureObj)
         {
         while (futureObj.wait_for(std::chrono::milliseconds(1)) == std::future_status::timeout)
         {
@@ -43,7 +43,7 @@ namespace {
 
                     // Do something with the payload
                     std::string sop = payload.getString(TagId(tagId_t::SOPInstanceUID_0008_0018), 0);
-                    imebra::CodecFactory::save(payload, sop + std::string(".dcm"), imebra::codecType_t::dicom);
+                    imebra::CodecFactory::save(payload, storagePath + "/" + sop + std::string(".dcm"), imebra::codecType_t::dicom);
                    
                     std::string msg = ns::createJsonResponse(ns::PENDING, "storing: " + sop);
                     progress.Send(msg.c_str(), msg.length());
@@ -86,6 +86,11 @@ void GetAsyncWorker::Execute(const ExecutionProgress& progress)
 
     if (in.destination.empty()) {
         in.destination = in.source.aet;
+    }
+
+    if (in.storagePath.empty()) {
+        in.storagePath = "./data";
+        SendInfo("storage path not set, defaulting to " + in.storagePath, progress);
     }
 
     const std::string abstractSyntax = uidStudyRootQueryRetrieveInformationModelGET_1_2_840_10008_5_1_4_1_2_2_3;
@@ -145,7 +150,7 @@ void GetAsyncWorker::Execute(const ExecutionProgress& progress)
 	std::future<void> futureObj = exitSignal.get_future();
 
     dimse.sendCommandOrResponse(command);
-    std::thread storeProc(StoreProc, &dimse, progress, std::move(futureObj));
+    std::thread storeProc(StoreProc, &dimse, progress, in.storagePath, std::move(futureObj));
 
     try
     {

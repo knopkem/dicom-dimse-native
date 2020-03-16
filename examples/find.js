@@ -28,5 +28,11 @@ addon.findScu(JSON.stringify(
         ]
     }
 ), (result) => {
-    console.log(JSON.parse(result));
+        try
+        {
+            console.log(JSON.parse(result));
+        }
+        catch {
+            console.log(result);
+        }
 });
