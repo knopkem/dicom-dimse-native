@@ -38,7 +38,12 @@ dimse.startScp(JSON.stringify(
         }
     }   
     ), (result) => {
-        console.log(result);
+        try {
+            console.log(JSON.parse(result));
+        }
+        catch {
+            console.log(result);
+        }
 });
 
 dimse.moveScu(JSON.stringify(
@@ -66,7 +71,12 @@ dimse.moveScu(JSON.stringify(
         ]
     }
 ), (result) => {
-    console.log("result: ", result);
+    try {
+        console.log(JSON.parse(result));
+    }
+    catch {
+        console.log(result);
+    }
 });
 
 dimse.findScu(JSON.stringify(
@@ -97,8 +107,12 @@ dimse.findScu(JSON.stringify(
         ]
     }
 ), (result) => {
-    const json = JSON.parse(result);
-    console.log("result: ", json);
+    try {
+        console.log(JSON.parse(result));
+    }
+    catch {
+        console.log(result);
+    }
 });
 ```
 
