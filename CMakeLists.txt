@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.9)
 cmake_policy(SET CMP0042 NEW)
-set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_STANDARD 17)
 
 # Name of the project (will be the name of the plugin)
 project(imebra)
@@ -105,7 +105,7 @@ else()
 
     message(STATUS "GNU or Clang detected, adding compile flags")
 
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -lpthread -Wall -Wextra -Wpedantic -Wconversion -Wfloat-equal ${HIDDEN_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -lpthread -Wall -Wextra -Wpedantic -Wconversion -Wfloat-equal ${HIDDEN_FLAGS}")
     set(imebra_libraries ${imebra_libraries} pthread)
     if("${EMBED_BITCODE}" STREQUAL "1")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fembed-bitcode")

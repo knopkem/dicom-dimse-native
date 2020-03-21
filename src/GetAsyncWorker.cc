@@ -18,6 +18,7 @@
 #include <thread>
 #include <future>
 #include <chrono>
+#include <filesystem>
 
 using namespace imebra;
 
@@ -43,7 +44,10 @@ namespace {
 
                     // Do something with the payload
                     std::string sop = payload.getString(TagId(tagId_t::SOPInstanceUID_0008_0018), 0);
-                    imebra::CodecFactory::save(payload, storagePath + "/" + sop + std::string(".dcm"), imebra::codecType_t::dicom);
+                    std::string study = payload.getString(TagId(tagId_t::StudyInstanceUID_0020_000D), 0);
+                    std::filesystem::path p(storagePath + std::string("/") + study);
+                    std::filesystem::create_directories(p);
+                    imebra::CodecFactory::save(payload, p.string() + std::string("/") + sop + std::string(".dcm"), imebra::codecType_t::dicom);
                    
                     std::string msg = ns::createJsonResponse(ns::PENDING, "storing: " + sop);
                     progress.Send(msg.c_str(), msg.length());
