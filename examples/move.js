@@ -6,7 +6,8 @@ addon.startScp(JSON.stringify(
             "aet": "IMEBRA",
             "ip" : "127.0.0.1",
             "port": "9999"
-        }
+        },
+	"storagePath": "./data"
     }   
     ), (result) => {
         try

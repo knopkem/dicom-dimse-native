@@ -22,8 +22,7 @@ This package uses prebuild to fetch precompiled binaries, so provided your platf
 
 Otherwise install will try to compile the sources for your platform, you will need:
 * CMake installed and in path
-* a working c++ compiler
-* linux only: gobjc++ library installed (e.g for ubuntu: sudo apt-get install gobjc++)
+* a working c++ compiler (vs 2015+ or g++5.3+)
 
 ## Examples
 ```
@@ -35,8 +34,9 @@ dimse.startScp(JSON.stringify(
             "aet": "IMEBRA",
             "ip" : "127.0.0.1",
             "port": "9999"
-        }
-    }   
+        },
+	"storagePath": "./data"
+    }
     ), (result) => {
         try {
             console.log(JSON.parse(result));
