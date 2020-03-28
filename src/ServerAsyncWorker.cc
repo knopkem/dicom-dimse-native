@@ -21,7 +21,6 @@
 
 using namespace imebra;
 
-
 #include "json.h"
 #include "Utils.h"
 
@@ -31,16 +30,18 @@ ServerAsyncWorker::ServerAsyncWorker(std::string data, Function &callback) : Bas
 {
 }
 
-void ServerAsyncWorker::Execute(const ExecutionProgress& progress)
+void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
 {
     ns::sInput in = ns::parseInputJson(_input);
 
-    if (!in.source.valid()) {
+    if (!in.source.valid())
+    {
         SetErrorJson("Source not set");
         return;
     }
 
-    if (in.storagePath.empty()) {
+    if (in.storagePath.empty())
+    {
         in.storagePath = "./data";
         SendInfo("storage path not set, defaulting to " + in.storagePath, progress);
     }
@@ -79,10 +80,11 @@ void ServerAsyncWorker::Execute(const ExecutionProgress& progress)
     // DICOM commands
     imebra::DimseService dimse(scp);
 
-    try
+    // Receive commands until the association is closed
+    for (;;)
     {
-        // Receive commands until the association is closed
-        for(;;)
+
+        try
         {
             // receive a C-Store
             imebra::CStoreCommand command(dimse.getCommand().getAsCStoreCommand());
@@ -104,11 +106,11 @@ void ServerAsyncWorker::Execute(const ExecutionProgress& progress)
             // Send a response
             dimse.sendCommandOrResponse(CStoreResponse(command, dimseStatusCode_t::success));
         }
-    }
-    catch(const StreamEOFError& e)
-    {
-        // The association has been closed, do not abort
-        SendInfo("assoc closed, reason: " + std::string(e.what()), progress, ns::FAILURE);
+        catch (const StreamEOFError &e)
+        {
+            // The association has been closed, do not abort
+            SendInfo("assoc closed, reason: " + std::string(e.what()), progress, ns::FAILURE);
+        }
     }
 
     SendInfo("shutting down scp...", progress);
