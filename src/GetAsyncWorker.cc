@@ -11,7 +11,7 @@
 #include "../library/include/imebra/streamReader.h"
 #include "../library/include/imebra/streamWriter.h"
 
-#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING 
+#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
 
 #include <iostream>
 #include <sstream>

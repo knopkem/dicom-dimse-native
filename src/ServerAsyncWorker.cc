@@ -11,11 +11,13 @@
 #include "../library/include/imebra/streamReader.h"
 #include "../library/include/imebra/streamWriter.h"
 
+#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
 
 #include <iostream>
 #include <sstream>
 #include <memory>
 #include <list>
+#include <experimental/filesystem>
 
 using namespace imebra;
 
@@ -91,9 +93,13 @@ void ServerAsyncWorker::Execute(const ExecutionProgress& progress)
 
             // Do something with the payload
             std::string sop = payload.getString(TagId(tagId_t::SOPInstanceUID_0008_0018), 0);
-            imebra::CodecFactory::save(payload, in.storagePath + std::string("/") + sop + std::string(".dcm"), imebra::codecType_t::dicom);
+            std::string study = payload.getString(TagId(tagId_t::StudyInstanceUID_0020_000D), 0);
+            std::experimental::filesystem::path p(in.storagePath + std::string("/") + study);
+            std::experimental::filesystem::create_directories(p);
+            imebra::CodecFactory::save(payload, p.string() + std::string("/") + sop + std::string(".dcm"), imebra::codecType_t::dicom);
 
-            SendInfo(std::string("storing: ") + sop, progress);
+            std::string msg = ns::createJsonResponse(ns::PENDING, "storing: " + sop);
+            SendInfo(msg, progress);
 
             // Send a response
             dimse.sendCommandOrResponse(CStoreResponse(command, dimseStatusCode_t::success));
