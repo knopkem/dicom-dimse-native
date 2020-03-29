@@ -8,7 +8,6 @@
 #include "dcmtk/ofstd/ofconapp.h"
 #include "dcmtk/dcmdata/dcdict.h"
 #include "dcmtk/dcmdata/dcostrmz.h"     /* for dcmZlibCompressionLevel */
-#include "dcmtk/dcmtls/tlsopt.h"        /* for DcmTLSOptions */
 
 #ifdef WITH_ZLIB
 #include <zlib.h>                       /* for zlibVersion() */
@@ -17,14 +16,6 @@
 #include "dcmtk/ofstd/ofchrenc.h"       /* for OFCharacterEncoding */
 #endif
 
-#define OFFIS_CONSOLE_APPLICATION "findscu"
-
-static OFLogger findscuLogger = OFLog::getLogger("dcmtk.apps." OFFIS_CONSOLE_APPLICATION);
-
-static char rcsid[] = "$dcmtk: " OFFIS_CONSOLE_APPLICATION " v"
-  OFFIS_DCMTK_VERSION " " OFFIS_DCMTK_RELEASEDATE " $";
-
-/* default application titles */
 #define APPLICATIONTITLE        "FINDSCU"
 #define PEERAPPLICATIONTITLE    "ANY-SCP"
 
@@ -82,5 +73,84 @@ void FindAsyncWorker::Execute(const ExecutionProgress& progress)
         SetErrorJson("Target not set");
         return;
     }
+    
+    OFList<OFString>      fileNameList;
+    OFBool                opt_abortAssociation = OFFalse;
+    const char *          opt_abstractSyntax = UID_FINDModalityWorklistInformationModel;
+    int                   opt_acse_timeout = 30;
+    T_DIMSE_BlockingMode  opt_blockMode = DIMSE_BLOCKING;
+    OFCmdSignedInt        opt_cancelAfterNResponses = -1;
+    int                   opt_dimse_timeout = 0;
+    int                   opt_outputResponsesToLogger = 0;
+    DcmFindSCUExtractMode opt_extractResponses = FEM_none;
+    OFString              opt_extractXMLFilename;
+    OFString              opt_outputDirectory = ".";
+    OFCmdUnsignedInt      opt_maxReceivePDULength = ASC_DEFAULTMAXPDU;
+    E_TransferSyntax      opt_networkTransferSyntax = EXS_Unknown;
+    const char *          opt_ourTitle = APPLICATIONTITLE;
+    const char *          opt_peer;
+    const char *          opt_peerTitle = PEERAPPLICATIONTITLE;
+    OFCmdUnsignedInt      opt_port = 104;
+    OFCmdUnsignedInt      opt_repeatCount = 1;
+    OFList<OFString>      overrideKeys;
+
+#ifdef WITH_ZLIB
+    OFCmdUnsignedInt      opt_compressionLevel = 0;
+#endif
+
+    /*
+    ** By default. don't let "dcmdata" remove trailing padding or
+    ** perform other manipulations. We want to see the real data.
+    */
+    OFBool                opt_automaticDataCorrection = OFFalse;
+
+    OFStandard::initializeNetwork();
+
+   // enabled or disable removal of trailing padding
+    dcmEnableAutomaticInputDataCorrection.set(opt_automaticDataCorrection);
+
+    // declare findSCU handler and initialize network
+    DcmFindSCU findscu;
+    OFCondition cond = findscu.initializeNetwork(opt_acse_timeout);
+    if (cond.bad()) {
+        
+    }
+
+
+    // do the main work: negotiate network association, perform C-FIND transaction,
+    // process results, and finally tear down the association.
+    cond = findscu.performQuery(
+      opt_peer,
+      opt_port,
+      opt_ourTitle,
+      opt_peerTitle,
+      opt_abstractSyntax,
+      opt_networkTransferSyntax,
+      opt_blockMode,
+      opt_dimse_timeout,
+      opt_maxReceivePDULength,
+      false,
+      opt_abortAssociation,
+      opt_repeatCount,
+      opt_extractResponses,
+      opt_cancelAfterNResponses,
+      &overrideKeys,
+      NULL, /* we want to use the default callback */
+      &fileNameList,
+      opt_outputDirectory.c_str(),
+      opt_extractXMLFilename.c_str());
+
+    // make sure that an appropriate exit code is returned
+    int exitCode = cond.good() ? 0 : 2;
+
+    // destroy network structure
+    cond = findscu.dropNetwork();
+    if (cond.bad()) {
+        
+    }
+
+    OFStandard::shutdownNetwork();
+
+
 
 }

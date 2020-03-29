@@ -5,6 +5,6 @@ project(ofstd)
 include_directories("${ofstd_SOURCE_DIR}/include" ${LIBICONV_INCDIR})
 
 # recurse into subdirectories
-foreach(SUBDIR libsrc include tests)
+foreach(SUBDIR libsrc include)
   add_subdirectory(${SUBDIR})
 endforeach()
