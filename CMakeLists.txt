@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.9)
-cmake_policy(SET CMP0042 NEW)
-set (CMAKE_CXX_STANDARD 11)
+#cmake_policy(SET CMP0042 NEW)
+#set (CMAKE_CXX_STANDARD 11)
 
 
 #-------------------------------------DCMTK-----------------------------------
@@ -21,7 +21,7 @@ cmake_policy(VERSION "${DCMTK_CMAKE_POLICY_VERSION}")
 
 
 # Declare project
-project(dcmtk)
+project(DCMTK)
 
 # Check the build system
 include(CMake/dcmtkPrepare.cmake NO_POLICY_SCOPE)
@@ -60,7 +60,7 @@ INSPECT_FUNDAMENTAL_ARITHMETIC_TYPES()
 #-----------------------------------------------------------------------------
 
 # Recurse into subdirectories
-foreach(module config doxygen ${DCMTK_MODULES})
+foreach(module config ${DCMTK_MODULES})
   add_subdirectory(${module})
 endforeach()
 include(CMake/dcmtkAfterModules.cmake NO_POLICY_SCOPE)
