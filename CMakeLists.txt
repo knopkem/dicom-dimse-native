@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.9)
-#cmake_policy(SET CMP0042 NEW)
-#set (CMAKE_CXX_STANDARD 11)
+cmake_policy(SET CMP0042 NEW)
+set (CMAKE_CXX_STANDARD 11)
 
 
 #-------------------------------------DCMTK-----------------------------------
@@ -74,7 +74,7 @@ add_library(${PROJECT_NAME} SHARED
 
 # Define dependency libraries
 #----------------------------
-target_link_libraries(dcmtk dcmnet dcmdata oflog ofstd)
+#target_link_libraries(DCMTK dcmnet dcmdata oflog ofstd)
 
 # Gives our library file a .node extension without any "lib" prefix
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")
