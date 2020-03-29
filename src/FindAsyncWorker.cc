@@ -16,8 +16,8 @@
 #include "dcmtk/ofstd/ofchrenc.h"       /* for OFCharacterEncoding */
 #endif
 
-#define APPLICATIONTITLE        "FINDSCU"
-#define PEERAPPLICATIONTITLE    "ANY-SCP"
+#define APPLICATIONTITLE        "IMEBRA"
+#define PEERAPPLICATIONTITLE    "CONQUESTSRV1"
 
 #define SHORTCOL 4
 #define LONGCOL 20
@@ -88,9 +88,9 @@ void FindAsyncWorker::Execute(const ExecutionProgress& progress)
     OFCmdUnsignedInt      opt_maxReceivePDULength = ASC_DEFAULTMAXPDU;
     E_TransferSyntax      opt_networkTransferSyntax = EXS_Unknown;
     const char *          opt_ourTitle = APPLICATIONTITLE;
-    const char *          opt_peer;
+    const char *          opt_peer = "127.0.0.1";
     const char *          opt_peerTitle = PEERAPPLICATIONTITLE;
-    OFCmdUnsignedInt      opt_port = 104;
+    OFCmdUnsignedInt      opt_port = 5678;
     OFCmdUnsignedInt      opt_repeatCount = 1;
     OFList<OFString>      overrideKeys;
 

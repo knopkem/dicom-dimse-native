@@ -74,6 +74,18 @@ file(GLOB SOURCE_FILES "src/*.cc" "src/*.h")
 add_library(${PROJECT_NAME} SHARED 
 	${SOURCE_FILES}
 	)
+    
+# Add flags specific to the compiler
+#-----------------------------------
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    message(STATUS "MSVC detected, adding compile flags")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3")
+    set(imebra_libraries ${imebra_libraries} Kernel32)
+else()
+    message(STATUS "GNU or Clang detected, adding compile flags")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -lstdc++fs -Wall -Wextra -Wpedantic -Wconversion -Wfloat-equal ${HIDDEN_FLAGS}")
+endif()
+
 
 # Define dependency libraries
 #----------------------------
