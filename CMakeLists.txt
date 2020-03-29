@@ -2,159 +2,79 @@ cmake_minimum_required(VERSION 3.9)
 cmake_policy(SET CMP0042 NEW)
 set (CMAKE_CXX_STANDARD 11)
 
-# Name of the project (will be the name of the plugin)
-project(imebra)
 
-set(imebra_libraries "")
+#-------------------------------------DCMTK-----------------------------------
 
-# Select the proper charset conversion libraries according to the charset conversion method
-#------------------------------------------------------------------------------------------
-if(IMEBRA_CHARSET_CONVERSION MATCHES ICONV)
-    message("Using ICONV")
-    add_definitions(-DIMEBRA_USE_ICONV)
-    if(APPLE)
-        set(imebra_libraries ${imebra_libraries} iconv)
-    endif(APPLE)
-elseif(IMEBRA_CHARSET_CONVERSION MATCHES ICU)
-    message("Using ICU")
-    add_definitions(-DIMEBRA_USE_ICU)
-    set(imebra_libraries ${imebra_libraries} icuuc)
-    set(imebra_libraries ${imebra_libraries} icuio)
-elseif(IMEBRA_CHARSET_CONVERSION MATCHES JAVA)
-    message("Using JAVA")
-    add_definitions(-DIMEBRA_USE_JAVA)
-elseif(IMEBRA_CHARSET_CONVERSION MATCHES WINDOWS)
-    message("Using WINDOWS CHARSET CONVERSION")
-    add_definitions(-DIMEBRA_USE_WINDOWS_CHARSET)
-else(IMEBRA_CHARSET_CONVERSION MATCHES ICONV)
-    if(WIN32)
-        message("Using WINDOWS CHARSET CONVERSION (default)")
-        add_definitions(-DIMEBRA_USE_WINDOWS_CHARSET)
-    else(WIN32)
-        message("Using ICONV (default)")
-        add_definitions(-DIMEBRA_USE_ICONV)
-        if(APPLE)
-            set(imebra_libraries ${imebra_libraries} iconv)
-        endif(APPLE)
-    endif(WIN32)
-endif(IMEBRA_CHARSET_CONVERSION MATCHES ICONV)
+# As of 2018-12-26 DCMTK has been validated to build with CMake 3.13.2 policies.
+set(DCMTK_MAX_CMAKE_POLICY_VERSION 3.13.2)
 
-# Set the proper logging preprocessor macros
-#-------------------------------------------
-if(IMEBRA_LOG_FRAMEWORK MATCHES LOG4CXX)
-    add_definitions(-DIMEBRA_LOGGING_LOG4CXX)
-    set(imebra_libraries ${imebra_libraries} log4cxx) # Log4cxx needs additional libraries
-elseif(IMEBRA_LOG_FRAMEWORK MATCHES SYSLOG)
-    add_definitions(-DIMEBRA_LOGGING_SYSLOG)
-elseif(IMEBRA_LOG_FRAMEWORK MATCHES COUT)
-    add_definitions(-DIMEBRA_LOGGING_COUT)
-elseif(IMEBRA_LOG_FRAMEWORK MATCHES APPLE)
-    add_definitions(-DIMEBRA_LOGGING_APPLE)
-elseif(IMEBRA_LOG_FRAMEWORK MATCHES ANDROID)
-    add_definitions(-DIMEBRA_LOGGING_ANDROID)
-endif(IMEBRA_LOG_FRAMEWORK MATCHES LOG4CXX)
-
-if(IMEBRA_LOG_LEVEL)
-    add_definitions(-DIMEBRA_LOG_LEVEL_${IMEBRA_LOG_LEVEL})
-endif(IMEBRA_LOG_LEVEL)
+# Set and use the newest CMake policies that are validated to work
+# (VERSION_LESS comparison is only defined for CMake 3 and newer)
+if(CMAKE_MAJOR_VERSION LESS 3)
+    set(DCMTK_CMAKE_POLICY_VERSION "${CMAKE_VERSION}")
+elseif(CMAKE_VERSION VERSION_LESS DCMTK_MAX_CMAKE_POLICY_VERSION)
+    set(DCMTK_CMAKE_POLICY_VERSION "${CMAKE_VERSION}")
+else()
+    set(DCMTK_CMAKE_POLICY_VERSION "${DCMTK_MAX_CMAKE_POLICY_VERSION}")
+endif()
+cmake_policy(VERSION "${DCMTK_CMAKE_POLICY_VERSION}")
 
 
-##############################################
-#
-# LIBRARY
-#
-##############################################
-add_definitions(-DIMEBRA_DLL)
-add_definitions(-DIMEBRA_DLL_EXPORTS)
-add_definitions(-DNOMINMAX)
+# Declare project
+project(dcmtk)
 
-file(GLOB imebra_interface "${CMAKE_CURRENT_SOURCE_DIR}/library/include/imebra/*.h")
-file(GLOB imebra_include "${CMAKE_CURRENT_SOURCE_DIR}/library/src/*.h")
-file(GLOB imebra_src "${CMAKE_CURRENT_SOURCE_DIR}/library/src/*.cpp")
-file(GLOB imebra_implementation_src "${CMAKE_CURRENT_SOURCE_DIR}/library/implementation/*.cpp")
-file(GLOB imebra_implementation_src_objc "${CMAKE_CURRENT_SOURCE_DIR}/library/implementation/*.mm")
-file(GLOB imebra_implementation_include "${CMAKE_CURRENT_SOURCE_DIR}/library/implementation/*.h")
-set(imebra_objc_src "")
-set(imebra_objc_include "")
-set(imebra_objc_include_dir "")
-set(imebra_objc_gnustep_dir "")
+# Check the build system
+include(CMake/dcmtkPrepare.cmake NO_POLICY_SCOPE)
+
+set(DCMTK_MODULES ofstd oflog dcmdata dcmimgle
+  dcmimage dcmjpeg dcmjpls dcmtls dcmnet
+  CACHE STRING "List of modules that should be built.")
+
+#-----------------------------------------------------------------------------
+# Include directories
+#-----------------------------------------------------------------------------
+
+set(DCMTK_INCLUDE_DIR "${DCMTK_BINARY_DIR}/config/include")
+foreach(inc ${DCMTK_MODULES})
+  list(APPEND DCMTK_INCLUDE_DIR "${DCMTK_SOURCE_DIR}/${inc}/include")
+endforeach()
+
+include_directories(${DCMTK_INCLUDE_DIR})
+
+#-----------------------------------------------------------------------------
+# Prepare osconfig.h
+#-----------------------------------------------------------------------------
+
+# add the osconfig.h.in file
+configure_file("${DCMTK_SOURCE_DIR}/CMake/osconfig.h.in"
+               "${DCMTK_BINARY_DIR}/config/include/dcmtk/config/osconfig.h")
+
+#-----------------------------------------------------------------------------
+# Prepare arith.h
+#-----------------------------------------------------------------------------
+
+INSPECT_FUNDAMENTAL_ARITHMETIC_TYPES()
+
+#-----------------------------------------------------------------------------
+# Start actual compilation tasks
+#-----------------------------------------------------------------------------
+
+# Recurse into subdirectories
+foreach(module config doxygen ${DCMTK_MODULES})
+  add_subdirectory(${module})
+endforeach()
+include(CMake/dcmtkAfterModules.cmake NO_POLICY_SCOPE)
+
 
 # Build a shared library named after the project from the files in `src/`
 file(GLOB SOURCE_FILES "src/*.cc" "src/*.h")
 add_library(${PROJECT_NAME} SHARED 
 	${SOURCE_FILES}
-	${imebra_implementation_src}
-    ${imebra_implementation_src_objc}
-    ${imebra_implementation_include}
-    ${imebra_objc_src}
-    ${imebra_objc_include}
-    ${imebra_include}
-    ${imebra_src}
-    ${imebra_interface}
 	)
-	
-# Add flags specific to the compiler
-#-----------------------------------
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-
-    message(STATUS "MSVC detected, adding compile flags")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3")
-    set(imebra_libraries ${imebra_libraries} Kernel32)
-
-else()
-
-    message(STATUS "GNU or Clang detected, adding compile flags")
-
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -lstdc++fs -lpthread -Wall -Wextra -Wpedantic -Wconversion -Wfloat-equal ${HIDDEN_FLAGS}")
-    set(imebra_libraries ${imebra_libraries} pthread)
-    if("${EMBED_BITCODE}" STREQUAL "1")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fembed-bitcode")
-    endif("${EMBED_BITCODE}" STREQUAL "1")
-
-    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-        if(CMAKE_BUILD_TYPE MATCHES DEBUG)
-            message("Debug mode, enabling coverage")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
-            set(imebra_libraries ${imebra_libraries} gcov)
-        endif()
-    endif()
-
-endif()
 
 # Define dependency libraries
 #----------------------------
-target_link_libraries(imebra ${imebra_libraries})
-
-# Define Imebra public folder
-#----------------------------
-target_include_directories(imebra PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/library/include> $<INSTALL_INTERFACE:include>)
-target_include_directories(imebra PUBLIC $<BUILD_INTERFACE:${imebra_objc_include_dir}> $<INSTALL_INTERFACE:include>)
-
-# Set the library version from IMEBRA_MAJOR_VERSION, IMEBRA_MINOR_VERSION,
-#  & IMEBRA_REVISION
-#---------------------------------------------------------------------------------
-if ("$ENV{IMEBRA_MAJOR_VERSION}" STREQUAL "")
-    set(IMEBRA_MAJOR_VERSION "5")
-else("$ENV{IMEBRA_MAJOR_VERSION}" STREQUAL "")
-    set(IMEBRA_MAJOR_VERSION "$ENV{IMEBRA_MAJOR_VERSION}")
-endif("$ENV{IMEBRA_MAJOR_VERSION}" STREQUAL "")
-
-if ("$ENV{IMEBRA_MINOR_VERSION}" STREQUAL "")
-    set(IMEBRA_MINOR_VERSION "0")
-else("$ENV{IMEBRA_MINOR_VERSION}" STREQUAL "")
-    set(IMEBRA_MINOR_VERSION "$ENV{IMEBRA_MINOR_VERSION}")
-endif("$ENV{IMEBRA_MINOR_VERSION}" STREQUAL "")
-
-if ("$ENV{IMEBRA_REVISION}" STREQUAL "")
-    set(IMEBRA_REVISION "0")
-else("$ENV{IMEBRA_REVISION}" STREQUAL "")
-    set(IMEBRA_REVISION "$ENV{IMEBRA_REVISION}")
-endif("$ENV{IMEBRA_REVISION}" STREQUAL "")
-
-set(IMEBRA_VERSION "${IMEBRA_MAJOR_VERSION}.${IMEBRA_MINOR_VERSION}.${IMEBRA_REVISION}")
-
-set_target_properties(imebra PROPERTIES VERSION ${IMEBRA_VERSION} SOVERSION ${IMEBRA_MAJOR_VERSION})
-
+target_link_libraries(dcmtk dcmnet dcmdata oflog ofstd)
 
 # Gives our library file a .node extension without any "lib" prefix
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")

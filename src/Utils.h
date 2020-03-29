@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../library/include/imebra/definitions.h"
 #include "json.h"
 using json = nlohmann::json;
 
@@ -85,9 +84,6 @@ namespace ns {
         return in;
     }
 
-    std::string tagVrName(imebra::tagVR_t tagVr);
-
-    std::vector<std::string> dcmLongSCUStorageSOPClassUIDs();
 
     enum eStatus {
         SUCCESS = 0,

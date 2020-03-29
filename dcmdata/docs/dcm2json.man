@@ -1,0 +1,355 @@
+/*!
+
+\if MANPAGES
+\page dcm2json Convert DICOM file and data set to JSON
+\else
+\page dcm2json dcm2json: Convert DICOM file and data set to JSON
+\endif
+
+\section dcm2json_synopsis SYNOPSIS
+
+\verbatim
+dcm2json [options] dcmfile-in [jsonfile-out]
+\endverbatim
+
+\section dcm2json_description DESCRIPTION
+
+The \b dcm2json utility converts the contents of a DICOM file (file format or
+raw data set) to JSON (JavaScript Object Notation).  The output refers to the
+"DICOM JSON Model", which is found in DICOM Part 18 Section F.
+
+If \b dcm2json reads a raw data set (DICOM data without a file format
+meta-header) it will attempt to guess the transfer syntax by examining the
+first few bytes of the file.  It is not always possible to correctly guess the
+transfer syntax and it is better to convert a data set to a file format
+whenever possible (using the \b dcmconv utility).  It is also possible to use
+the \e -f and <em>-t[ieb]</em> options to force \b dcm2json to read a data set
+with a particular transfer syntax.
+
+\section dcm2json_parameters PARAMETERS
+
+\verbatim
+dcmfile-in    DICOM input filename to be converted
+
+jsonfile-out  JSON output filename (default: stdout)
+\endverbatim
+
+\section dcm2json_options OPTIONS
+
+\subsection dcm2json_general_options general options
+\verbatim
+  -h    --help
+          print this help text and exit
+
+        --version
+          print version information and exit
+
+        --arguments
+          print expanded command line arguments
+
+  -q    --quiet
+          quiet mode, print no warnings and errors
+
+  -v    --verbose
+          verbose mode, print processing details
+
+  -d    --debug
+          debug mode, print debug information
+
+  -ll   --log-level  [l]evel: string constant
+          (fatal, error, warn, info, debug, trace)
+          use level l for the logger
+
+  -lc   --log-config  [f]ilename: string
+          use config file f for the logger
+\endverbatim
+
+\subsection dcm2json_input_options input options
+\verbatim
+input file format:
+
+  +f    --read-file
+          read file format or data set (default)
+
+  +fo   --read-file-only
+          read file format only
+
+  -f    --read-dataset
+          read data set without file meta information
+
+input transfer syntax:
+
+  -t=   --read-xfer-auto
+          use TS recognition (default)
+
+  -td   --read-xfer-detect
+          ignore TS specified in the file meta header
+
+  -te   --read-xfer-little
+          read with explicit VR little endian TS
+
+  -tb   --read-xfer-big
+          read with explicit VR big endian TS
+
+  -ti   --read-xfer-implicit
+          read with implicit VR little endian TS
+\endverbatim
+
+\subsection dcm2json_output_options output options
+\verbatim
+output format:
+
+  +fc   --formatted-code
+          enable whitespace formatting (default)
+
+          # prints additional spaces and newlines for increased
+          # readability
+
+  -fc   --compact-code
+          print only required characters
+
+  +m    --write-meta
+          write data set with meta information
+          (warning: not conforming to the DICOM standard)
+\endverbatim
+
+\section dcm2json_json_format JSON Format
+
+The basic structure of the JSON output created from a DICOM file looks like
+the following (see DICOM Part 18 Section F for details):
+
+\verbatim
+{
+    "00080005": {
+        "vr": "CS",
+        "Value": [
+            "ISO_IR 192"
+        ]
+    },
+    "00080020": {
+        "vr": "DT",
+        "Value": [
+            "20130409"
+        ]
+    },
+    "00080030": {
+        "vr": "TM",
+        "Value": [
+            "131600.0000"
+        ]
+    },
+    "00080050": {
+        "vr": "SH",
+        "Value": [
+            "11235813"
+        ]
+    },
+    "00080056": {
+        "vr": "CS",
+        "Value": [
+            "ONLINE"
+        ]
+    },
+    "00080061": {
+        "vr": "CS",
+        "Value": [
+            "CT",
+            "PET"
+        ]
+    },
+    "00080090": {
+        "vr": "PN",
+        "Value": [
+          {
+            "Alphabetic": "^Bob^^Dr."
+          }
+        ]
+    },
+    "00081190": {
+        "vr": "UR",
+        "Value": [
+            "http://wado.nema.org/studies/
+            1.2.392.200036.9116.2.2.2.1762893313.1029997326.945873"
+        ]
+    },
+    "00090010": {
+        "vr": "LO",
+        "Value": [
+            "Vendor A"
+        ]
+    },
+    "00091002": {
+        "vr": "UN",
+        "InlineBinary": "z0x9c8v7"
+    },
+    "00100010": {
+        "vr": "PN",
+        "Value": [
+          {
+            "Alphabetic": "Wang^XiaoDong"
+          }
+        ]
+    },
+    "00100020": {
+        "vr": "LO",
+        "Value": [
+            "12345"
+        ]
+    },
+    "00100021": {
+        "vr": "LO",
+        "Value": [
+            "Hospital A"
+        ]
+    },
+    "00100030": {
+        "vr": "DT",
+        "Value": [
+            "19670701"
+        ]
+    },
+    "00100040": {
+        "vr": "CS",
+        "Value": [
+            "M"
+        ]
+    },
+    "00101002": {
+        "vr": "SQ",
+        "Value": [
+            {
+                "00100020": {
+                    "vr": "LO",
+                    "Value": [
+                        "54321"
+                    ]
+                },
+                "00100021": {
+                    "vr": "LO",
+                    "Value": [
+                        "Hospital B"
+                    ]
+                }
+            },
+            {
+                "00100020": {
+                    "vr": "LO",
+                    "Value": [
+                        "24680"
+                    ]
+                },
+                "00100021": {
+                    "vr": "LO",
+                    "Value": [
+                        "Hospital C"
+                    ]
+                }
+            }
+        ]
+    },
+    "0020000D": {
+        "vr": "UI",
+        "Value": [
+            "1.2.392.200036.9116.2.2.2.1762893313.1029997326.945873"
+        ]
+    },
+    "00200010": {
+        "vr": "SH",
+        "Value": [
+            "11235813"
+        ]
+    },
+    "00201206": {
+        "vr": "IS",
+        "Value": [
+            4
+        ]
+    },
+    "00201208": {
+        "vr": "IS",
+        "Value": [
+            942
+        ]
+    }
+}
+\endverbatim
+
+\subsection dcm2json_bulk_data Bulk Data
+
+Binary data, i.e. DICOM element values with Value Representations (VR) of OB
+or OW, as well as OD, OF and UN values are by default not written to the JSON
+output because of their size.  Instead, for each element, a new Universally
+Unique Identifier (UUID) is being generated and written as an value of a
+BulkDataURI JSON element.  So far, there is no possibility to write an
+additional file to hold the binary data for each of the binary data chunks.
+
+\section dcm2json_notes NOTES
+
+\subsection dcm2json_character_encoding Character Encoding
+
+\b dcm2json always tries to output in UTF-8 encoding.  If this is not possible,
+e.g. because there is no support for character set conversion, ASCII is used
+instead (which is a subset of UTF-8).
+
+\section dcm2json_logging LOGGING
+
+The level of logging output of the various command line tools and underlying
+libraries can be specified by the user.  By default, only errors and warnings
+are written to the standard error stream.  Using option \e --verbose also
+informational messages like processing details are reported.  Option
+\e --debug can be used to get more details on the internal activity, e.g. for
+debugging purposes.  Other logging levels can be selected using option
+\e --log-level.  In \e --quiet mode only fatal errors are reported.  In such
+very severe error events, the application will usually terminate.  For more
+details on the different logging levels, see documentation of module "oflog".
+
+In case the logging output should be written to file (optionally with logfile
+rotation), to syslog (Unix) or the event log (Windows) option \e --log-config
+can be used.  This configuration file also allows for directing only certain
+messages to a particular output stream and for filtering certain messages
+based on the module or application where they are generated.  An example
+configuration file is provided in <em>\<etcdir\>/logger.cfg</em>.
+
+\section dcm2json_command_line COMMAND LINE
+
+All command line tools use the following notation for parameters: square
+brackets enclose optional values (0-1), three trailing dots indicate that
+multiple values are allowed (1-n), a combination of both means 0 to n values.
+
+Command line options are distinguished from parameters by a leading '+' or '-'
+sign, respectively.  Usually, order and position of command line options are
+arbitrary (i.e. they can appear anywhere).  However, if options are mutually
+exclusive the rightmost appearance is used.  This behavior conforms to the
+standard evaluation rules of common Unix shells.
+
+In addition, one or more command files can be specified using an '@' sign as a
+prefix to the filename (e.g. <em>\@command.txt</em>).  Such a command argument
+is replaced by the content of the corresponding text file (multiple
+whitespaces are treated as a single separator unless they appear between two
+quotation marks) prior to any further evaluation.  Please note that a command
+file cannot contain another command file.  This simple but effective approach
+allows one to summarize common combinations of options/parameters and avoids
+longish and confusing command lines (an example is provided in file
+<em>\<datadir\>/dumppat.txt</em>).
+
+\section dcm2json_environment ENVIRONMENT
+
+The \b dcm2json utility will attempt to load DICOM data dictionaries specified
+in the \e DCMDICTPATH environment variable.  By default, i.e. if the
+\e DCMDICTPATH environment variable is not set, the file
+<em>\<datadir\>/dicom.dic</em> will be loaded unless the dictionary is built
+into the application (default for Windows).
+
+The default behavior should be preferred and the \e DCMDICTPATH environment
+variable only used when alternative data dictionaries are required.  The
+\e DCMDICTPATH environment variable has the same format as the Unix shell
+\e PATH variable in that a colon (":") separates entries.  On Windows systems,
+a semicolon (";") is used as a separator.  The data dictionary code will
+attempt to load each file specified in the \e DCMDICTPATH environment variable.
+It is an error if no data dictionary can be loaded.
+
+\section dcm2json_copyright COPYRIGHT
+
+Copyright (C) 2016-2017 by OFFIS e.V., Escherweg 2, 26121 Oldenburg, Germany.
+
+*/

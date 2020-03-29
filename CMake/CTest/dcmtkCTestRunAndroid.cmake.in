@@ -1,0 +1,33 @@
+#
+# This file is used to executed given unit test commands on a previously
+# initialize Android device emulator instance, handling additional arguments
+# like 'exhaustive' and setting the DCMDICTPATH environment variable
+# appropriately.
+#
+
+# Restore the required settings of the CMake configuration step
+set(CMAKE_BINARY_DIR "@CMAKE_BINARY_DIR@")
+set(CMAKE_CURRENT_BINARY_DIR "@CMAKE_BINARY_DIR@")
+set(CMAKE_FILES_DIRECTORY "@CMAKE_FILES_DIRECTORY@")
+set(DCMTK_CMAKE_INCLUDE "@CMAKE_SOURCE_DIR@/@DCMTK_CMAKE_INCLUDE@")
+set(DCMDICTPATH "@DCMDICTPATH@")
+set(ANDROID_ADB_PROGRAM "@ANDROID_ADB_PROGRAM@")
+set(ANDROID_TEMPORARY_FILES_LOCATION "@ANDROID_TEMPORARY_FILES_LOCATION@")
+# Load required functions for controlling the Android device emulator
+include(${DCMTK_CMAKE_INCLUDE}CMake/dcmtkUseAndroidSDK.cmake)
+
+# Restore the Android device emulator instance handle
+set(DCMTK_ANDROID_EMULATOR_INSTANCE "$ENV{DCMTK_ANDROID_EMULATOR_INSTANCE}")
+
+# Run the actual testcase on the remote device
+DCMTK_ANDROID_SHELL(DCMTK_ANDROID_EMULATOR_INSTANCE
+    COMMAND "LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:${ANDROID_TEMPORARY_FILES_LOCATION}" "DCMDICTPATH=${DCMDICTPATH}" "${DCMTK_CTEST_TESTCASE_COMMAND}" $ENV{DCMTK_CTEST_EXTRA_ARGUMENTS} "${DCMTK_CTEST_TEST_NAME}"
+    WORKING_DIRECTORY "${ANDROID_TEMPORARY_FILES_LOCATION}"
+    RESULT_VARIABLE RESULT
+)
+
+# We cannot forward the result value to CTest, so print it instead and let CMake
+# return with code '1' or whatever it deems appropriate to notify about an error.
+if(RESULT)
+    message(FATAL_ERROR "Test command returned: ${RESULT}")
+endif()
