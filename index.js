@@ -1,1 +1,1 @@
-module.exports = require('bindings')('imebra.node');
+module.exports = require('bindings')('dcmtk.node');
