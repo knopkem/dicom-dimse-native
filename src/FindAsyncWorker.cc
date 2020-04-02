@@ -79,14 +79,14 @@ FindScuCallback::FindScuCallback(const ns::DicomObject &rqContainer, std::list<n
 void FindScuCallback::callback(T_DIMSE_C_FindRQ *request, int &responseCount, T_DIMSE_C_FindRSP *rsp, DcmDataset *responseIdentifiers)
 {
     ns::DicomObject responseItem;
-    for (const ns::DicomElement &ns::DicomElement : m_requestContainer)
+    for (const ns::DicomElement &element : m_requestContainer)
     {
         OFString value;
-        responseIdentifiers->findAndGetOFStringArray(ns::DicomElement.xtag, value);
+        responseIdentifiers->findAndGetOFStringArray(element.xtag, value);
         ns::DicomElement cp;
-        cp.xtag = ns::DicomElement.xtag;
+        cp.xtag = element.xtag;
         cp.value = value.c_str();
-        responseItem.push_back(ns::DicomElement);
+        responseItem.push_back(element);
     }
     m_responseContainer->push_back(responseItem);
 }

@@ -8,6 +8,11 @@
 #include "dcmtk/dcmdata/dcxfer.h"  /* for E_TransferSyntax */
 #include "dcmtk/dcmnet/dimse.h"    /* for T_DIMSE_BlockingMode */
 
+#include <iostream>
+#include <sstream>
+#include <memory>
+#include <list>
+#include <iomanip>
 
 #include "json.h"
 using json = nlohmann::json;
@@ -36,15 +41,15 @@ namespace ns {
         return element.xtag.toString().substr(1, 9) + OFString("=") + OFString(element.value.c_str());
     }
 
-    DicomElement toElement(const std::string& tag, const std::string& value) {
-            ns::DicomElement el;
+    DicomElement toElement(const std::string& key, const std::string& value) {
+            DicomElement el;
             unsigned int grp = 0xffff;
             unsigned int elm = 0xffff;
 
-            sscanf(tag.key.substr(0, 4).c_str(), "%x", &grp);
-            sscanf(tag.key.substr(4, 4).c_str(), "%x", &elm);
+            sscanf(key.substr(0, 4).c_str(), "%x", &grp);
+            sscanf(key.substr(4, 4).c_str(), "%x", &elm);
             el.xtag = DcmTagKey(grp, elm);
-            el.value = tag.value;
+            el.value = value;
             return el;
     }
 
