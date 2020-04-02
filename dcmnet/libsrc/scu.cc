@@ -1365,6 +1365,7 @@ OFCondition DcmSCU::handleSTORERequest(const T_ASC_PresentationContextID /* pres
   }
 
   OFString filename = createStorageFilename(incomingObject);
+
   if (OFStandard::fileExists(filename))
   {
     DCMNET_WARN("DICOM file already exists, overwriting: " << filename);
@@ -1469,17 +1470,27 @@ OFCondition DcmSCU::sendSTOREResponse(T_ASC_PresentationContextID presID,
 
 OFString DcmSCU::createStorageFilename(DcmDataset *dataset)
 {
-  OFString sopClassUID, sopInstanceUID;
+  OFString sopClassUID, sopInstanceUID, studyInstanceUID;
   E_TransferSyntax dummy;
   getDatasetInfo(dataset, sopClassUID, sopInstanceUID, dummy);
+  dataset->findAndGetOFString(DCM_StudyInstanceUID, studyInstanceUID);
+
   // Create unique filename
   if (sopClassUID.empty() || sopInstanceUID.empty())
     return "";
-  OFString name = dcmSOPClassUIDToModality(sopClassUID.c_str(), "UNKNOWN");
-  name += ".";
-  name += sopInstanceUID;
+  OFString name = sopInstanceUID; // dcmSOPClassUIDToModality(sopClassUID.c_str(), "UNKNOWN");
+  name += ".dcm";
+
+  OFString baseStr;
+  OFStandard::combineDirAndFilename(baseStr, m_storageDir, studyInstanceUID, OFTrue);
+  if (!OFStandard::dirExists(baseStr)) {
+    if (OFStandard::createDirectory(baseStr, m_storageDir).bad()) {
+      return "";
+    }
+  }
+
   OFString returnStr;
-  OFStandard::combineDirAndFilename(returnStr, m_storageDir, name, OFTrue);
+  OFStandard::combineDirAndFilename(returnStr, baseStr, name, OFTrue);
   return returnStr;
 }
 

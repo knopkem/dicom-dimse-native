@@ -184,7 +184,7 @@ void GetAsyncWorker::Execute(const ExecutionProgress &progress)
     T_DIMSE_BlockingMode opt_blockMode = DIMSE_BLOCKING;
     int opt_dimse_timeout = 0;
     int opt_acse_timeout = 30;
-    OFString opt_outputDirectory = ".";
+    OFString opt_outputDirectory = in.storagePath.c_str();
 
     ns::DicomObject queryAttributes;
     OFList<OFString> overrideKeys;
@@ -209,7 +209,7 @@ void GetAsyncWorker::Execute(const ExecutionProgress &progress)
     scu.setDIMSEBlockingMode(opt_blockMode);
     scu.setDIMSETimeout(opt_dimse_timeout);
     scu.setAETitle(in.source.aet.c_str());
-    scu.setPeerHostName(in.target.aet.c_str());
+    scu.setPeerHostName(in.target.ip.c_str());
     scu.setPeerPort(OFstatic_cast(Uint16, std::stoi(in.target.port)));
     scu.setPeerAETitle(in.source.aet.c_str());
     scu.setVerbosePCMode(opt_showPresentationContexts);
