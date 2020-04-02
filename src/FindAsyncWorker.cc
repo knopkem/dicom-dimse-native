@@ -4,8 +4,6 @@
 
 #include "dcmtk/dcmnet/dfindscu.h"
 #include "dcmtk/dcmnet/diutil.h"
-#include "dcmtk/dcmdata/cmdlnarg.h"
-#include "dcmtk/ofstd/ofconapp.h"
 #include "dcmtk/dcmdata/dcdict.h"
 #include "dcmtk/dcmdata/dcostrmz.h" /* for dcmZlibCompressionLevel */
 
@@ -55,18 +53,10 @@ unsigned int hex_to_int(std::string hex) {
     return std::strtoul(hex.c_str(), 0, 16);
 }
 
-struct DicomElement
-{
-    DcmTagKey xtag;
-    std::string value;
-};
-
-typedef std::list<DicomElement> DicomObject;
-
 class FindScuCallback : public DcmFindSCUCallback
 {
 public:
-    FindScuCallback(const DicomObject &rqContainer, std::list<DicomObject> *rspContainer);
+    FindScuCallback(const ns::DicomObject &rqContainer, std::list<ns::DicomObject> *rspContainer);
 
     ~FindScuCallback() {}
 
@@ -77,34 +67,30 @@ public:
         DcmDataset *responseIdentifiers);
 
 private:
-    DicomObject m_requestContainer;
-    std::list<DicomObject> *m_responseContainer;
+    ns::DicomObject m_requestContainer;
+    std::list<ns::DicomObject> *m_responseContainer;
 };
 
-FindScuCallback::FindScuCallback(const DicomObject &rqContainer, std::list<DicomObject> *rspContainer)
+FindScuCallback::FindScuCallback(const ns::DicomObject &rqContainer, std::list<ns::DicomObject> *rspContainer)
     : m_requestContainer(rqContainer), m_responseContainer(rspContainer)
 {
 }
 
 void FindScuCallback::callback(T_DIMSE_C_FindRQ *request, int &responseCount, T_DIMSE_C_FindRSP *rsp, DcmDataset *responseIdentifiers)
 {
-    DicomObject responseItem;
-    for (const DicomElement &dicomElement : m_requestContainer)
+    ns::DicomObject responseItem;
+    for (const ns::DicomElement &ns::DicomElement : m_requestContainer)
     {
         OFString value;
-        responseIdentifiers->findAndGetOFStringArray(dicomElement.xtag, value);
-        DicomElement cp;
-        cp.xtag = dicomElement.xtag;
+        responseIdentifiers->findAndGetOFStringArray(ns::DicomElement.xtag, value);
+        ns::DicomElement cp;
+        cp.xtag = ns::DicomElement.xtag;
         cp.value = value.c_str();
-        responseItem.push_back(dicomElement);
+        responseItem.push_back(ns::DicomElement);
     }
     m_responseContainer->push_back(responseItem);
 }
 
-OFString convertElement(const DicomElement &element)
-{
-    return element.xtag.toString().substr(1, 9) + OFString("=") + OFString(element.value.c_str());
-}
 
 } // namespace
 
@@ -134,21 +120,9 @@ void FindAsyncWorker::Execute(const ExecutionProgress &progress)
         return;
     }
 
-    DicomObject queryAttributes;
-
-    for (std::vector<ns::sTag>::iterator it = in.tags.begin(); it != in.tags.end(); ++it) {
-        auto tag = (*it);
-        DicomElement el;
-        unsigned int grp = 0xffff;
-        unsigned int elm = 0xffff;
-
-        sscanf(tag.key.substr(0, 4).c_str(), "%x", &grp);
-        sscanf(tag.key.substr(4, 4).c_str(), "%x", &elm);
-        el.xtag = DcmTagKey(grp, elm);
-        el.value = tag.value;
-        queryAttributes.push_back(el);
-    }
-
+    ns::DicomObject queryAttributes;
+    OFList<OFString> overrideKeys;
+    ns::applyTags(in, &queryAttributes, &overrideKeys);
 
     OFStandard::initializeNetwork();
 
@@ -164,16 +138,7 @@ void FindAsyncWorker::Execute(const ExecutionProgress &progress)
         return;
     }
 
-    std::list<DicomObject> result;
-
-
-    OFList<OFString> overrideKeys;
-    for (const DicomElement &element : queryAttributes)
-    {
-        OFString key = convertElement(element);
-        overrideKeys.push_back(key);
-    }
-
+    std::list<ns::DicomObject> result;
     FindScuCallback callback(queryAttributes, &result);
 
     // do the main work: negotiate network association, perform C-FIND transaction,
@@ -210,9 +175,9 @@ void FindAsyncWorker::Execute(const ExecutionProgress &progress)
 
     // convert result
     json outJson = json::array();
-    for (const DicomObject& obj: result) {
+    for (const ns::DicomObject& obj: result) {
         json v = json::object();
-        for (const DicomElement& elm: obj) {
+        for (const ns::DicomElement& elm: obj) {
 
             std::string value = elm.value;
             std::string keyName =  int_to_hex(elm.xtag.getGroup()) + int_to_hex(elm.xtag.getElement());

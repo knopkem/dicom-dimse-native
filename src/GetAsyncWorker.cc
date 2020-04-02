@@ -34,94 +34,106 @@ using json = nlohmann::json;
 
 namespace
 {
-void applyOverrideKeys(DcmDataset *dataset, const OFList<OFString> &overrideKeys)
-{
-    /* replace specific keys by those in overrideKeys */
-    OFListConstIterator(OFString) path = overrideKeys.begin();
-    OFListConstIterator(OFString) endOfList = overrideKeys.end();
-    DcmPathProcessor proc;
-    proc.setItemWildcardSupport(OFFalse);
-    proc.checkPrivateReservations(OFFalse);
-    OFCondition cond;
-    while (path != endOfList)
+    typedef enum
     {
-        cond = proc.applyPathWithValue(dataset, *path);
-        if (cond.bad())
+        QMPatientRoot = 0,
+        QMStudyRoot = 1,
+        QMPatientStudyOnly = 2
+    } QueryModel;
+
+    const char *querySyntax[3] = {
+        UID_GETPatientRootQueryRetrieveInformationModel,
+        UID_GETStudyRootQueryRetrieveInformationModel,
+        UID_RETIRED_GETPatientStudyOnlyQueryRetrieveInformationModel};
+
+    void applyOverrideKeys(DcmDataset *dataset, const OFList<OFString> &overrideKeys)
+    {
+        /* replace specific keys by those in overrideKeys */
+        OFListConstIterator(OFString) path = overrideKeys.begin();
+        OFListConstIterator(OFString) endOfList = overrideKeys.end();
+        DcmPathProcessor proc;
+        proc.setItemWildcardSupport(OFFalse);
+        proc.checkPrivateReservations(OFFalse);
+        OFCondition cond;
+        while (path != endOfList)
         {
-            std::cerr << "bad override key provided" << std::endl;
+            cond = proc.applyPathWithValue(dataset, *path);
+            if (cond.bad())
+            {
+                std::cerr << "bad override key provided" << std::endl;
+            }
+            path++;
         }
-        path++;
     }
-}
 
-void prepareTS(E_TransferSyntax ts,
-               OFList<OFString> &syntaxes)
-{
-    /*
-  ** We prefer to use Explicitly encoded transfer syntaxes.
-  ** If we are running on a Little Endian machine we prefer
-  ** LittleEndianExplicitTransferSyntax to BigEndianTransferSyntax.
-  ** Some SCP implementations will just select the first transfer
-  ** syntax they support (this is not part of the standard) so
-  ** organize the proposed transfer syntaxes to take advantage
-  ** of such behavior.
-  **
-  ** The presentation contexts proposed here are only used for
-  ** C-FIND and C-MOVE, so there is no need to support compressed
-  ** transmission.
-  */
-
-    switch (ts)
+    void prepareTS(E_TransferSyntax ts,
+                OFList<OFString> &syntaxes)
     {
-    case EXS_LittleEndianImplicit:
-        /* we only support Little Endian Implicit */
-        syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
-        break;
-    case EXS_LittleEndianExplicit:
-        /* we prefer Little Endian Explicit */
-        syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
-        syntaxes.push_back(UID_BigEndianExplicitTransferSyntax);
-        syntaxes.push_back(UID_LittleEndianImplicitTransferSyntax);
-        break;
-    case EXS_BigEndianExplicit:
-        /* we prefer Big Endian Explicit */
-        syntaxes.push_back(UID_BigEndianExplicitTransferSyntax);
-        syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
-        syntaxes.push_back(UID_LittleEndianImplicitTransferSyntax);
-        break;
-#ifdef WITH_ZLIB
-    case EXS_DeflatedLittleEndianExplicit:
-        /* we prefer Deflated Little Endian Explicit */
-        syntaxes.push_back(UID_DeflatedExplicitVRLittleEndianTransferSyntax);
-        syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
-        syntaxes.push_back(UID_BigEndianExplicitTransferSyntax);
-        syntaxes.push_back(UID_LittleEndianImplicitTransferSyntax);
-        break;
-#endif
-    default:
-        DcmXfer xfer(ts);
-        if (xfer.isEncapsulated())
+        /*
+    ** We prefer to use Explicitly encoded transfer syntaxes.
+    ** If we are running on a Little Endian machine we prefer
+    ** LittleEndianExplicitTransferSyntax to BigEndianTransferSyntax.
+    ** Some SCP implementations will just select the first transfer
+    ** syntax they support (this is not part of the standard) so
+    ** organize the proposed transfer syntaxes to take advantage
+    ** of such behavior.
+    **
+    ** The presentation contexts proposed here are only used for
+    ** C-FIND and C-MOVE, so there is no need to support compressed
+    ** transmission.
+    */
+
+        switch (ts)
         {
-            syntaxes.push_back(xfer.getXferID());
-        }
-        /* We prefer explicit transfer syntaxes.
-       * If we are running on a Little Endian machine we prefer
-       * LittleEndianExplicitTransferSyntax to BigEndianTransferSyntax.
-       */
-        if (gLocalByteOrder == EBO_LittleEndian) /* defined in dcxfer.h */
-        {
+        case EXS_LittleEndianImplicit:
+            /* we only support Little Endian Implicit */
+            syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
+            break;
+        case EXS_LittleEndianExplicit:
+            /* we prefer Little Endian Explicit */
             syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
             syntaxes.push_back(UID_BigEndianExplicitTransferSyntax);
-        }
-        else
-        {
+            syntaxes.push_back(UID_LittleEndianImplicitTransferSyntax);
+            break;
+        case EXS_BigEndianExplicit:
+            /* we prefer Big Endian Explicit */
             syntaxes.push_back(UID_BigEndianExplicitTransferSyntax);
             syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
+            syntaxes.push_back(UID_LittleEndianImplicitTransferSyntax);
+            break;
+    #ifdef WITH_ZLIB
+        case EXS_DeflatedLittleEndianExplicit:
+            /* we prefer Deflated Little Endian Explicit */
+            syntaxes.push_back(UID_DeflatedExplicitVRLittleEndianTransferSyntax);
+            syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
+            syntaxes.push_back(UID_BigEndianExplicitTransferSyntax);
+            syntaxes.push_back(UID_LittleEndianImplicitTransferSyntax);
+            break;
+    #endif
+        default:
+            DcmXfer xfer(ts);
+            if (xfer.isEncapsulated())
+            {
+                syntaxes.push_back(xfer.getXferID());
+            }
+            /* We prefer explicit transfer syntaxes.
+        * If we are running on a Little Endian machine we prefer
+        * LittleEndianExplicitTransferSyntax to BigEndianTransferSyntax.
+        */
+            if (gLocalByteOrder == EBO_LittleEndian) /* defined in dcxfer.h */
+            {
+                syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
+                syntaxes.push_back(UID_BigEndianExplicitTransferSyntax);
+            }
+            else
+            {
+                syntaxes.push_back(UID_BigEndianExplicitTransferSyntax);
+                syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
+            }
+            syntaxes.push_back(UID_LittleEndianImplicitTransferSyntax);
+            break;
         }
-        syntaxes.push_back(UID_LittleEndianImplicitTransferSyntax);
-        break;
     }
-}
 } // namespace
 
 GetAsyncWorker::GetAsyncWorker(std::string data, Function &callback) : BaseAsyncWorker(data, callback)
@@ -161,18 +173,6 @@ void GetAsyncWorker::Execute(const ExecutionProgress &progress)
         SendInfo("storage path not set, defaulting to " + in.storagePath, progress);
     }
 
-    typedef enum
-    {
-        QMPatientRoot = 0,
-        QMStudyRoot = 1,
-        QMPatientStudyOnly = 2
-    } QueryModel;
-
-    const char *querySyntax[3] = {
-        UID_GETPatientRootQueryRetrieveInformationModel,
-        UID_GETStudyRootQueryRetrieveInformationModel,
-        UID_RETIRED_GETPatientStudyOnlyQueryRetrieveInformationModel};
-
     OFCmdUnsignedInt opt_maxPDU = ASC_DEFAULTMAXPDU;
     E_TransferSyntax opt_store_networkTransferSyntax = EXS_JPEGLSLossless;
     E_TransferSyntax opt_get_networkTransferSyntax = EXS_Unknown;
@@ -185,7 +185,11 @@ void GetAsyncWorker::Execute(const ExecutionProgress &progress)
     int opt_dimse_timeout = 0;
     int opt_acse_timeout = 30;
     OFString opt_outputDirectory = ".";
+
+    ns::DicomObject queryAttributes;
     OFList<OFString> overrideKeys;
+    ns::applyTags(in, &queryAttributes, &overrideKeys);
+
 
     /* setup SCU */
     OFList<OFString> syntaxes;

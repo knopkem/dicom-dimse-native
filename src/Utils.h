@@ -1,9 +1,28 @@
 #pragma once
 
+#include "dcmtk/config/osconfig.h" /* make sure OS specific configuration is included first */
+
+#include "dcmtk/dcmnet/diutil.h"
+#include "dcmtk/dcmdata/dcdict.h"
+#include "dcmtk/ofstd/ofcond.h"    /* for class OFCondition */
+#include "dcmtk/dcmdata/dcxfer.h"  /* for E_TransferSyntax */
+#include "dcmtk/dcmnet/dimse.h"    /* for T_DIMSE_BlockingMode */
+
+
 #include "json.h"
 using json = nlohmann::json;
 
 namespace ns {
+
+    
+    struct DicomElement
+    {
+        DcmTagKey xtag;
+        std::string value;
+    };
+
+    typedef std::list<DicomElement> DicomObject;
+
      // a simple struct to model a person
     struct sTag {
         std::string key;
@@ -12,6 +31,31 @@ namespace ns {
             return !key.empty();
         }
     };
+
+    inline OFString convertElement(const ns::DicomElement &element) {
+        return element.xtag.toString().substr(1, 9) + OFString("=") + OFString(element.value.c_str());
+    }
+
+    inline void applyTags( const sInput& in, DicomObject* queryAttributes, OFList<OFString>* overrideKeys) {
+        for (std::vector<ns::sTag>::iterator it = in.tags.begin(); it != in.tags.end(); ++it) {
+            auto tag = (*it);
+            ns::DicomElement el;
+            unsigned int grp = 0xffff;
+            unsigned int elm = 0xffff;
+
+            sscanf(tag.key.substr(0, 4).c_str(), "%x", &grp);
+            sscanf(tag.key.substr(4, 4).c_str(), "%x", &elm);
+            el.xtag = DcmTagKey(grp, elm);
+            el.value = tag.value;
+            queryAttributes->push_back(el);
+        }
+
+        for (const ns::DicomElement &element : queryAttributes)
+        {
+            OFString key = convertElement(element);
+            overrideKeys->push_back(key);
+        }
+    }
 
     struct sIdent {
         std::string aet;
