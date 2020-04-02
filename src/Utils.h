@@ -41,7 +41,7 @@ namespace ns {
         return element.xtag.toString().substr(1, 9) + OFString("=") + OFString(element.value.c_str());
     }
 
-    DicomElement toElement(const std::string& key, const std::string& value) {
+    inline DicomElement toElement(const std::string& key, const std::string& value) {
             DicomElement el;
             unsigned int grp = 0xffff;
             unsigned int elm = 0xffff;
