@@ -36,9 +36,7 @@ namespace ns {
         return element.xtag.toString().substr(1, 9) + OFString("=") + OFString(element.value.c_str());
     }
 
-    inline void applyTags( const sInput& in, DicomObject* queryAttributes, OFList<OFString>* overrideKeys) {
-        for (std::vector<ns::sTag>::iterator it = in.tags.begin(); it != in.tags.end(); ++it) {
-            auto tag = (*it);
+    DicomElement toElement(const std::string& tag, const std::string& value) {
             ns::DicomElement el;
             unsigned int grp = 0xffff;
             unsigned int elm = 0xffff;
@@ -47,14 +45,7 @@ namespace ns {
             sscanf(tag.key.substr(4, 4).c_str(), "%x", &elm);
             el.xtag = DcmTagKey(grp, elm);
             el.value = tag.value;
-            queryAttributes->push_back(el);
-        }
-
-        for (const ns::DicomElement &element : queryAttributes)
-        {
-            OFString key = convertElement(element);
-            overrideKeys->push_back(key);
-        }
+            return el;
     }
 
     struct sIdent {

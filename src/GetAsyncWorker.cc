@@ -188,7 +188,16 @@ void GetAsyncWorker::Execute(const ExecutionProgress &progress)
 
     ns::DicomObject queryAttributes;
     OFList<OFString> overrideKeys;
-    ns::applyTags(in, &queryAttributes, &overrideKeys);
+
+    for (std::vector<ns::sTag>::iterator it = in.tags.begin(); it != in.tags.end(); ++it) {
+        auto tag = (*it);
+        queryAttributes.push_back(ns::toElement(tag.key, tag.value));
+    }
+
+    for (const ns::DicomElement &element : queryAttributes) {
+        OFString key = ns::convertElement(element);
+        overrideKeys.push_back(key);
+    }
 
 
     /* setup SCU */
