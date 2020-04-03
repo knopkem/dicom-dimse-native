@@ -14,11 +14,6 @@
 #include "dcmtk/ofstd/ofchrenc.h" /* for OFCharacterEncoding */
 #endif
 
-#define APPLICATIONTITLE "IMEBRA"
-#define PEERAPPLICATIONTITLE "CONQUESTSRV1"
-
-#define SHORTCOL 4
-#define LONGCOL 20
 
 #include "json.h"
 #include "Utils.h"
