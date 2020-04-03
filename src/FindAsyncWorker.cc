@@ -14,7 +14,6 @@
 #include "dcmtk/ofstd/ofchrenc.h" /* for OFCharacterEncoding */
 #endif
 
-
 #include "json.h"
 #include "Utils.h"
 
@@ -44,7 +43,8 @@ std::string int_to_hex(uint16_t i)
     return str_toupper(stream.str());
 }
 
-unsigned int hex_to_int(std::string hex) {
+unsigned int hex_to_int(std::string hex)
+{
     return std::strtoul(hex.c_str(), 0, 16);
 }
 
@@ -86,7 +86,6 @@ void FindScuCallback::callback(T_DIMSE_C_FindRQ *request, int &responseCount, T_
     m_responseContainer->push_back(responseItem);
 }
 
-
 } // namespace
 
 FindAsyncWorker::FindAsyncWorker(std::string data, Function &callback) : BaseAsyncWorker(data, callback)
@@ -118,12 +117,14 @@ void FindAsyncWorker::Execute(const ExecutionProgress &progress)
     ns::DicomObject queryAttributes;
     OFList<OFString> overrideKeys;
 
-    for (std::vector<ns::sTag>::iterator it = in.tags.begin(); it != in.tags.end(); ++it) {
+    for (std::vector<ns::sTag>::iterator it = in.tags.begin(); it != in.tags.end(); ++it)
+    {
         auto tag = (*it);
         queryAttributes.push_back(ns::toElement(tag.key, tag.value));
     }
 
-    for (const ns::DicomElement &element : queryAttributes) {
+    for (const ns::DicomElement &element : queryAttributes)
+    {
         OFString key = ns::convertElement(element);
         overrideKeys.push_back(key);
     }
@@ -179,20 +180,34 @@ void FindAsyncWorker::Execute(const ExecutionProgress &progress)
 
     // convert result
     json outJson = json::array();
-    for (const ns::DicomObject& obj: result) {
+    for (const ns::DicomObject &obj : result)
+    {
         json v = json::object();
-        for (const ns::DicomElement& elm: obj) {
+        for (const ns::DicomElement &elm : obj)
+        {
 
             std::string value = elm.value;
-            std::string keyName =  int_to_hex(elm.xtag.getGroup()) + int_to_hex(elm.xtag.getElement());
-            std::string vr = "PN";
-            v[keyName] = { 
-                {"Value", json::array({value})},
-                {"vr", vr}
-            };
+            std::string keyName = int_to_hex(elm.xtag.getGroup()) + int_to_hex(elm.xtag.getElement());
+            DcmTag t(elm.xtag);
+            std::string vr = std::string(t.getVR().getVRName());
+            if (vr == "PN")
+            {
+                v[keyName] = {
+                    {"Value", json::array({json{{"Alphabetic", value}}})},
+                    {"vr", vr}};
+            }
+            else
+            {
+                v[keyName] = {
+                    {"Value", json::array({value})},
+                    {"vr", vr}};
+
+                v[keyName] = {
+                    {"Value", json::array({value})},
+                    {"vr", vr}};
+            }
         }
         outJson.push_back(v);
         _jsonOutput = outJson.dump();
     }
-
 }
