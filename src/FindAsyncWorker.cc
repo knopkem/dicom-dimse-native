@@ -28,7 +28,26 @@ using json = nlohmann::json;
 namespace
 {
 
-std::string str_toupper(std::string s)
+std::string to_utf8(const std::string &str)
+{
+    std::string strOut;
+    for (std::string::iterator it = str.begin(); it != str.end(); ++it)
+    {
+        uint8_t ch = *it;
+        if (ch < 0x80)
+        {
+            strOut.push_back(ch);
+        }
+        else
+        {
+            strOut.push_back(0xc0 | ch >> 6);
+            strOut.push_back(0x80 | (ch & 0x3f));
+        }
+    }
+    return strOut;
+}
+
+std::string str_toupper(const std::string& s)
 {
     std::transform(s.begin(), s.end(), s.begin(),
                    [](unsigned char c) { return std::toupper(c); });
@@ -80,8 +99,8 @@ void FindScuCallback::callback(T_DIMSE_C_FindRQ *request, int &responseCount, T_
         responseIdentifiers->findAndGetOFStringArray(element.xtag, value);
         ns::DicomElement cp;
         cp.xtag = element.xtag;
-        cp.value = value.c_str();
-        responseItem.push_back(element);
+        cp.value = to_utf8(std::string(value.c_str()));
+        responseItem.push_back(cp);
     }
     m_responseContainer->push_back(responseItem);
 }
@@ -198,10 +217,6 @@ void FindAsyncWorker::Execute(const ExecutionProgress &progress)
             }
             else
             {
-                v[keyName] = {
-                    {"Value", json::array({value})},
-                    {"vr", vr}};
-
                 v[keyName] = {
                     {"Value", json::array({value})},
                     {"vr", vr}};
