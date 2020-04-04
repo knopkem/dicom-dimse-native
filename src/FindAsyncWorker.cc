@@ -28,7 +28,7 @@ using json = nlohmann::json;
 namespace
 {
 
-std::string to_utf8(const std::string &str)
+std::string to_utf8(std::string str)
 {
     std::string strOut;
     for (std::string::iterator it = str.begin(); it != str.end(); ++it)
@@ -47,7 +47,7 @@ std::string to_utf8(const std::string &str)
     return strOut;
 }
 
-std::string str_toupper(const std::string& s)
+std::string str_toupper(std::string s)
 {
     std::transform(s.begin(), s.end(), s.begin(),
                    [](unsigned char c) { return std::toupper(c); });
@@ -62,10 +62,6 @@ std::string int_to_hex(uint16_t i)
     return str_toupper(stream.str());
 }
 
-unsigned int hex_to_int(std::string hex)
-{
-    return std::strtoul(hex.c_str(), 0, 16);
-}
 
 class FindScuCallback : public DcmFindSCUCallback
 {
