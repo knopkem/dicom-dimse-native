@@ -1476,9 +1476,7 @@ OFString DcmSCU::createStorageFilename(DcmDataset *dataset)
   dataset->findAndGetOFString(DCM_StudyInstanceUID, studyInstanceUID);
 
   // Create unique filename
-  if (sopClassUID.empty() || sopInstanceUID.empty())
-    return "";
-  OFString name = sopInstanceUID; // dcmSOPClassUIDToModality(sopClassUID.c_str(), "UNKNOWN");
+  OFString name = sopInstanceUID;
   name += ".dcm";
 
   OFString baseStr;

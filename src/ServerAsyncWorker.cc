@@ -58,6 +58,7 @@ enum E_SortStudyMode
 struct StoreCallbackData
 {
   char *imageFileName;
+  OFString storageDir;
   DcmFileFormat *dcmff;
   T_ASC_Association *assoc;
 };
@@ -80,33 +81,8 @@ OFCondition echoSCP( T_ASC_Association * assoc, T_DIMSE_Message * msg, T_ASC_Pre
 void storeSCPCallback(void *callbackData, T_DIMSE_StoreProgress *progress, T_DIMSE_C_StoreRQ *req,
                       char * /*imageFileName*/, DcmDataset **imageDataSet, T_DIMSE_C_StoreRSP *rsp, DcmDataset **statusDetail)
 {
-  /*
   DIC_UI sopClass;
   DIC_UI sopInstance;
-
-
-  // dump some information if required (depending on the progress state)
-  // We can't use oflog for the PDU output, but we use a special logger for
-  // generating this output. If it is set to level "INFO" we generate the
-  // output, if it's set to "DEBUG" then we'll assume that there is debug output
-  // generated for each PDU elsewhere.
-  OFLogger progressLogger = OFLog::getLogger("dcmtk.apps." OFFIS_CONSOLE_APPLICATION ".progress");
-  if (progressLogger.getChainedLogLevel() == OFLogger::INFO_LOG_LEVEL)
-  {
-    switch (progress->state)
-    {
-    case DIMSE_StoreBegin:
-      COUT << "RECV: ";
-      break;
-    case DIMSE_StoreEnd:
-      COUT << OFendl;
-      break;
-    default:
-      COUT << '.';
-      break;
-    }
-    COUT.flush();
-  }
 
   // if this is the final call of this function, save the data which was received to a file
   // (note that we could also save the image somewhere else, put it in database, etc.)
@@ -120,153 +96,24 @@ void storeSCPCallback(void *callbackData, T_DIMSE_StoreProgress *progress, T_DIM
     // remember callback data
     StoreCallbackData *cbdata = OFstatic_cast(StoreCallbackData *, callbackData);
 
-    // Concerning the following line: an appropriate status code is already set in the resp structure,
-    // it need not be success. For example, if the caller has already detected an out of resources problem
-    // then the status will reflect this.  The callback function is still called to allow cleanup.
-    //rsp->DimseStatus = STATUS_Success;
+    OFString studyInstanceUID;
+    (*imageDataSet)->findAndGetOFString(DCM_StudyInstanceUID, studyInstanceUID);
 
-    // we want to write the received information to a file only if this information
-    // is present and the options opt_bitPreserving and opt_ignore are not set.
+    OFString baseStr;
+    OFStandard::combineDirAndFilename(baseStr, cbdata->storageDir, studyInstanceUID, OFTrue);
+    if (!OFStandard::dirExists(baseStr)) {
+      if (OFStandard::createDirectory(baseStr, cbdata->storageDir).bad()) {
+        std::cerr << "failed to create directory " << baseStr.c_str() << std::endl;
+        return;
+      }
+    }
+
+    OFString fileName;
+    OFStandard::combineDirAndFilename(fileName, baseStr, cbdata->imageFileName, OFTrue);
+
+    
     if ((imageDataSet != NULL) && (*imageDataSet != NULL))
     {
-      OFString fileName;
-
-      // in case one of the --sort-xxx options is set, we need to perform some particular steps to
-      // determine the actual name of the output file
-      if (opt_sortStudyMode != ESM_None)
-      {
-        // determine the study instance UID in the (current) DICOM object that has just been received
-        OFString currentStudyInstanceUID;
-        if ((*imageDataSet)->findAndGetOFString(DCM_StudyInstanceUID, currentStudyInstanceUID).bad() || currentStudyInstanceUID.empty())
-        {
-          OFLOG_ERROR(storescpLogger, "element StudyInstanceUID " << DCM_StudyInstanceUID << " absent or empty in data set");
-          rsp->DimseStatus = STATUS_STORE_Error_CannotUnderstand;
-          return;
-        }
-
-        // if --sort-on-patientname is active, we need to extract the
-        // patient's name (format: last_name^first_name)
-        OFString currentPatientName;
-        if (opt_sortStudyMode == ESM_PatientName)
-        {
-          OFString tmpName;
-          if ((*imageDataSet)->findAndGetOFString(DCM_PatientName, tmpName).bad() || tmpName.empty())
-          {
-            // default if patient name is missing or empty
-            tmpName = "ANONYMOUS";
-            OFLOG_WARN(storescpLogger, "element PatientName " << DCM_PatientName << " absent or empty in data set, using '"
-                                                              << tmpName << "' instead");
-          }
-          else
-          {
-            DcmElement *patElem = NULL;
-            OFString charset;
-            (*imageDataSet)->findAndGetElement(DCM_PatientName, patElem); // patElem cannot be NULL, see above
-            (*imageDataSet)->findAndGetOFStringArray(DCM_SpecificCharacterSet, charset);
-            if (!charset.empty() && !(charset == "ISO_IR 100") && (patElem->containsExtendedCharacters()))
-            {
-              OFLOG_WARN(storescpLogger, "Patient name not in Latin-1 (charset: " << charset << "), ASCII dir name may be broken");
-            }
-          }
-
-          // substitute non-ASCII characters in patient name to ASCII "equivalent"
-          const size_t length = tmpName.length();
-          for (size_t i = 0; i < length; i++)
-            mapCharacterAndAppendToString(tmpName[i], currentPatientName);
-        }
-
-        // if this is the first DICOM object that was received or if the study instance UID in the
-        // current DICOM object does not equal the last object's study instance UID we need to create
-        // a new subdirectory in which the current DICOM object will be stored
-        if (lastStudyInstanceUID.empty() || (lastStudyInstanceUID != currentStudyInstanceUID))
-        {
-          // if lastStudyInstanceUID is non-empty, we have just completed receiving all objects for one
-          // study. In such a case, we need to set a certain indicator variable (lastStudySubdirectoryPathAndName),
-          // so that we know that executeOnEndOfStudy() might have to be executed later. In detail, this indicator
-          // variable will contain the path and name of the last study's subdirectory, so that we can still remember
-          // this directory, when we execute executeOnEndOfStudy(). The memory that is allocated for this variable
-          // here will be freed after the execution of executeOnEndOfStudy().
-          if (!lastStudyInstanceUID.empty())
-            lastStudySubdirectoryPathAndName = subdirectoryPathAndName;
-
-          // create the new lastStudyInstanceUID value according to the value in the current DICOM object
-          lastStudyInstanceUID = currentStudyInstanceUID;
-
-          // get the current time (needed for subdirectory name)
-          OFDateTime dateTime;
-          dateTime.setCurrentDateTime();
-
-          // create a name for the new subdirectory.
-          char timestamp[32];
-          sprintf(timestamp, "%04u%02u%02u_%02u%02u%02u%03u",
-                  dateTime.getDate().getYear(), dateTime.getDate().getMonth(), dateTime.getDate().getDay(),
-                  dateTime.getTime().getHour(), dateTime.getTime().getMinute(), dateTime.getTime().getIntSecond(), dateTime.getTime().getMilliSecond());
-
-          OFString subdirectoryName;
-          switch (opt_sortStudyMode)
-          {
-          case ESM_Timestamp:
-            // pattern: "[prefix]_[YYYYMMDD]_[HHMMSSMMM]"
-            subdirectoryName = opt_sortStudyDirPrefix;
-            if (!subdirectoryName.empty())
-              subdirectoryName += '_';
-            subdirectoryName += timestamp;
-            break;
-          case ESM_StudyInstanceUID:
-            // pattern: "[prefix]_[Study Instance UID]"
-            subdirectoryName = opt_sortStudyDirPrefix;
-            if (!subdirectoryName.empty())
-              subdirectoryName += '_';
-            subdirectoryName += currentStudyInstanceUID;
-            break;
-          case ESM_PatientName:
-            // pattern: "[Patient's Name]_[YYYYMMDD]_[HHMMSSMMM]"
-            subdirectoryName = currentPatientName;
-            subdirectoryName += '_';
-            subdirectoryName += timestamp;
-            break;
-          case ESM_None:
-            break;
-          }
-
-          // create subdirectoryPathAndName (string with full path to new subdirectory)
-          OFStandard::combineDirAndFilename(subdirectoryPathAndName, OFStandard::getDirNameFromPath(tmpStr, cbdata->imageFileName), subdirectoryName);
-
-          // check if the subdirectory already exists
-          // if it already exists dump a warning
-          if (OFStandard::dirExists(subdirectoryPathAndName))
-            OFLOG_WARN(storescpLogger, "subdirectory for study already exists: " << subdirectoryPathAndName);
-          else
-          {
-            // if it does not exist create it
-            OFLOG_INFO(storescpLogger, "creating new subdirectory for study: " << subdirectoryPathAndName);
-#ifdef HAVE_WINDOWS_H
-            if (_mkdir(subdirectoryPathAndName.c_str()) == -1)
-#else
-            if (mkdir(subdirectoryPathAndName.c_str(), S_IRWXU | S_IRWXG | S_IRWXO) == -1)
-#endif
-            {
-              OFLOG_ERROR(storescpLogger, "could not create subdirectory for study: " << subdirectoryPathAndName);
-              rsp->DimseStatus = STATUS_STORE_Error_CannotUnderstand;
-              return;
-            }
-            // all objects of a study have been received, so a new subdirectory is started.
-            // ->timename counter can be reset, because the next filename can't cause a duplicate.
-            // if no reset would be done, files of a new study (->new directory) would start with a counter in filename
-            if (opt_timeNames)
-              timeNameCounter = -1;
-          }
-        }
-
-        // integrate subdirectory name into file name (note that cbdata->imageFileName currently contains both
-        // path and file name; however, the path refers to the output directory captured in opt_outputDirectory)
-        OFStandard::combineDirAndFilename(fileName, subdirectoryPathAndName, OFStandard::getFilenameFromPath(tmpStr, cbdata->imageFileName));
-      }
-      // if no --sort-xxx option is set, the determination of the output file name is simple
-      else
-      {
-        fileName = cbdata->imageFileName;
-      }
 
       // determine the transfer syntax which shall be used to write the information to the file
       E_TransferSyntax xfer = xfer = (*imageDataSet)->getOriginalXfer();
@@ -309,10 +156,9 @@ void storeSCPCallback(void *callbackData, T_DIMSE_StoreProgress *progress, T_DIM
       }
     }
   }
-  */
 }
 
-OFCondition storeSCP(T_ASC_Association *assoc, T_DIMSE_Message *msg, T_ASC_PresentationContextID presID)
+OFCondition storeSCP(T_ASC_Association *assoc, T_DIMSE_Message *msg, T_ASC_PresentationContextID presID, const OFString& outputDirectory)
 {
   OFCondition cond = EC_Normal;
   T_DIMSE_C_StoreRQ *req;
@@ -321,75 +167,13 @@ OFCondition storeSCP(T_ASC_Association *assoc, T_DIMSE_Message *msg, T_ASC_Prese
   // assign the actual information of the C-STORE-RQ command to a local variable
   req = &msg->msg.CStoreRQ;
 
-  /*
-  {
-    // 3 possibilities: create unique filenames (fn), create timestamp fn, create fn from SOP Instance UIDs
-    if (opt_uniqueFilenames)
-    {
-      // create unique filename by generating a temporary UID and using ".X." as an infix
-      char buf[70];
-      dcmGenerateUniqueIdentifier(buf);
-      sprintf(imageFileName, "%s%c%s.X.%s%s", opt_outputDirectory.c_str(), PATH_SEPARATOR, dcmSOPClassUIDToModality(req->AffectedSOPClassUID, "UNKNOWN"),
-              buf, opt_fileNameExtension.c_str());
-    }
-    else if (opt_timeNames)
-    {
-      // create a name for the new file. pattern: "[YYYYMMDDHHMMSSMMM]_[NUMBER].MODALITY[EXTENSION]" (use current datetime)
-      // get the current time (needed for file name)
-      OFDateTime dateTime;
-      dateTime.setCurrentDateTime();
-      // used to hold prospective filename
-      char cmpFileName[2048];
-      // next if/else block generates prospective filename, that is compared to last written filename
-      if (timeNameCounter == -1)
-      {
-        // timeNameCounter not set -> last written filename has to be without "serial number"
-        sprintf(cmpFileName, "%04u%02u%02u%02u%02u%02u%03u.%s%s",
-                dateTime.getDate().getYear(), dateTime.getDate().getMonth(), dateTime.getDate().getDay(),
-                dateTime.getTime().getHour(), dateTime.getTime().getMinute(), dateTime.getTime().getIntSecond(), dateTime.getTime().getMilliSecond(),
-                dcmSOPClassUIDToModality(req->AffectedSOPClassUID, "UNKNOWN"), opt_fileNameExtension.c_str());
-      }
-      else
-      {
-        // counter was active before, so generate filename with "serial number" for comparison
-        sprintf(cmpFileName, "%04u%02u%02u%02u%02u%02u%03u_%04u.%s%s", // millisecond version
-                dateTime.getDate().getYear(), dateTime.getDate().getMonth(), dateTime.getDate().getDay(),
-                dateTime.getTime().getHour(), dateTime.getTime().getMinute(), dateTime.getTime().getIntSecond(), dateTime.getTime().getMilliSecond(),
-                timeNameCounter, dcmSOPClassUIDToModality(req->AffectedSOPClassUID, "UNKNOWN"), opt_fileNameExtension.c_str());
-      }
-      if ((outputFileNameArray.size() != 0) && (outputFileNameArray.back() == cmpFileName))
-      {
-        // if this is not the first run and the prospective filename is equal to the last written filename
-        // generate one with a serial number (incremented by 1)
-        timeNameCounter++;
-        sprintf(imageFileName, "%s%c%04u%02u%02u%02u%02u%02u%03u_%04u.%s%s", opt_outputDirectory.c_str(), PATH_SEPARATOR, // millisecond version
-                dateTime.getDate().getYear(), dateTime.getDate().getMonth(), dateTime.getDate().getDay(),
-                dateTime.getTime().getHour(), dateTime.getTime().getMinute(), dateTime.getTime().getIntSecond(), dateTime.getTime().getMilliSecond(),
-                timeNameCounter, dcmSOPClassUIDToModality(req->AffectedSOPClassUID, "UNKNOWN"), opt_fileNameExtension.c_str());
-      }
-      else
-      {
-        // first run or filenames are different: create filename without serial number
-        sprintf(imageFileName, "%s%c%04u%02u%02u%02u%02u%02u%03u.%s%s", opt_outputDirectory.c_str(), PATH_SEPARATOR, // millisecond version
-                dateTime.getDate().getYear(), dateTime.getDate().getMonth(), dateTime.getDate().getDay(),
-                dateTime.getTime().getHour(), dateTime.getTime().getMinute(), dateTime.getTime().getIntSecond(), dateTime.getTime().getMilliSecond(),
-                dcmSOPClassUIDToModality(req->AffectedSOPClassUID, "UNKNOWN"), opt_fileNameExtension.c_str());
-        // reset counter, because timestamp and therefore filename has changed
-        timeNameCounter = -1;
-      }
-    }
-    else
-    {
-      // don't create new UID, use the study instance UID as found in object
-      sprintf(imageFileName, "%s%c%s.%s%s", opt_outputDirectory.c_str(), PATH_SEPARATOR, dcmSOPClassUIDToModality(req->AffectedSOPClassUID, "UNKNOWN"),
-              req->AffectedSOPInstanceUID, opt_fileNameExtension.c_str());
-    }
-  }
-*/
+  sprintf(imageFileName, "%s.%s", req->AffectedSOPInstanceUID, "dcm");
+
   // initialize some variables
   StoreCallbackData callbackData;
   callbackData.assoc = assoc;
   callbackData.imageFileName = imageFileName;
+  callbackData.storageDir = outputDirectory;
   DcmFileFormat dcmff;
   callbackData.dcmff = &dcmff;
 
@@ -423,7 +207,7 @@ OFCondition storeSCP(T_ASC_Association *assoc, T_DIMSE_Message *msg, T_ASC_Prese
 
 // ------------------------------------------------------------------------------------------------------------
 
-OFCondition processCommands(T_ASC_Association *assoc)
+OFCondition processCommands(T_ASC_Association *assoc, const OFString& outputDirectory)
 {
   OFCondition cond = EC_Normal;
   T_DIMSE_Message msg;
@@ -457,7 +241,7 @@ OFCondition processCommands(T_ASC_Association *assoc)
         break;
       case DIMSE_C_STORE_RQ:
         // process C-STORE-Request
-        cond = storeSCP(assoc, &msg, presID);
+        cond = storeSCP(assoc, &msg, presID, outputDirectory);
         break;
       default:
         OFString tempStr;
@@ -478,7 +262,7 @@ OFCondition processCommands(T_ASC_Association *assoc)
 
 // ------------------------------------------------------------------------------------------------------------
 
-OFCondition acceptAssociation(T_ASC_Network *net, DcmAssociationConfiguration &asccfg, OFBool secureConnection)
+OFCondition acceptAssociation(T_ASC_Network *net, DcmAssociationConfiguration &asccfg, OFBool secureConnection, const OFString& outputDirectory)
 {
   char buf[BUFSIZ];
   T_ASC_Association *assoc;
@@ -582,7 +366,7 @@ OFCondition acceptAssociation(T_ASC_Network *net, DcmAssociationConfiguration &a
   /* now do the real work, i.e. receive DIMSE commands over the network connection */
   /* which was established and handle these commands correspondingly. In case of */
   /* storescp only C-ECHO-RQ and C-STORE-RQ commands can be processed. */
-  cond = processCommands(assoc);
+  cond = processCommands(assoc, outputDirectory);
 
   if (cond == DUL_PEERREQUESTEDRELEASE)
   {
@@ -640,22 +424,10 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
     SendInfo("storage path not set, defaulting to " + in.storagePath, progress);
   }
 
-  // OFBool opt_uniqueFilenames = OFFalse;
-  // OFString opt_fileNameExtension;
-  // OFBool opt_timeNames = OFFalse;
-  // int timeNameCounter = -1; // "serial number" to differentiate between files with same timestamp
-
-  int opt_port = std::stoi(in.target.port);
+  int opt_port = std::stoi(in.source.port);
   OFString callingAETitle = OFString(in.source.aet.c_str());
-  OFString calledAETitle = OFString(in.target.aet.c_str());
-  OFString callingPresentationAddress = OFString(in.target.ip.c_str());
   const char *opt_respondingAETitle = in.source.aet.c_str();
-  static OFString opt_outputDirectory = ".";        // default: output directory equals "."
-  // E_SortStudyMode opt_sortStudyMode = ESM_None;     // default: no sorting
-  // static const char *opt_sortStudyDirPrefix = NULL; // default: no directory prefix
-  // OFString lastStudyInstanceUID;
-  // OFString subdirectoryPathAndName;
-  // OFString lastStudySubdirectoryPathAndName;
+  static OFString opt_outputDirectory = OFString(in.storagePath.c_str());
 
   T_ASC_Network *net;
   DcmAssociationConfiguration asccfg;
@@ -710,7 +482,7 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
   {
     /* receive an association and acknowledge or reject it. If the association was */
     /* acknowledged, offer corresponding services and invoke one or more if required. */
-    cond = acceptAssociation(net, asccfg, false);
+    cond = acceptAssociation(net, asccfg, false, opt_outputDirectory);
   }
 
   /* drop the network, i.e. free memory of T_ASC_Network* structure. This call */
