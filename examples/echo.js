@@ -18,7 +18,7 @@ addon.echoScu(JSON.stringify(
         {
             console.log(JSON.parse(result));
         }
-        catch {
-            console.log(result);
+        catch (e) {
+            console.log(e, result);
         }
 });
