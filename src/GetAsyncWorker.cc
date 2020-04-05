@@ -66,23 +66,8 @@ namespace
         }
     }
 
-    void prepareTS(E_TransferSyntax ts,
-                OFList<OFString> &syntaxes)
+    void prepareTS(E_TransferSyntax ts,  OFList<OFString> &syntaxes)
     {
-        /*
-    ** We prefer to use Explicitly encoded transfer syntaxes.
-    ** If we are running on a Little Endian machine we prefer
-    ** LittleEndianExplicitTransferSyntax to BigEndianTransferSyntax.
-    ** Some SCP implementations will just select the first transfer
-    ** syntax they support (this is not part of the standard) so
-    ** organize the proposed transfer syntaxes to take advantage
-    ** of such behavior.
-    **
-    ** The presentation contexts proposed here are only used for
-    ** C-FIND and C-MOVE, so there is no need to support compressed
-    ** transmission.
-    */
-
         switch (ts)
         {
         case EXS_LittleEndianImplicit:
@@ -116,10 +101,6 @@ namespace
             {
                 syntaxes.push_back(xfer.getXferID());
             }
-            /* We prefer explicit transfer syntaxes.
-        * If we are running on a Little Endian machine we prefer
-        * LittleEndianExplicitTransferSyntax to BigEndianTransferSyntax.
-        */
             if (gLocalByteOrder == EBO_LittleEndian) /* defined in dcxfer.h */
             {
                 syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
