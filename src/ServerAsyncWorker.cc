@@ -46,14 +46,6 @@ using json = nlohmann::json;
 
 namespace
 {
-/* sort study mode */
-enum E_SortStudyMode
-{
-  ESM_None,
-  ESM_Timestamp,
-  ESM_StudyInstanceUID,
-  ESM_PatientName
-};
 
 struct StoreCallbackData
 {
@@ -65,7 +57,7 @@ struct StoreCallbackData
 
 // ------------------------------------------------------------------------------------------------------------
 
-OFCondition echoSCP( T_ASC_Association * assoc, T_DIMSE_Message * msg, T_ASC_PresentationContextID presID)
+OFCondition echoSCP(T_ASC_Association *assoc, T_DIMSE_Message *msg, T_ASC_PresentationContextID presID)
 {
   // assign the actual information of the C-Echo-RQ command to a local variable
   T_DIMSE_C_EchoRQ *req = &msg->msg.CEchoRQ;
@@ -76,7 +68,6 @@ OFCondition echoSCP( T_ASC_Association * assoc, T_DIMSE_Message * msg, T_ASC_Pre
 }
 
 // ------------------------------------------------------------------------------------------------------------
-
 
 void storeSCPCallback(void *callbackData, T_DIMSE_StoreProgress *progress, T_DIMSE_C_StoreRQ *req,
                       char * /*imageFileName*/, DcmDataset **imageDataSet, T_DIMSE_C_StoreRSP *rsp, DcmDataset **statusDetail)
@@ -96,13 +87,16 @@ void storeSCPCallback(void *callbackData, T_DIMSE_StoreProgress *progress, T_DIM
     // remember callback data
     StoreCallbackData *cbdata = OFstatic_cast(StoreCallbackData *, callbackData);
 
+    // compose directory and filename structure
     OFString studyInstanceUID;
     (*imageDataSet)->findAndGetOFString(DCM_StudyInstanceUID, studyInstanceUID);
 
     OFString baseStr;
     OFStandard::combineDirAndFilename(baseStr, cbdata->storageDir, studyInstanceUID, OFTrue);
-    if (!OFStandard::dirExists(baseStr)) {
-      if (OFStandard::createDirectory(baseStr, cbdata->storageDir).bad()) {
+    if (!OFStandard::dirExists(baseStr))
+    {
+      if (OFStandard::createDirectory(baseStr, cbdata->storageDir).bad())
+      {
         std::cerr << "failed to create directory " << baseStr.c_str() << std::endl;
         return;
       }
@@ -111,24 +105,17 @@ void storeSCPCallback(void *callbackData, T_DIMSE_StoreProgress *progress, T_DIM
     OFString fileName;
     OFStandard::combineDirAndFilename(fileName, baseStr, cbdata->imageFileName, OFTrue);
 
-    
     if ((imageDataSet != NULL) && (*imageDataSet != NULL))
     {
 
       // determine the transfer syntax which shall be used to write the information to the file
       E_TransferSyntax xfer = xfer = (*imageDataSet)->getOriginalXfer();
 
-      // store file either with meta header or as pure dataset
-      // OFLOG_INFO(storescpLogger, "storing DICOM file: " << fileName);
-      if (OFStandard::fileExists(fileName))
-      {
-        // OFLOG_WARN(storescpLogger, "DICOM file already exists, overwriting: " << fileName);
-      }
       OFCondition cond = cbdata->dcmff->saveFile(fileName.c_str(), xfer, EET_ExplicitLength, EGL_recalcGL,
                                                  EPD_withoutPadding, 0, 0, EWM_fileformat);
       if (cond.bad())
       {
-        // OFLOG_ERROR(storescpLogger, "cannot write DICOM file: " << fileName << ": " << cond.text());
+        std::cerr << "cannot write DICOM file " << fileName.c_str() << std::endl;
         rsp->DimseStatus = STATUS_STORE_Refused_OutOfResources;
 
         // delete incomplete file
@@ -142,7 +129,7 @@ void storeSCPCallback(void *callbackData, T_DIMSE_StoreProgress *progress, T_DIM
         // which SOP class and SOP instance ?
         if (!DU_findSOPClassAndInstanceInDataSet(*imageDataSet, sopClass, sizeof(sopClass), sopInstance, sizeof(sopInstance), OFFalse))
         {
-          // OFLOG_ERROR(storescpLogger, "bad DICOM file: " << fileName);
+          std::cerr << "bad DICOM file " << fileName.c_str() << std::endl;
           rsp->DimseStatus = STATUS_STORE_Error_CannotUnderstand;
         }
         else if (strcmp(sopClass, req->AffectedSOPClassUID) != 0)
@@ -158,7 +145,7 @@ void storeSCPCallback(void *callbackData, T_DIMSE_StoreProgress *progress, T_DIM
   }
 }
 
-OFCondition storeSCP(T_ASC_Association *assoc, T_DIMSE_Message *msg, T_ASC_PresentationContextID presID, const OFString& outputDirectory)
+OFCondition storeSCP(T_ASC_Association *assoc, T_DIMSE_Message *msg, T_ASC_PresentationContextID presID, const OFString &outputDirectory)
 {
   OFCondition cond = EC_Normal;
   T_DIMSE_C_StoreRQ *req;
@@ -167,6 +154,7 @@ OFCondition storeSCP(T_ASC_Association *assoc, T_DIMSE_Message *msg, T_ASC_Prese
   // assign the actual information of the C-STORE-RQ command to a local variable
   req = &msg->msg.CStoreRQ;
 
+  // format output
   sprintf(imageFileName, "%s.%s", req->AffectedSOPInstanceUID, "dcm");
 
   // initialize some variables
@@ -177,15 +165,6 @@ OFCondition storeSCP(T_ASC_Association *assoc, T_DIMSE_Message *msg, T_ASC_Prese
   DcmFileFormat dcmff;
   callbackData.dcmff = &dcmff;
 
-  // store SourceApplicationEntityTitle in metaheader
-  if (assoc && assoc->params)
-  {
-    const char *aet = assoc->params->DULparams.callingAPTitle;
-    if (aet) {
-      // dcmff.getMetaInfo()->putAndInsertString(DCM_SourceApplicationEntityTitle, aet);
-    }
-  }
-
   // define an address where the information which will be received over the network will be stored
   DcmDataset *dset = dcmff.getDataset();
 
@@ -194,20 +173,18 @@ OFCondition storeSCP(T_ASC_Association *assoc, T_DIMSE_Message *msg, T_ASC_Prese
   // if some error occurred, dump corresponding information and remove the outfile if necessary
   if (cond.bad())
   {
-    OFString temp_str;
-    // OFLOG_ERROR(storescpLogger, "Store SCP Failed: " << DimseCondition::dump(temp_str, cond));
+    std::cerr << "Store SCP failed: " << cond.text() << std::endl;
+
     // remove file
     if (strcmp(imageFileName, NULL_DEVICE_NAME) != 0)
       OFStandard::deleteFile(imageFileName);
   }
-
-  // return return value
   return cond;
 }
 
 // ------------------------------------------------------------------------------------------------------------
 
-OFCondition processCommands(T_ASC_Association *assoc, const OFString& outputDirectory)
+OFCondition processCommands(T_ASC_Association *assoc, const OFString &outputDirectory)
 {
   OFCondition cond = EC_Normal;
   T_DIMSE_Message msg;
@@ -220,7 +197,7 @@ OFCondition processCommands(T_ASC_Association *assoc, const OFString& outputDire
     // receive a DIMSE command over the network
     cond = DIMSE_receiveCommand(assoc, DIMSE_BLOCKING, 0, &presID, &msg, &statusDetail);
 
-      // if the command which was received has extra status
+    // if the command which was received has extra status
     // detail information, dump this information
     if (statusDetail != NULL)
     {
@@ -247,12 +224,7 @@ OFCondition processCommands(T_ASC_Association *assoc, const OFString& outputDire
         OFString tempStr;
         // we cannot handle this kind of message
         cond = DIMSE_BADCOMMANDTYPE;
-        /*
-        OFLOG_ERROR(storescpLogger, "Expected C-ECHO or C-STORE request but received DIMSE command 0x"
-                                        << STD_NAMESPACE hex << STD_NAMESPACE setfill('0') << STD_NAMESPACE setw(4)
-                                        << OFstatic_cast(unsigned, msg.CommandField));
-        OFLOG_DEBUG(storescpLogger, DIMSE_dumpMessage(tempStr, msg, DIMSE_INCOMING, NULL, presID));
-        */
+        std::cerr << "unsupported DIMSE command received" << std::endl;
         break;
       }
     }
@@ -262,7 +234,7 @@ OFCondition processCommands(T_ASC_Association *assoc, const OFString& outputDire
 
 // ------------------------------------------------------------------------------------------------------------
 
-OFCondition acceptAssociation(T_ASC_Network *net, DcmAssociationConfiguration &asccfg, OFBool secureConnection, const OFString& outputDirectory)
+OFCondition acceptAssociation(T_ASC_Network *net, DcmAssociationConfiguration &asccfg, OFBool secureConnection, const OFString &outputDirectory, const OFString &aet, const OFString &ts)
 {
   char buf[BUFSIZ];
   T_ASC_Association *assoc;
@@ -291,14 +263,12 @@ OFCondition acceptAssociation(T_ASC_Network *net, DcmAssociationConfiguration &a
     // If something else was wrong we might have to dump an error message.
     else
     {
-      // OFLOG_ERROR(storescpLogger, "Receiving Association failed: " << DimseCondition::dump(temp_str, cond));
+      std::cerr << "Receiving Assocition failed: " << cond.text() << std::endl;
     }
 
     // no matter what kind of error occurred, we need to do a cleanup
     goto cleanup;
   }
-
-  // OFLOG_INFO(storescpLogger, "Association Received");
 
   if (gLocalByteOrder == EBO_LittleEndian) /* defined in dcxfer.h */
   {
@@ -318,7 +288,6 @@ OFCondition acceptAssociation(T_ASC_Network *net, DcmAssociationConfiguration &a
     cond = ASC_acceptContextsWithPreferredTransferSyntaxes(assoc->params, knownAbstractSyntaxes, DIM_OF(knownAbstractSyntaxes), transferSyntaxes, numTransferSyntaxes);
     if (cond.bad())
     {
-      // OFLOG_DEBUG(storescpLogger, DimseCondition::dump(temp_str, cond));
       goto cleanup;
     }
 
@@ -326,13 +295,12 @@ OFCondition acceptAssociation(T_ASC_Network *net, DcmAssociationConfiguration &a
     cond = ASC_acceptContextsWithPreferredTransferSyntaxes(assoc->params, dcmAllStorageSOPClassUIDs, numberOfDcmAllStorageSOPClassUIDs, transferSyntaxes, numTransferSyntaxes);
     if (cond.bad())
     {
-      // OFLOG_DEBUG(storescpLogger, DimseCondition::dump(temp_str, cond));
       goto cleanup;
     }
   }
 
   /* set our app title */
-  ASC_setAPTitles(assoc->params, NULL, NULL, "IMEBRA"/*in.source.aet.c_str()*/);
+  ASC_setAPTitles(assoc->params, NULL, NULL, aet.c_str());
 
   /* acknowledge or reject this association */
   cond = ASC_getApplicationContextName(assoc->params, buf, sizeof(buf));
@@ -345,11 +313,12 @@ OFCondition acceptAssociation(T_ASC_Network *net, DcmAssociationConfiguration &a
             ASC_SOURCE_SERVICEUSER,
             ASC_REASON_SU_APPCONTEXTNAMENOTSUPPORTED};
 
-    // OFLOG_INFO(storescpLogger, "Association Rejected: Bad Application Context Name: " << buf);
+    std::cerr << "Association Rejected: Bad Application Context Name:" << buf << std::endl;
+
     cond = ASC_rejectAssociation(assoc, &rej);
     if (cond.bad())
     {
-      // OFLOG_DEBUG(storescpLogger, DimseCondition::dump(temp_str, cond));
+      std::cerr << cond.text() << std::endl;
     }
     goto cleanup;
   }
@@ -358,7 +327,7 @@ OFCondition acceptAssociation(T_ASC_Network *net, DcmAssociationConfiguration &a
     cond = ASC_acknowledgeAssociation(assoc);
     if (cond.bad())
     {
-      // OFLOG_ERROR(storescpLogger, DimseCondition::dump(temp_str, cond));
+      std::cerr << cond.text() << std::endl;
       goto cleanup;
     }
   }
@@ -370,17 +339,17 @@ OFCondition acceptAssociation(T_ASC_Network *net, DcmAssociationConfiguration &a
 
   if (cond == DUL_PEERREQUESTEDRELEASE)
   {
-    // OFLOG_INFO(storescpLogger, "Association Release");
     cond = ASC_acknowledgeRelease(assoc);
   }
   else if (cond == DUL_PEERABORTEDASSOCIATION)
   {
-    // OFLOG_INFO(storescpLogger, "Association Aborted");
+    std::cerr << "Peer aborted association" << std::endl;
   }
   else
   {
-    // OFLOG_ERROR(storescpLogger, "DIMSE failure (aborting association): " << DimseCondition::dump(temp_str, cond));
     /* some kind of error so abort the association */
+    std::cerr << "DIMSE failure (aborting association): " << cond.text() << std::endl;
+
     cond = ASC_abortAssociation(assoc);
   }
 
@@ -388,19 +357,17 @@ cleanup:
   cond = ASC_dropSCPAssociation(assoc);
   if (cond.bad())
   {
-    // OFLOG_FATAL(storescpLogger, DimseCondition::dump(temp_str, cond));
+    std::cerr << cond.text() << std::endl;
     return cond;
   }
   cond = ASC_destroyAssociation(&assoc);
   if (cond.bad())
   {
-    // OFLOG_FATAL(storescpLogger, DimseCondition::dump(temp_str, cond));
+    std::cerr << cond.text() << std::endl;
   }
 
   return cond;
 }
-
-
 
 } // end namespace
 
@@ -437,7 +404,7 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
   /* make sure data dictionary is loaded */
   if (!dcmDataDict.isDictionaryLoaded())
   {
-    // OFLOG_WARN(storescpLogger, "no data dictionary loaded, check environment variable: " << DCM_DICT_ENVIRONMENT_VARIABLE);
+    SetErrorJson(std::string("No data dictionary loaded"));
   }
 
   /* if the output directory does not equal "." (default directory) */
@@ -451,7 +418,7 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
      */
     if (!OFStandard::dirExists(opt_outputDirectory))
     {
-      // OFLOG_FATAL(storescpLogger, "specified output directory does not exist");
+      SetErrorJson(std::string("Specified output directory does not exist: ") + std::string(opt_outputDirectory.c_str()));
       return;
     }
   }
@@ -459,7 +426,7 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
   /* check if the output directory is writeable */
   if (!OFStandard::isWriteable(opt_outputDirectory))
   {
-    // OFLOG_FATAL(storescpLogger, "specified output directory is not writeable");
+    SetErrorJson(std::string("Specified output directory is not writeable: ") + std::string(opt_outputDirectory.c_str()));
     return;
   }
 
@@ -467,7 +434,7 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
   OFCondition cond = ASC_initializeNetwork(NET_ACCEPTOR, opt_port, 30, &net);
   if (cond.bad())
   {
-    // OFLOG_ERROR(storescpLogger, "cannot create network: " << DimseCondition::dump(temp_str, cond));
+    SetErrorJson(std::string("Cannot create network: ") + std::string(cond.text()));
     return;
   }
 
@@ -475,6 +442,7 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
   if (OFStandard::dropPrivileges().bad())
   {
     // OFLOG_FATAL(storescpLogger, "setuid() failed, maximum number of processes/threads for uid already running.");
+    SetErrorJson(std::string("setuid() failed, maximum number of threads for uid already running"));
     return;
   }
 
@@ -482,7 +450,7 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
   {
     /* receive an association and acknowledge or reject it. If the association was */
     /* acknowledged, offer corresponding services and invoke one or more if required. */
-    cond = acceptAssociation(net, asccfg, false, opt_outputDirectory);
+    cond = acceptAssociation(net, asccfg, false, opt_outputDirectory, OFString(in.source.aet.c_str()), "");
   }
 
   /* drop the network, i.e. free memory of T_ASC_Network* structure. This call */
@@ -490,7 +458,7 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
   cond = ASC_dropNetwork(&net);
   if (cond.bad())
   {
-    // OFLOG_ERROR(storescpLogger, DimseCondition::dump(temp_str, cond));
+    SetErrorJson(std::string(cond.text()));
     return;
   }
 

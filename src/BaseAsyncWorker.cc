@@ -2,9 +2,16 @@
 
 #include "Utils.h"
 
+#include "dcmtk/config/osconfig.h" /* make sure OS specific configuration is included first */
+
+#include "dcmtk/oflog/oflog.h"
+
+
 BaseAsyncWorker::BaseAsyncWorker(std::string data, Function &callback) : AsyncProgressWorker<char>(callback),
                                                                            _input(data)
 {
+        // disable verbose logging
+        OFLog::configure(OFLogger::WARN_LOG_LEVEL);
 }
 
 void BaseAsyncWorker::OnOK()
