@@ -13,8 +13,9 @@ Nodejs native addon for DICOM DIMSE services using the DCMTK DICOM c++ toolkit.
 * C-Get-scu
 * C-Store-scp
 
-# in development
+# Roadmap:
 * C-Store-scu
+* extended characterSet support
 
 ## How to install
 This package uses prebuild to fetch precompiled binaries, so provided your platform is supported, all you need to do is:
