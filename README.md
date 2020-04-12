@@ -165,12 +165,12 @@ dimse.findScu(JSON.stringify(
 ```
 {
   code: 0 (success) / 1 (pending) / 2 (failure),
-  container: null / 'qido formatted result (only c-find)',
+  container: null / 'DICOMJSON (only when using c-find)',
   messsage: 'request succeeded' / 'descriptive problem',
   status: 'success' / 'pending' / 'failure'
 }
 ```
-QIDO results are returned in DICOMJSON format https://www.dicomstandard.org/dicomweb/dicom-json-format/
+C-FIND results are returned in DICOMJSON format see https://www.dicomstandard.org/dicomweb/dicom-json-format/
 
 
 ## License
