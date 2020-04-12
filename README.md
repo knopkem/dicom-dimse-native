@@ -170,6 +170,7 @@ dimse.findScu(JSON.stringify(
   status: 'success' / 'pending' / 'failure'
 }
 ```
+QIDO results are returned in DICOMJSON format https://www.dicomstandard.org/dicomweb/dicom-json-format/
 
 
 ## License
