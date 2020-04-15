@@ -68,6 +68,12 @@ enum DcmStorageMode
   DCMSCU_STORAGE_BIT_PRESERVING
 };
 
+class DCMTK_DCMNET_EXPORT DcmNotifier
+{
+  public:
+    virtual void sendMessage(const OFString& msg, const OFString& container) = 0;
+};
+
 
 /** Base class for C-FIND, C-MOVE and C-GET responses
  */
@@ -580,6 +586,12 @@ public:
 
   /* Set methods */
 
+
+  /** Set a notifier object so progress can be reported
+   *  @param DcmNotifier needs concreate implementation of abstract class
+   */
+  void setNotifier(DcmNotifier* ptr);
+
   /** Set maximum PDU length (to be received by SCU)
    *  @param maxRecPDU [in] The maximum PDU size to use in bytes
    */
@@ -978,6 +990,9 @@ private:
    *  @return Reference to this
    */
   DcmSCU &operator=(const DcmSCU &src);
+
+  // object able to send messages
+  DcmNotifier *m_notifier;
 
   /// Association of this SCU. This class only handles 1 association at a time.
   T_ASC_Association *m_assoc;

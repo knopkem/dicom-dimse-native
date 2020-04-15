@@ -19,7 +19,6 @@ addon.startScp(JSON.stringify(
         }
 });
 
-
 setTimeout(function() {
     addon.moveScu(JSON.stringify(
         {
