@@ -13,8 +13,9 @@ Nodejs native addon for DICOM DIMSE services using the DCMTK DICOM c++ toolkit.
 * C-Get-scu
 * C-Store-scp
 
-# in development
+# Roadmap:
 * C-Store-scu
+* extended characterSet support
 
 ## How to install
 This package uses prebuild to fetch precompiled binaries, so provided your platform is supported, all you need to do is:
@@ -164,11 +165,12 @@ dimse.findScu(JSON.stringify(
 ```
 {
   code: 0 (success) / 1 (pending) / 2 (failure),
-  container: null / 'qido formatted result (only c-find)',
+  container: null / 'DICOMJSON (only when using c-find)',
   messsage: 'request succeeded' / 'descriptive problem',
   status: 'success' / 'pending' / 'failure'
 }
 ```
+C-FIND results are returned in DICOMJSON format see https://www.dicomstandard.org/dicomweb/dicom-json-format/
 
 
 ## License

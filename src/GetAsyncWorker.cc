@@ -1,15 +1,9 @@
 #include "GetAsyncWorker.h"
 
-#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
-
 #include <iostream>
 #include <sstream>
 #include <memory>
 #include <list>
-#include <thread>
-#include <future>
-#include <chrono>
-#include <experimental/filesystem>
 
 #include "json.h"
 #include "Utils.h"
@@ -28,9 +22,6 @@ using json = nlohmann::json;
 #ifdef WITH_ZLIB
 #include <zlib.h> /* for zlibVersion() */
 #endif
-
-#define APPLICATIONTITLE "IMEBRA"
-#define PEERAPPLICATIONTITLE "CONQUESTSRV"
 
 namespace
 {
@@ -115,6 +106,22 @@ namespace
             break;
         }
     }
+
+    class NanNotifier : public DcmNotifier 
+    {
+        public:
+
+            NanNotifier(const AsyncProgressWorker<char>::ExecutionProgress& progress): _progress(progress) {
+
+            }
+            inline void sendMessage(const OFString& msg, const OFString& container) {
+                std::string msg2 = ns::createJsonResponse(ns::PENDING, msg.c_str());
+                _progress.Send(msg2.c_str(), msg2.length());
+            }
+        private:
+        AsyncProgressWorker<char>::ExecutionProgress _progress;
+
+    };
 } // namespace
 
 GetAsyncWorker::GetAsyncWorker(std::string data, Function &callback) : BaseAsyncWorker(data, callback)
@@ -184,7 +191,9 @@ void GetAsyncWorker::Execute(const ExecutionProgress &progress)
     /* setup SCU */
     OFList<OFString> syntaxes;
     prepareTS(opt_get_networkTransferSyntax, syntaxes);
+    NanNotifier notifier(progress);
     DcmSCU scu;
+    scu.setNotifier(&notifier);
     scu.setMaxReceivePDULength(opt_maxPDU);
     scu.setACSETimeout(opt_acse_timeout);
     scu.setDIMSEBlockingMode(opt_blockMode);
