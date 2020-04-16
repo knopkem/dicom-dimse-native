@@ -16,8 +16,6 @@ using json = nlohmann::json;
 #include "dcmtk/dcmnet/dfindscu.h"
 #include "dcmtk/dcmnet/diutil.h"
 #include "dcmtk/dcmdata/dcdict.h"
-/*
-
 #include "dcmtk/dcmdata/dcostrmz.h"
 
 #ifdef WITH_ZLIB
@@ -26,8 +24,6 @@ using json = nlohmann::json;
 #ifdef DCMTK_ENABLE_CHARSET_CONVERSION
 #include "dcmtk/ofstd/ofchrenc.h"
 #endif
-*/
-
 
 namespace
 {

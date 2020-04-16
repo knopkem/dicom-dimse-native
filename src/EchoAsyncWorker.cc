@@ -10,7 +10,6 @@
 
 using json = nlohmann::json;
 
-
 #include "dcmtk/config/osconfig.h" /* make sure OS specific configuration is included first */
 
 #define INCLUDE_CSTDLIB
@@ -29,12 +28,9 @@ using json = nlohmann::json;
 #include "dcmtk/dcmnet/diutil.h"
 #include "dcmtk/ofstd/ofconapp.h"
 
-/*
 #ifdef WITH_ZLIB
 #include <zlib.h>
 #endif
-*/
-
 
 namespace
 {

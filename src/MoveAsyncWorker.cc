@@ -30,8 +30,12 @@ using json = nlohmann::json;
 #include "dcmtk/dcmdata/dcmetinf.h"
 #include "dcmtk/dcmdata/dcuid.h" /* for dcmtk version name */
 #include "dcmtk/dcmdata/dcdicent.h"
-// #include "dcmtk/dcmdata/dcostrmz.h" /* for dcmZlibCompressionLevel */
 #include "dcmtk/dcmdata/dcpath.h"
+#include "dcmtk/dcmdata/dcostrmz.h" /* for dcmZlibCompressionLevel */
+
+#ifdef WITH_ZLIB
+#include <zlib.h>
+#endif
 
 namespace
 {

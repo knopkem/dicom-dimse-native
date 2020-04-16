@@ -30,13 +30,11 @@ using json = nlohmann::json;
 #include "dcmtk/dcmdata/dcmetinf.h"
 #include "dcmtk/dcmdata/dcuid.h" /* for dcmtk version name */
 #include "dcmtk/dcmdata/dcdeftag.h"
-// #include "dcmtk/dcmdata/dcostrmz.h" /* for dcmZlibCompressionLevel */
+#include "dcmtk/dcmdata/dcostrmz.h" /* for dcmZlibCompressionLevel */
 
-/*
 #ifdef WITH_ZLIB
 #include <zlib.h>
 #endif
-*/
 
 // we assume that the inetd super server is available on all non-Windows systems
 #ifndef _WIN32
