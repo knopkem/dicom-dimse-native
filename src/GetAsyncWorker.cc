@@ -16,12 +16,14 @@ using json = nlohmann::json;
 #include "dcmtk/ofstd/oflist.h"
 #include "dcmtk/dcmnet/scu.h"
 #include "dcmtk/dcmdata/dcuid.h"    /* for dcmtk version name */
-#include "dcmtk/dcmdata/dcostrmz.h" /* for dcmZlibCompressionLevel */
 #include "dcmtk/dcmdata/dcpath.h"   /* for DcmPathProcessor */
+// #include "dcmtk/dcmdata/dcostrmz.h" /* for dcmZlibCompressionLevel */
 
+/*
 #ifdef WITH_ZLIB
-#include <zlib.h> /* for zlibVersion() */
+#include <zlib.h>
 #endif
+*/
 
 namespace
 {
