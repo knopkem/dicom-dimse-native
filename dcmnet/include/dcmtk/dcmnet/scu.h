@@ -991,9 +991,6 @@ private:
    */
   DcmSCU &operator=(const DcmSCU &src);
 
-  // object able to send messages
-  DcmNotifier *m_notifier;
-
   /// Association of this SCU. This class only handles 1 association at a time.
   T_ASC_Association *m_assoc;
 
@@ -1082,6 +1079,9 @@ private:
 
   /// Progress notification mode (default: enabled)
   OFBool m_progressNotificationMode;
+
+  // object able to send messages
+  DcmNotifier *m_notifier;
 
   /** Returns next available message ID free to be used by SCU
    *  @return Next free message ID

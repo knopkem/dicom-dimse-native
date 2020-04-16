@@ -31,13 +31,10 @@
 #define INETD_AVAILABLE
 #endif
 
-#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
-
 #include <iostream>
 #include <sstream>
 #include <memory>
 #include <list>
-#include <experimental/filesystem>
 
 #include "json.h"
 #include "Utils.h"

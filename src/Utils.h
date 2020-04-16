@@ -48,7 +48,7 @@ namespace ns {
 
             sscanf(key.substr(0, 4).c_str(), "%x", &grp);
             sscanf(key.substr(4, 4).c_str(), "%x", &elm);
-            el.xtag = DcmTagKey(grp, elm);
+            el.xtag = DcmTagKey(OFstatic_cast(Uint16,grp),OFstatic_cast(Uint16, elm));
             el.value = value;
             return el;
     }
