@@ -1,5 +1,15 @@
 #include "ServerAsyncWorker.h"
 
+#include <iostream>
+#include <sstream>
+#include <memory>
+#include <list>
+
+#include "json.h"
+#include "Utils.h"
+
+using json = nlohmann::json;
+
 #ifdef HAVE_WINDOWS_H
 #include <direct.h> /* for _mkdir() */
 #endif
@@ -23,7 +33,7 @@
 #include "dcmtk/dcmdata/dcostrmz.h" /* for dcmZlibCompressionLevel */
 
 #ifdef WITH_ZLIB
-#include <zlib.h> /* for zlibVersion() */
+#include <zlib.h>
 #endif
 
 // we assume that the inetd super server is available on all non-Windows systems
@@ -31,18 +41,7 @@
 #define INETD_AVAILABLE
 #endif
 
-#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
 
-#include <iostream>
-#include <sstream>
-#include <memory>
-#include <list>
-#include <experimental/filesystem>
-
-#include "json.h"
-#include "Utils.h"
-
-using json = nlohmann::json;
 
 namespace
 {

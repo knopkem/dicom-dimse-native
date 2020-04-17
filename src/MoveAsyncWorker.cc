@@ -1,5 +1,15 @@
 #include "MoveAsyncWorker.h"
 
+#include <iostream>
+#include <sstream>
+#include <memory>
+#include <list>
+
+#include "json.h"
+#include "Utils.h"
+
+using json = nlohmann::json;
+
 #include "dcmtk/config/osconfig.h" /* make sure OS specific configuration is included first */
 
 #ifdef HAVE_GUSI_H
@@ -20,18 +30,12 @@
 #include "dcmtk/dcmdata/dcmetinf.h"
 #include "dcmtk/dcmdata/dcuid.h" /* for dcmtk version name */
 #include "dcmtk/dcmdata/dcdicent.h"
-#include "dcmtk/dcmdata/dcostrmz.h" /* for dcmZlibCompressionLevel */
 #include "dcmtk/dcmdata/dcpath.h"
+#include "dcmtk/dcmdata/dcostrmz.h" /* for dcmZlibCompressionLevel */
 
-#include <iostream>
-#include <sstream>
-#include <memory>
-#include <list>
-
-#include "json.h"
-#include "Utils.h"
-
-using json = nlohmann::json;
+#ifdef WITH_ZLIB
+#include <zlib.h>
+#endif
 
 namespace
 {

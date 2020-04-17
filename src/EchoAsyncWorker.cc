@@ -1,5 +1,15 @@
 #include "EchoAsyncWorker.h"
 
+#include <iostream>
+#include <list>
+#include <memory>
+#include <sstream>
+
+#include "Utils.h"
+#include "json.h"
+
+using json = nlohmann::json;
+
 #include "dcmtk/config/osconfig.h" /* make sure OS specific configuration is included first */
 
 #define INCLUDE_CSTDLIB
@@ -19,18 +29,8 @@
 #include "dcmtk/ofstd/ofconapp.h"
 
 #ifdef WITH_ZLIB
-#include <zlib.h> /* for zlibVersion() */
+#include <zlib.h>
 #endif
-
-#include <iostream>
-#include <list>
-#include <memory>
-#include <sstream>
-
-#include "Utils.h"
-#include "json.h"
-
-using json = nlohmann::json;
 
 namespace
 {

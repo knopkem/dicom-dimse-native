@@ -1,13 +1,5 @@
 #pragma once
 
-#include "dcmtk/config/osconfig.h" /* make sure OS specific configuration is included first */
-
-#include "dcmtk/dcmnet/diutil.h"
-#include "dcmtk/dcmdata/dcdict.h"
-#include "dcmtk/ofstd/ofcond.h"    /* for class OFCondition */
-#include "dcmtk/dcmdata/dcxfer.h"  /* for E_TransferSyntax */
-#include "dcmtk/dcmnet/dimse.h"    /* for T_DIMSE_BlockingMode */
-
 #include <iostream>
 #include <sstream>
 #include <memory>
@@ -16,6 +8,14 @@
 
 #include "json.h"
 using json = nlohmann::json;
+
+#include "dcmtk/config/osconfig.h" /* make sure OS specific configuration is included first */
+
+#include "dcmtk/dcmnet/diutil.h"
+#include "dcmtk/dcmdata/dcdict.h"
+#include "dcmtk/ofstd/ofcond.h"    /* for class OFCondition */
+#include "dcmtk/dcmdata/dcxfer.h"  /* for E_TransferSyntax */
+#include "dcmtk/dcmnet/dimse.h"    /* for T_DIMSE_BlockingMode */
 
 namespace ns {
 
@@ -48,7 +48,7 @@ namespace ns {
 
             sscanf(key.substr(0, 4).c_str(), "%x", &grp);
             sscanf(key.substr(4, 4).c_str(), "%x", &elm);
-            el.xtag = DcmTagKey(grp, elm);
+            el.xtag = DcmTagKey(OFstatic_cast(Uint16,grp),OFstatic_cast(Uint16, elm));
             el.value = value;
             return el;
     }
@@ -131,6 +131,20 @@ namespace ns {
         FAILURE = 2
     };
  
-    std::string createJsonResponse(eStatus status, const std::string& message, const json& j = {});
+    inline std::string createJsonResponse(eStatus status, const std::string& message, const json& j = {}) {
+  	std::string meaning = "success";
+        if (status == PENDING) {
+            meaning = "pending";
+        }
+        if (status == FAILURE) {
+            meaning = "failure";
+        }
+        json v = json::object();
+        v["container"] = j;
+        v["messsage"] = message;
+        v["code"] = (int)status;
+        v["status"] = meaning;
+        return v.dump();
+    }
 
 } // namespace ns
