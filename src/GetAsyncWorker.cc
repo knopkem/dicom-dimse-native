@@ -115,7 +115,9 @@ namespace
 
             }
             inline void sendMessage(const OFString& msg, const OFString& container) {
-                std::string msg2 = ns::createJsonResponse(ns::PENDING, msg.c_str());
+                 json v = json::object();
+                 v["SOPInstanceUID"] = container.c_str();
+                std::string msg2 = ns::createJsonResponse(ns::PENDING, msg.c_str(), v);
                 _progress.Send(msg2.c_str(), msg2.length());
             }
         private:
