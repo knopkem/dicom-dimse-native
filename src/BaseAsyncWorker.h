@@ -25,4 +25,5 @@ class BaseAsyncWorker : public AsyncProgressWorker<char>
 
         std::string _input;
         nlohmann::json _jsonOutput;
+        std::string _error;
 };
