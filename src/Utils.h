@@ -141,10 +141,10 @@ namespace ns {
         }
         json v = json::object();
         v["container"] = j;
-        v["messsage"] = message;
+        v["message"] = message;
         v["code"] = (int)status;
         v["status"] = meaning;
-        return v.dump();
+        return v.dump(-1, ' ', true, nlohmann::detail::error_handler_t::replace);
     }
 
 } // namespace ns

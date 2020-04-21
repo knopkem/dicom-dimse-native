@@ -17,6 +17,7 @@ void BaseAsyncWorker::OnOK()
 {
         HandleScope scope(Env());
         std::string msg = ns::createJsonResponse(ns::SUCCESS, "request succeeded", _jsonOutput);
+        if (_error.length() > 0) msg = _error;
         String o = String::New(Env(), msg);
         Callback().Call({o});
 }
@@ -30,8 +31,8 @@ void BaseAsyncWorker::OnProgress(const char *data, size_t size)
 
 void BaseAsyncWorker::SetErrorJson(const std::string& message)
 {
-       std::string sError =  ns::createJsonResponse(ns::FAILURE, message);
-       SetError(sError);
+       _error =  ns::createJsonResponse(ns::FAILURE, message);
+       // SetError(sError);
 }
 
 void BaseAsyncWorker::SendInfo(const std::string& msg, const ExecutionProgress& progress, ns::eStatus status)

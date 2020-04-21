@@ -14,11 +14,13 @@ addon.echoScu(JSON.stringify(
         }
     }
 ), (result) => {
-        try
-        {
-            console.log(JSON.parse(result));
-        }
-        catch (e) {
-            console.log(e, result);
+        if (result && result.length > 0) {
+            try
+            {
+                console.log(JSON.parse(result));
+            }
+            catch (e) {
+                console.log(e, result);
+            }
         }
 });
