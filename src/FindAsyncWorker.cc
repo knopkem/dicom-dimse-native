@@ -92,6 +92,7 @@ void FindScuCallback::callback(T_DIMSE_C_FindRQ *request, int &responseCount, T_
     for (const ns::DicomElement &element : m_requestContainer)
     {
         OFString value;
+        // TODO: use correct method depending on VR type 
         responseIdentifiers->findAndGetOFStringArray(element.xtag, value);
         ns::DicomElement cp;
         cp.xtag = element.xtag;
@@ -205,18 +206,25 @@ void FindAsyncWorker::Execute(const ExecutionProgress &progress)
             std::string keyName = int_to_hex(elm.xtag.getGroup()) + int_to_hex(elm.xtag.getElement());
             DcmTag t(elm.xtag);
             std::string vr = std::string(t.getVR().getVRName());
-            if (vr == "PN")
-            {
-                v[keyName] = {
-                    {"Value", json::array({json{{"Alphabetic", value}}})},
-                    {"vr", vr}};
+            json jsonValue;
+            if (vr == "PN") {
+                jsonValue = json::array({json{{"Alphabetic", value}}});
             }
-            else
-            {
-                v[keyName] = {
-                    {"Value", json::array({value})},
-                    {"vr", vr}};
+            else if (vr == "DS" || vr == "IS" || vr == "SL" || vr == "SS" || vr == "UL" || vr == "US") {
+                jsonValue = json::array({std::stoi(value)});
             }
+            else if (vr == "FL" || vr == "FD") {
+                jsonValue = json::array({std::stof(value)});
+            }
+            else {
+                jsonValue = json::array({value});
+            }
+
+            v[keyName] = {
+                {"Value", jsonValue},
+                {"vr", vr}
+            };
+
         }
         outJson.push_back(v);
         _jsonOutput = outJson.dump();
