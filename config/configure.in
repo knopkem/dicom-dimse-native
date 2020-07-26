@@ -977,6 +977,7 @@ AC_ARG_ENABLE(builtin-dict,
 [ case "$enableval" in
   yes)
     AC_MSG_RESULT(yes)
+    DCMTK_ENABLE_BUILTIN_DICTIONARY=true
     AC_DEFINE(ENABLE_BUILTIN_DICTIONARY, , [Define if we are compiling with built-in (compiled-in) dictionary enabled.])
     ;;
   *)
