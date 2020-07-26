@@ -67,6 +67,7 @@ else()
     message(STATUS "GNU or Clang detected, adding compile flags")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Wconversion -Wfloat-equal -fPIC")
     set (CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+    set (DCMTK_ENABLE_BUILDIN_DICTIONARY TRUE)
 endif()
 
 #-----------------------------------------------------------------------------
