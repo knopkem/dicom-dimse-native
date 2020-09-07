@@ -140,6 +140,8 @@ void EchoAsyncWorker::Execute(const ExecutionProgress &progress)
 {
     ns::sInput in = ns::parseInputJson(_input);
 
+    EnableVerboseLogging(in.verbose);
+
     if (!in.source.valid())
     {
         SetErrorJson("Source not set");

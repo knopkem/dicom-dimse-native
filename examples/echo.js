@@ -11,7 +11,8 @@ addon.echoScu(JSON.stringify(
             "aet": "CONQUESTSRV1",
             "ip" : "127.0.0.1",
             "port": "5678"
-        }
+        },
+        "verbose": true
     }
 ), (result) => {
         if (result && result.length > 0) {

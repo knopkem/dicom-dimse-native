@@ -68,6 +68,7 @@ namespace ns {
         std::string storagePath;
         std::string destination;
         std::vector<sTag> tags;
+        bool verbose;
         inline bool valid() {
             return source.valid() && target.valid();
         }
@@ -120,6 +121,9 @@ namespace ns {
                 sTag tag = (*it).get<sTag>();
                 in.tags.push_back(tag);
             }
+        } catch(...) {}
+        try {
+            in.verbose = j.at("verbose");
         } catch(...) {}
         return in;
     }

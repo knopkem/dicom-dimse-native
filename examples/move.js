@@ -7,8 +7,9 @@ addon.startScp(JSON.stringify(
             "ip" : "127.0.0.1",
             "port": "9999"
         },
-	"storagePath": "./data"
-    }   
+        "storagePath": "./data",
+        "verbose": true
+    }
     ), (result) => {
         if (result && result.length > 0) {
             try
@@ -44,7 +45,8 @@ setTimeout(function() {
                     "value": "STUDY",
                 },
             ],
-            "destination" : "IMEBRA"
+            "destination" : "IMEBRA",
+            "verbose": true
         }
     ), (result) => {
         if (result && result.length > 0) {

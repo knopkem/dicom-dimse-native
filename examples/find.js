@@ -25,7 +25,8 @@ addon.findScu(JSON.stringify(
                 "key": "00100010", 
                 "value": "",
             },
-        ]
+        ],
+        "verbose": true
     }
 ), (result) => {
         if (result && result.length > 0) {
@@ -39,7 +40,7 @@ addon.findScu(JSON.stringify(
             }
         }
 });
-
+/*
 addon.findScu(JSON.stringify(
     {
         "source": {
@@ -69,7 +70,8 @@ addon.findScu(JSON.stringify(
                 "key": "00200011", 
                 "value": "",
             },
-        ]
+        ],
+        "verbose": true
     }
 ), (result) => {
         if (result && result.length > 0) {
@@ -109,7 +111,8 @@ addon.findScu(JSON.stringify(
                 "key": "00080052", 
                 "value": "IMAGE",
             },
-        ]
+        ],
+        "verbose": true    
     }
 ), (result) => {
         if (result && result.length > 0) {
@@ -124,3 +127,4 @@ addon.findScu(JSON.stringify(
         }
 });
 
+*/

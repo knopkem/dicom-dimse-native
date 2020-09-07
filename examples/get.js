@@ -21,7 +21,8 @@ addon.getScu(JSON.stringify(
                 "key": "00080052", 
                 "value": "STUDY",
             },
-        ]
+        ],
+        "verbose": true
     }
 ), (result) => {
         if (result && result.length > 0) {

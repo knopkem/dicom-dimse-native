@@ -40,3 +40,12 @@ void BaseAsyncWorker::SendInfo(const std::string& msg, const ExecutionProgress& 
     std::string msg2 = ns::createJsonResponse(status, msg);
     progress.Send(msg2.c_str(), msg2.length());
 }
+
+void BaseAsyncWorker::EnableVerboseLogging(bool enabled)
+{
+    if (enabled) {
+        OFLog::configure(OFLogger::INFO_LOG_LEVEL);
+    } else {
+        OFLog::configure(OFLogger::WARN_LOG_LEVEL);
+    }
+}

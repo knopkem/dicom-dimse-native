@@ -23,6 +23,8 @@ class BaseAsyncWorker : public AsyncProgressWorker<char>
 
         void SendInfo(const std::string& msg, const ExecutionProgress& progress, ns::eStatus status = ns::PENDING);
 
+        void EnableVerboseLogging(bool enabled);
+
         std::string _input;
         nlohmann::json _jsonOutput;
         std::string _error;
