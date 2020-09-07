@@ -44,7 +44,7 @@ void BaseAsyncWorker::SendInfo(const std::string& msg, const ExecutionProgress& 
 void BaseAsyncWorker::EnableVerboseLogging(bool enabled)
 {
     if (enabled) {
-        OFLog::configure(OFLogger::INFO_LOG_LEVEL);
+        OFLog::configure(OFLogger::DEBUG_LOG_LEVEL);
     } else {
         OFLog::configure(OFLogger::WARN_LOG_LEVEL);
     }

@@ -88,6 +88,25 @@ FindScuCallback::FindScuCallback(const ns::DicomObject &rqContainer, std::list<n
 
 void FindScuCallback::callback(T_DIMSE_C_FindRQ *request, int &responseCount, T_DIMSE_C_FindRSP *rsp, DcmDataset *responseIdentifiers)
 {
+    OFLogger rspLogger = OFLog::getLogger(DCMNET_LOGGER_NAME ".responses");
+
+    if (DCM_dcmnetLogger.isEnabledFor(OFLogger::DEBUG_LOG_LEVEL))
+    {
+        OFString temp_str;
+        DCMNET_INFO("Received Find Response " << responseCount);
+        DCMNET_DEBUG(DIMSE_dumpMessage(temp_str, *rsp, DIMSE_INCOMING));
+        if (rspLogger.isEnabledFor(OFLogger::INFO_LOG_LEVEL)) {
+            DCMNET_DEBUG("Response Identifiers:" << OFendl << DcmObject::PrintHelper(*responseIdentifiers));
+        }
+    }
+    /* otherwise check whether special response logger is enabled */
+    else if (rspLogger.isEnabledFor(OFLogger::INFO_LOG_LEVEL))
+    {
+        OFLOG_INFO(rspLogger, "---------------------------");
+        OFLOG_INFO(rspLogger, "Find Response: " << responseCount << " (" << DU_cfindStatusString(rsp->DimseStatus) << ")");
+        OFLOG_INFO(rspLogger, DcmObject::PrintHelper(*responseIdentifiers));
+    }
+
     ns::DicomObject responseItem;
     for (const ns::DicomElement &element : m_requestContainer)
     {
