@@ -40,7 +40,7 @@ addon.findScu(JSON.stringify(
             }
         }
 });
-/*
+
 addon.findScu(JSON.stringify(
     {
         "source": {
@@ -64,6 +64,10 @@ addon.findScu(JSON.stringify(
             },
             {
                 "key": "0020000E", 
+                "value": "",
+            },
+            {
+                "key": "00200010", 
                 "value": "",
             },
             {
@@ -126,5 +130,3 @@ addon.findScu(JSON.stringify(
             }
         }
 });
-
-*/
