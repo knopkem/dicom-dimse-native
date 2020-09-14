@@ -112,11 +112,13 @@ void FindScuCallback::callback(T_DIMSE_C_FindRQ *request, int &responseCount, T_
     {
         OFString value;
         // TODO: use correct method depending on VR type 
-        responseIdentifiers->findAndGetOFStringArray(element.xtag, value);
-        ns::DicomElement cp;
-        cp.xtag = element.xtag;
-        cp.value = to_utf8(std::string(value.c_str()));
-        responseItem.push_back(cp);
+        OFCondition status = responseIdentifiers->findAndGetOFStringArray(element.xtag, value);
+        if (status.good()) {
+            ns::DicomElement cp;
+            cp.xtag = element.xtag;
+            cp.value = to_utf8(std::string(value.c_str()));
+            responseItem.push_back(cp);
+        }
     }
     m_responseContainer->push_back(responseItem);
 }
@@ -222,7 +224,6 @@ void FindAsyncWorker::Execute(const ExecutionProgress &progress)
         json v = json::object();
         for (const ns::DicomElement &elm : obj)
         {
-
             std::string value = elm.value;
             std::string keyName = int_to_hex(elm.xtag.getGroup()) + int_to_hex(elm.xtag.getElement());
             DcmTag t(elm.xtag);
@@ -232,7 +233,7 @@ void FindAsyncWorker::Execute(const ExecutionProgress &progress)
                 jsonValue = json::array({json{{"Alphabetic", value}}});
             }
             else if (vr == "DS" || vr == "IS" || vr == "SL" || vr == "SS" || vr == "UL" || vr == "US") {
-                if (value.length == 0) {
+                if (value.length() == 0) {
                     jsonValue = json::array({});
                 }
                 else {
@@ -250,7 +251,7 @@ void FindAsyncWorker::Execute(const ExecutionProgress &progress)
                 }
             }
             else if (vr == "FL" || vr == "FD") {
-                if (value.length == 0) {
+                if (value.length() == 0) {
                     jsonValue = json::array({});
                 }
                 else {
