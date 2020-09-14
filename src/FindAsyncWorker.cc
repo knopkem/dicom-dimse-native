@@ -232,10 +232,40 @@ void FindAsyncWorker::Execute(const ExecutionProgress &progress)
                 jsonValue = json::array({json{{"Alphabetic", value}}});
             }
             else if (vr == "DS" || vr == "IS" || vr == "SL" || vr == "SS" || vr == "UL" || vr == "US") {
-                jsonValue = json::array({std::stoi(value)});
+                if (value.length == 0) {
+                    jsonValue = json::array({});
+                }
+                else {
+                    try {
+                        jsonValue = json::array({std::stoi(value)});
+                    }
+                    catch (const std::invalid_argument& err) {
+                        jsonValue = json::array({});
+                        std::cerr << "Invalid argument: " << err.what() << '\n';
+                    }
+                    catch (const std::out_of_range& err) {
+                        jsonValue = json::array({});
+                        std::cerr << "Out of range: " << err.what() << '\n';
+                    }
+                }
             }
             else if (vr == "FL" || vr == "FD") {
-                jsonValue = json::array({std::stof(value)});
+                if (value.length == 0) {
+                    jsonValue = json::array({});
+                }
+                else {
+                    try {
+                        jsonValue = json::array({std::stof(value)});
+                    }
+                    catch (const std::invalid_argument& err) {
+                        jsonValue = json::array({});
+                        std::cerr << "Invalid argument: " << err.what() << '\n';
+                    }
+                    catch (const std::out_of_range& err) {
+                        jsonValue = json::array({});
+                        std::cerr << "Out of range: " << err.what() << '\n';
+                    }
+                }
             }
             else {
                 jsonValue = json::array({value});
