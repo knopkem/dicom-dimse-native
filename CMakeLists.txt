@@ -30,7 +30,7 @@ include(CMake/dcmtkPrepare.cmake NO_POLICY_SCOPE)
 #  dcmimage dcmjpeg dcmjpls dcmtls dcmnet
 #  CACHE STRING "List of modules that should be built.")
 
-set(DCMTK_MODULES ofstd oflog dcmdata dcmnet
+set(DCMTK_MODULES ofstd oflog dcmdata dcmnet dcmjpeg dcmjpls dcmimage dcmimgle
   CACHE STRING "List of modules that should be built.")
 
 #-----------------------------------------------------------------------------
@@ -88,7 +88,7 @@ add_library(${PROJECT_NAME} SHARED
 
 # Define dependency libraries
 #----------------------------
-target_link_libraries(${PROJECT_NAME} dcmnet dcmdata oflog ofstd)
+target_link_libraries(${PROJECT_NAME} ${DCMTK_MODULES})
 
 # Gives our library file a .node extension without any "lib" prefix
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")

@@ -17,6 +17,13 @@ using json = nlohmann::json;
 #include "dcmtk/dcmdata/dcxfer.h"  /* for E_TransferSyntax */
 #include "dcmtk/dcmnet/dimse.h"    /* for T_DIMSE_BlockingMode */
 
+#include "dcmtk/dcmjpeg/djdecode.h"     /* for dcmjpeg decoders */
+#include "dcmtk/dcmjpeg/djencode.h"     /* for dcmjpeg encoders */
+#include "dcmtk/dcmdata/dcrledrg.h"     /* for DcmRLEDecoderRegistration */
+#include "dcmtk/dcmdata/dcrleerg.h"     /* for DcmRLEEncoderRegistration */
+#include "dcmtk/dcmjpls/djdecode.h"     /* for dcmjpls decoder */
+#include "dcmtk/dcmjpls/djencode.h"     /* for dcmjpls encoder */
+
 namespace ns {
 
     
@@ -66,6 +73,7 @@ namespace ns {
         sIdent source;
         sIdent target;
         std::string storagePath;
+        std::string sourcePath;
         std::string destination;
         std::vector<sTag> tags;
         bool verbose;
@@ -82,6 +90,21 @@ namespace ns {
 
         }
         return "";
+    }
+
+    static bool codecsRegistered = false;
+
+    static void registerCodecs() {
+        if (!codecsRegistered) {
+            DcmRLEDecoderRegistration::registerCodecs();
+            DJDecoderRegistration::registerCodecs();
+            DJLSDecoderRegistration::registerCodecs();
+            
+            DJEncoderRegistration::registerCodecs();
+            DJLSEncoderRegistration::registerCodecs();
+            DcmRLEEncoderRegistration::registerCodecs();
+            codecsRegistered = true;
+        }
     }
 
     inline void to_json(json& j, const sTag& p) {
@@ -115,6 +138,7 @@ namespace ns {
         } catch(...) {}
         in.destination = toString(j, "destination");
         in.storagePath = toString(j, "storagePath");
+        in.sourcePath = toString(j, "sourcePath");
         try {
             auto tags = j.at("tags");
             for (json::iterator it = tags.begin(); it != tags.end(); ++it) {

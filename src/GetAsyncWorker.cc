@@ -19,6 +19,7 @@ using json = nlohmann::json;
 #include "dcmtk/dcmdata/dcpath.h"   /* for DcmPathProcessor */
 #include "dcmtk/dcmdata/dcostrmz.h" /* for dcmZlibCompressionLevel */
 
+
 #ifdef WITH_ZLIB
 #include <zlib.h>
 #endif
@@ -128,6 +129,7 @@ namespace
 
 GetAsyncWorker::GetAsyncWorker(std::string data, Function &callback) : BaseAsyncWorker(data, callback)
 {
+    ns::registerCodecs();
 }
 
 void GetAsyncWorker::Execute(const ExecutionProgress &progress)

@@ -4,6 +4,7 @@
 #include "FindAsyncWorker.h"
 #include "GetAsyncWorker.h"
 #include "MoveAsyncWorker.h"
+#include "StoreAsyncWorker.h"
 #include "ServerAsyncWorker.h"
 
 using namespace Napi;
@@ -44,6 +45,15 @@ Value DoMove(const CallbackInfo& info) {
     return info.Env().Undefined();
 }
 
+Value DoStore(const CallbackInfo& info) {
+    std::string input = info[0].As<String>().Utf8Value();
+    Function cb = info[1].As<Function>();
+
+    auto worker = new StoreAsyncWorker(input, cb);
+    worker->Queue();
+    return info.Env().Undefined();
+}
+
 Value StartScp(const CallbackInfo& info) {
     std::string input = info[0].As<String>().Utf8Value();
     Function cb = info[1].As<Function>();
@@ -63,6 +73,8 @@ Object Init(Env env, Object exports) {
                 Function::New(env, DoGet));
     exports.Set(String::New(env, "moveScu"),
                 Function::New(env, DoMove));
+    exports.Set(String::New(env, "storeScu"),
+                Function::New(env, DoStore));
     exports.Set(String::New(env, "startScp"),
                 Function::New(env, StartScp));
     return exports;

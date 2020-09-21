@@ -11,11 +11,12 @@ Nodejs native addon for DICOM DIMSE services using the DCMTK DICOM c++ toolkit.
 * C-Find-scu
 * C-Move-scu
 * C-Get-scu
+* C-Store-scu
 * C-Store-scp
 
 # Roadmap:
-* C-Store-scu
 * extended characterSet support
+* JPEG 2000 support (c-store scu)
 
 ## How to install
 This package uses prebuild to fetch precompiled binaries, so provided your platform is supported, all you need to do is:
@@ -26,6 +27,9 @@ Otherwise install will try to compile the sources for your platform, you will ne
 * a working c++ compiler (vs 2015+ or g++5.3+)
 
 ## Examples
+
+run the examples:
+```npm run example:[echo|find|get|move|store]```
 
 # Store-SCP
 ```
@@ -38,7 +42,7 @@ dimse.startScp(JSON.stringify(
             "ip" : "127.0.0.1",
             "port": "9999"
         },
-	"storagePath": "./data"
+    "storagePath": "./data" // Directory where incoming DICOM files will be stored
     }
     ), (result) => {
         try {
@@ -100,7 +104,7 @@ dimse.getScu(JSON.stringify(
             "ip" : "127.0.0.1",
             "port": "5678"
         },
-        "storagePath": "./data"
+        "storagePath": "./data" // Directory where incoming DICOM files will be stored
         "tags" : [
             {
                 "key": "0020000D", 
@@ -111,6 +115,32 @@ dimse.getScu(JSON.stringify(
                 "value": "STUDY",
             },
         ]
+    }
+), (result) => {
+    try {
+        console.log(JSON.parse(result));
+    }
+    catch {
+        console.log(result);
+    }
+});
+```
+
+# Store-SCU
+```
+dimse.storeScu(JSON.stringify(
+    {
+        "source": {
+            "aet": "DCMTK",
+            "ip" : "127.0.0.1",
+            "port": "9999"
+        },
+        "target": {
+            "aet": "CONQUESTSRV1",
+            "ip" : "127.0.0.1",
+            "port": "5678"
+        },
+        "sourcePath": "./input" // Directory with DICOM files to be send
     }
 ), (result) => {
     try {

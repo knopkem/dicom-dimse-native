@@ -390,6 +390,7 @@ cleanup:
 
 ServerAsyncWorker::ServerAsyncWorker(std::string data, Function &callback) : BaseAsyncWorker(data, callback)
 {
+    ns::registerCodecs();
 }
 
 void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
