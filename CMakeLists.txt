@@ -81,7 +81,7 @@ include(CMake/dcmtkAfterModules.cmake NO_POLICY_SCOPE)
 
 
 # Build a shared library named after the project from the files in `src/`
-file(GLOB SOURCE_FILES "src/*.cc" "src/*.h")
+file(GLOB SOURCE_FILES "src/*.cc" "src/*.c" "src/*.h")
 add_library(${PROJECT_NAME} SHARED 
 	${SOURCE_FILES}
 	)
