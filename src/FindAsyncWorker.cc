@@ -8,6 +8,7 @@
 #include <memory>
 #include <list>
 #include <iomanip>
+#include <vector>
 
 using json = nlohmann::json;
 
@@ -27,6 +28,17 @@ using json = nlohmann::json;
 
 namespace
 {
+std::vector<std::string> split(const std::string& s, char delimiter)
+{
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream tokenStream(s);
+    while (std::getline(tokenStream, token, delimiter))
+    {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
 
 std::string to_utf8(std::string str)
 {
@@ -228,48 +240,44 @@ void FindAsyncWorker::Execute(const ExecutionProgress &progress)
             std::string keyName = int_to_hex(elm.xtag.getGroup()) + int_to_hex(elm.xtag.getElement());
             DcmTag t(elm.xtag);
             std::string vr = std::string(t.getVR().getVRName());
-            json jsonValue;
+            json jsonValue = json::array();
             if (vr == "PN") {
-                jsonValue = json::array({json{{"Alphabetic", value}}});
+                jsonValue.push_back({json{{"Alphabetic", value}}});
             }
-            else if (vr == "DS" || vr == "IS" || vr == "SL" || vr == "SS" || vr == "UL" || vr == "US") {
+            else if (vr == "IS" || vr == "SL" || vr == "SS" || vr == "UL" || vr == "US") {
                 if (value.length() == 0) {
-                    jsonValue = json::array({});
+                    jsonValue.push_back({});
                 }
                 else {
-                    try {
-                        jsonValue = json::array({std::stoi(value)});
-                    }
-                    catch (const std::invalid_argument& err) {
-                        jsonValue = json::array({});
-                        std::cerr << "Invalid argument: " << err.what() << '\n';
-                    }
-                    catch (const std::out_of_range& err) {
-                        jsonValue = json::array({});
-                        std::cerr << "Out of range: " << err.what() << '\n';
+                    std::vector<std::string> splitValue = split(value, '\\');
+                    for (auto i : splitValue) {
+                        try {
+                            jsonValue.push_back(std::stoi(i));
+                        }
+                        catch (...) {
+                            jsonValue.push_back({});
+                        }
                     }
                 }
             }
-            else if (vr == "FL" || vr == "FD") {
+            else if (vr == "DS" || vr == "FL" || vr == "FD") {
                 if (value.length() == 0) {
-                    jsonValue = json::array({});
+                    jsonValue.push_back({});
                 }
                 else {
-                    try {
-                        jsonValue = json::array({std::stof(value)});
-                    }
-                    catch (const std::invalid_argument& err) {
-                        jsonValue = json::array({});
-                        std::cerr << "Invalid argument: " << err.what() << '\n';
-                    }
-                    catch (const std::out_of_range& err) {
-                        jsonValue = json::array({});
-                        std::cerr << "Out of range: " << err.what() << '\n';
+                    std::vector<std::string> splitValue = split(value, '\\');
+                    for (auto i : splitValue) {
+                        try {
+                            jsonValue.push_back(std::stof(i));
+                        }
+                        catch (...) {
+                            jsonValue.push_back({});
+                        }
                     }
                 }
             }
             else {
-                jsonValue = json::array({value});
+                jsonValue = split(value, '\\');
             }
 
             v[keyName] = {
