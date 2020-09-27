@@ -16,8 +16,10 @@ class DcmQueryRetriveConfigExt : public DcmQueryRetrieveConfig
 {
 
 public:
+    DcmQueryRetriveConfigExt() : _permissive(false) {}
     void addPeer(const char* AETitle, const char* HostName, int PortNumber);
     void setStorageArea(const OFFilename& filename) { _storageArea = filename; }
+    void setPermissiveMode(bool enabled) { _permissive = enabled;  }
 
     // override
     int peerForAETitle(const char* AETitle, const char** HostName, int* PortNumber) const;
@@ -35,6 +37,7 @@ private:
     };
     std::list<sPeer> _peers;
     OFFilename _storageArea;
+    bool _permissive;
 };
 
 class DcmQueryRetrieveSQLiteDatabaseHandleFactory : public DcmQueryRetrieveDatabaseHandleFactory

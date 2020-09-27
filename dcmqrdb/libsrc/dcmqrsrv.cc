@@ -86,8 +86,33 @@ static void storeCallback(
   T_DIMSE_C_StoreRSP *rsp,            /* final store response */
   DcmDataset **stDetail)
 {
-  DcmQueryRetrieveStoreContext *context = OFstatic_cast(DcmQueryRetrieveStoreContext *, callbackData);
-  context->callbackHandler(progress, req, imageFileName, imageDataSet, rsp, stDetail);
+    if (progress->state == DIMSE_StoreEnd) {
+        DcmQueryRetrieveStoreContext* context = OFstatic_cast(DcmQueryRetrieveStoreContext*, callbackData);
+
+
+        OFString studyInstanceUID;
+        OFString sopInstanceUID;
+        (*imageDataSet)->findAndGetOFString(DCM_StudyInstanceUID, studyInstanceUID);
+        (*imageDataSet)->findAndGetOFString(DCM_SOPInstanceUID, sopInstanceUID);
+
+        OFString baseStr;
+        OFStandard::combineDirAndFilename(baseStr, context->storageDir(), studyInstanceUID, OFTrue);
+        if (!OFStandard::dirExists(baseStr))
+        {
+            if (OFStandard::createDirectory(baseStr, context->storageDir()).bad())
+            {
+                std::cerr << "failed to create directory " << baseStr.c_str() << std::endl;
+                return;
+            }
+        }
+
+        OFString filename;
+        OFStandard::combineDirAndFilename(filename, baseStr, sopInstanceUID, OFTrue);
+        char newFilename[1024];
+        OFStandard::strlcpy(newFilename, filename.c_str(), 1025);
+        context->setFileName(filename.c_str());
+        context->callbackHandler(progress, req, newFilename, imageDataSet, rsp, stDetail);
+    }
 }
 
 
@@ -392,6 +417,7 @@ OFCondition DcmQueryRetrieveSCP::storeSCP(T_ASC_Association * assoc, T_DIMSE_C_S
 #endif
 
     context.setFileName(imageFileName);
+    context.setStorageDir(config_->getStorageArea("any"));
 
     // store SourceApplicationEntityTitle in metaheader
     if (assoc && assoc->params)

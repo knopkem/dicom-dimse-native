@@ -70,6 +70,7 @@ namespace ns {
     };
 
     struct sInput {
+        sInput() : verbose(false), permissive(false) {}
         sIdent source;
         sIdent target;
         std::string storagePath;
@@ -78,6 +79,7 @@ namespace ns {
         std::vector<sTag> tags;
         std::vector<sIdent> peers;
         bool verbose;
+        bool permissive;
         inline bool valid() {
             return source.valid() && target.valid();
         }
@@ -153,6 +155,9 @@ namespace ns {
                 sIdent peer = (*it).get<sIdent>();
                 in.peers.push_back(peer);
             }
+        } catch(...) {}
+        try {
+            in.permissive = j.at("permissive");
         } catch(...) {}
         try {
             in.verbose = j.at("verbose");

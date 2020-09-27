@@ -71,6 +71,9 @@ public:
      */
     void setFileName(const char *fn) { fileName = fn; }
 
+    void setStorageDir(const char* fn) { _storageDir = fn; }
+    const char* storageDir() { return _storageDir; }
+
     /** callback handler called by the DIMSE_storeProvider callback function.
      *  @param progress progress state (in)
      *  @param req original store request (in)
@@ -121,6 +124,8 @@ private:
 
     /// file name under which the incoming image should be stored
     const char *fileName;
+
+    const char* _storageDir;
 
     /// DICOM file format into which the image is received
     DcmFileFormat *dcmff;

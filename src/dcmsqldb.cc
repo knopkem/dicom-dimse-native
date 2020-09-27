@@ -332,7 +332,7 @@ std::list< sQRes > DcmSQLiteDatabase::query(const std::list<DcmSmallDcmElm> & fi
             DCMNET_WARN(bindName + bindValue);
         }
     }
-    DCMNET_WARN(prepare);
+
     for (sqlite3pp::query::iterator i = query.begin(); i != query.end(); ++i) {
 
         std::list<DcmSmallDcmElm> responseList;

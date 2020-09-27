@@ -7,7 +7,7 @@ addon.startScp(JSON.stringify(
             "ip" : "127.0.0.1",
             "port": "9999"
         },
-        "peers": [
+        "peers": [ // peers needed for C-MOVE destination
                 {
                 "aet": "CONQUESTSRV1",
                 "ip" : "RYZEN7",
@@ -15,7 +15,8 @@ addon.startScp(JSON.stringify(
                 }
             ],
         "storagePath": "./data",
-        "verbose": true
+        "permissive": true, // any AET can perform FIND,GET and STORE
+        "verbose": true // verbose logging
     }
     ), (result) => {
         if (result && result.length > 0) {

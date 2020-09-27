@@ -116,6 +116,7 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
     cfg.addPeer(peer.aet.c_str(), peer.ip.c_str(), std::stoi(peer.port));
   }
   cfg.setStorageArea(in.storagePath.c_str());
+  cfg.setPermissiveMode(in.permissive);
  
   DcmQueryRetrieveOptions options;
   options.net_ = network;

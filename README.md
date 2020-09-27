@@ -7,19 +7,20 @@
 Nodejs native addon for DICOM DIMSE services using the DCMTK DICOM c++ toolkit.
 
 # supported DIMSE services
-* C-Echo-scu 
-* C-Find-scu
-* C-Move-scu
-* C-Get-scu
-* C-Store-scu
-* C-Store-scp
+* C-Echo as SCU and SCP
+* C-Find as SCU and SCP
+* C-Move as SCU and SCP
+* C-Get  as SCU and SCP
+* C-Store as SCU and SCP
 
 # Roadmap:
+* multithreaded association handling (scp)
 * extended characterSet support
 * JPEG 2000 support (c-store scu)
 
 ## How to install
 This package uses prebuild to fetch precompiled binaries, so provided your platform is supported, all you need to do is:
+
 ```npm i -s dicom-native-addon```
 
 Otherwise install will try to compile the sources for your platform, you will need:
@@ -29,9 +30,11 @@ Otherwise install will try to compile the sources for your platform, you will ne
 ## Examples
 
 run the examples:
-```npm run example:[echo|find|get|move|store]```
+```npm run example:[echoscu|findscu|getscu|movescu|storescu|storescp]```
 
-# Store-SCP
+# PACS-server 
+
+## Supports: ECHO, FIND, MOVE, GET and STORE-SCP using sqlite db backend
 ```
 const dimse = require('dicom-dimse-native');
 
@@ -42,7 +45,19 @@ dimse.startScp(JSON.stringify(
             "ip" : "127.0.0.1",
             "port": "9999"
         },
-    "storagePath": "./data" // Directory where incoming DICOM files will be stored
+        "peers": [
+                {
+                "aet": "CONQUESTSRV1",
+                "ip" : "127.0.0.1",
+                "port": "5678"
+                },
+                {
+                "aet": "DCM4CHEE",
+                "ip" : "127.0.0.1",
+                "port": "11112"
+                }
+            ],
+        "storagePath": "./data" // Directory where incoming DICOM files will be stored
     }
     ), (result) => {
         try {

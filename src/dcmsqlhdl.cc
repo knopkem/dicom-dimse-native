@@ -52,18 +52,22 @@ int DcmQueryRetriveConfigExt::peerForAETitle(const char* AETitle, const char** H
 
 int DcmQueryRetriveConfigExt::peerInAETitle(const char* calledAETitle, const char* callingAETitle, const char* HostName) const
 {
+    if (_permissive) return 1;
+
     std::list<sPeer>::const_iterator it;
     for (it = _peers.begin(); it != _peers.end(); it++)
     {
         // Access the object through iterator
-        if (strcmp(it->aet.c_str(), callingAETitle) == 0 &&
-            strcmp(it->hostname.c_str(), HostName) == 0) {
+        if (strcmp(it->aet.c_str(), callingAETitle) == 0 /* &&
+            strcmp(it->hostname.c_str(), HostName) == 0 */) {
             return 1;
         }
     }
     DCMNET_WARN("No matching AET found for AET:" << calledAETitle);
     return 0;
 }
+
+//------------------------------------------------------------------------------------------------------
 
 int DcmQueryRetriveConfigExt::checkForSameVendor(const char* AETitle1, const char* AETitle2) const {
     return 1;
@@ -851,6 +855,7 @@ OFCondition DcmQueryRetrieveSQLiteDatabaseHandle::cancelMoveRequest( DcmQueryRet
 OFCondition DcmQueryRetrieveSQLiteDatabaseHandle::makeNewStoreFileName(const char* SOPClassUID, const char* SOPInstanceUID,
     char* newImageFileName, size_t newImageFileNameLen)
 {
+    /*
     OFString filename;
     char prefix[12];
 
@@ -865,6 +870,9 @@ OFCondition DcmQueryRetrieveSQLiteDatabaseHandle::makeNewStoreFileName(const cha
         return QR_EC_IndexDatabaseError;
 
     OFStandard::strlcpy(newImageFileName, filename.c_str(), newImageFileNameLen);
+    
+    */
+    // Note: filename ist overridden in storeCallback
     return OFCondition(EC_Normal);
 }
 

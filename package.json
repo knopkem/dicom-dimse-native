@@ -5,11 +5,12 @@
   "main": "index.js",
   "scripts": {
     "install": "npx prebuild-install -r napi || npx cmake-js compile",
-    "example:echo": "node ./examples/echo.js",
-    "example:find": "node ./examples/find.js",
-    "example:get": "node ./examples/get.js",
-    "example:move": "node ./examples/move.js",
-    "example:store": "node ./examples/store.js",
+    "example:echoscu": "node ./examples/echoscu.js",
+    "example:findscu": "node ./examples/findscu.js",
+    "example:getscu": "node ./examples/getscu.js",
+    "example:movescu": "node ./examples/movescu.js",
+    "example:storescu": "node ./examples/storescu.js",
+    "example:storescp": "node ./examples/storescp.js",
     "test": "mocha"
   },
   "keywords": [
@@ -30,7 +31,7 @@
     "PACS"
   ],
   "author": "Michael Knopke",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "bindings": "^1.5.0",
     "node-addon-api": "^3.0.2",
