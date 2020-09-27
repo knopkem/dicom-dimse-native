@@ -76,6 +76,7 @@ namespace ns {
         std::string sourcePath;
         std::string destination;
         std::vector<sTag> tags;
+        std::vector<sIdent> peers;
         bool verbose;
         inline bool valid() {
             return source.valid() && target.valid();
@@ -144,6 +145,13 @@ namespace ns {
             for (json::iterator it = tags.begin(); it != tags.end(); ++it) {
                 sTag tag = (*it).get<sTag>();
                 in.tags.push_back(tag);
+            }
+        } catch(...) {}
+        try {
+            auto tags = j.at("peers");
+            for (json::iterator it = tags.begin(); it != tags.end(); ++it) {
+                sIdent peer = (*it).get<sIdent>();
+                in.peers.push_back(peer);
             }
         } catch(...) {}
         try {

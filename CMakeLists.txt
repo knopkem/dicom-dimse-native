@@ -30,7 +30,7 @@ include(CMake/dcmtkPrepare.cmake NO_POLICY_SCOPE)
 #  dcmimage dcmjpeg dcmjpls dcmtls dcmnet
 #  CACHE STRING "List of modules that should be built.")
 
-set(DCMTK_MODULES ofstd oflog dcmdata dcmnet dcmjpeg dcmjpls dcmimage dcmimgle
+set(DCMTK_MODULES ofstd oflog dcmdata dcmnet dcmjpeg dcmjpls dcmimage dcmimgle dcmqrdb
   CACHE STRING "List of modules that should be built.")
 
 #-----------------------------------------------------------------------------

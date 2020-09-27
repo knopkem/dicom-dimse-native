@@ -3,7 +3,7 @@ const addon = require('../index');
 addon.getScu(JSON.stringify(
     {
         "source": {
-            "aet": "IMEBRA",
+            "aet": "DIMSE",
             "ip" : "127.0.0.1",
             "port": "9999"
         },

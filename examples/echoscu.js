@@ -1,9 +1,9 @@
 const addon = require('../index');
 
-addon.storeScu(JSON.stringify(
-    {
+addon.echoScu(JSON.stringify(
+    {        
         "source": {
-            "aet": "IMEBRA",
+            "aet": "DIMSE",
             "ip" : "127.0.0.1",
             "port": "9999"
         },
@@ -12,7 +12,6 @@ addon.storeScu(JSON.stringify(
             "ip" : "127.0.0.1",
             "port": "5678"
         },
-        "sourcePath": "./examples/dicom",
         "verbose": true
     }
 ), (result) => {

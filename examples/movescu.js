@@ -3,10 +3,17 @@ const addon = require('../index');
 addon.startScp(JSON.stringify(
     {
         "source": {
-            "aet": "IMEBRA",
+            "aet": "DIMSE",
+            "ip" : "127.0.0.1",
+            "port": "8888"
+        },
+        "peers": {
+            {
+            "aet": "SERVER",
             "ip" : "127.0.0.1",
             "port": "9999"
-        },
+            }
+            ]
         "storagePath": "./data",
         "verbose": true
     }
@@ -26,7 +33,7 @@ setTimeout(function() {
     addon.moveScu(JSON.stringify(
         {
             "source": {
-                "aet": "IMEBRA",
+                "aet": "DIMSE",
                 "ip" : "127.0.0.1",
                 "port": "9999"
             },

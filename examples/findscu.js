@@ -3,7 +3,7 @@ const addon = require('../index');
 addon.findScu(JSON.stringify(
     {
         "source": {
-            "aet": "IMEBRA",
+            "aet": "DIMSE",
             "ip" : "127.0.0.1",
             "port": "9999"
         },
@@ -44,7 +44,7 @@ addon.findScu(JSON.stringify(
 addon.findScu(JSON.stringify(
     {
         "source": {
-            "aet": "IMEBRA",
+            "aet": "DIMSE",
             "ip" : "127.0.0.1",
             "port": "9999"
         },
@@ -93,7 +93,7 @@ addon.findScu(JSON.stringify(
 addon.findScu(JSON.stringify(
     {
         "source": {
-            "aet": "IMEBRA",
+            "aet": "DIMSE",
             "ip" : "127.0.0.1",
             "port": "9999"
         },
