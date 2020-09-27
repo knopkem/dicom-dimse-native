@@ -274,7 +274,7 @@ std::list< sQRes > DcmSQLiteDatabase::query(const std::list<DcmSmallDcmElm> & fi
     std::vector < std::string > selectColumns;
     std::vector < std::string > whereColumns;
     std::vector < std::string > whereBindings;
-    std::vector <DcmTagKey> whereTag;
+    std::vector < std::string > whereBindingNames;
 
 
     for(auto qElm: findRequestList) {
@@ -295,16 +295,20 @@ std::list< sQRes > DcmSQLiteDatabase::query(const std::list<DcmSmallDcmElm> & fi
                 replace(valueStr, std::string("*"), std::string("%"));
                 replace(valueStr, std::string("?"), std::string("_"));
                 whereBindings.push_back(valueStr);
+                whereBindingNames.push_back(std::string(":") + whereStr);
             }
             else if ( isDateOrTimeField(qElm.XTag()) && contains(valueStr, "-")) {
-                whereColumns.push_back(whereStr + std::string(" BETWEEN :" ) + whereStr);
-                whereBindings.push_back(firstp(valueStr) + " AND " + secondp(valueStr));
+                whereColumns.push_back(whereStr + std::string(" BETWEEN :" ) + whereStr + "1 AND :" + whereStr + "2");
+                whereBindings.push_back(firstp(valueStr));
+                whereBindings.push_back(secondp(valueStr));
+                whereBindingNames.push_back(std::string(":") + whereStr + "1");
+                whereBindingNames.push_back(std::string(":") + whereStr + "2");
             }
             else {
                 whereColumns.push_back(whereStr + std::string(" = :") + whereStr);
                 whereBindings.push_back(valueStr);
+                whereBindingNames.push_back(std::string(":") + whereStr);
             }
-            whereTag.push_back(qElm.XTag());
         }
 
         selectColumns.push_back(getTagName( qElm.XTag() ));
@@ -320,16 +324,17 @@ std::list< sQRes > DcmSQLiteDatabase::query(const std::list<DcmSmallDcmElm> & fi
         + std::string(" WHERE ") + join(whereColumns, " AND ");
 
     sqlite3pp::query query(*d->db, prepare.c_str());
-    
+    // DCMNET_WARN(prepare);
     for (int i = 0; i < whereBindings.size(); ++i) {
         const std::string bindValue = whereBindings.at(i);
         if (i == whereBindings.size() -1) {
             query.bind(":referenceId", std::stoi(bindValue));
+            // DCMNET_WARN("ref  : " + bindValue);
         }
         else {
-            const std::string bindName = ":" + getTagName(whereTag.at(i));
+            const std::string bindName = whereBindingNames.at(i);
             query.bind(bindName.c_str(), bindValue, sqlite3pp::copy);
-            DCMNET_WARN(bindName + bindValue);
+            // DCMNET_WARN(bindName + " : " + bindValue);
         }
     }
 
@@ -414,7 +419,7 @@ std::string DcmSQLiteDatabase::secondp( const std::string& value ) const
         DCMNET_WARN("no range sign found");
         return value;
     }
-    return value.substr(pos, value.length()-1);
+    return value.substr(pos + 1, value.length()-1);
 }
 
 //--------------------------------------------------------------------------------------------

@@ -627,9 +627,11 @@ OFCondition DcmQueryRetrieveSQLiteDatabaseHandle::startFindRequest( const char *
 
     d->determineLevelBoundaries(d->handle->rootLevel, qLevel, lLevel);
 
+    /*
     if (d->testRequestList(d->handle->findRequestList, d->handle->queryLevel, qLevel, lLevel).bad()) {
         DCMNET_ERROR("DB_startFindRequest () : STATUS_FIND_Failed_IdentifierDoesNotMatchSOPClass - Invalid RequestList");
     }
+    */
 
     std::list<DcmSmallDcmElm> findRequestList = d->convertList(d->handle->findRequestList);
 
