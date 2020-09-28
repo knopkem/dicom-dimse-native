@@ -186,7 +186,14 @@ namespace {
         result.push_back(DB_FindAttrExt(DCM_PhotometricInterpretation, IMAGE_LEVEL, OPTIONAL_KEY));
         result.push_back(DB_FindAttrExt(DCM_RescaleSlope, IMAGE_LEVEL, OPTIONAL_KEY));
         result.push_back(DB_FindAttrExt(DCM_RescaleIntercept, IMAGE_LEVEL, OPTIONAL_KEY));
+        result.push_back(DB_FindAttrExt(DCM_SamplesPerPixel, IMAGE_LEVEL, OPTIONAL_KEY));
         result.push_back(DB_FindAttrExt(DCM_PixelSpacing, IMAGE_LEVEL, OPTIONAL_KEY));
+        result.push_back(DB_FindAttrExt(DCM_BitsAllocated, IMAGE_LEVEL, OPTIONAL_KEY));
+        result.push_back(DB_FindAttrExt(DCM_BitsStored, IMAGE_LEVEL, OPTIONAL_KEY));
+        result.push_back(DB_FindAttrExt(DCM_HighBit, IMAGE_LEVEL, OPTIONAL_KEY));
+        result.push_back(DB_FindAttrExt(DCM_PixelRepresentation, IMAGE_LEVEL, OPTIONAL_KEY));
+        result.push_back(DB_FindAttrExt(DCM_ImagePositionPatient, IMAGE_LEVEL, OPTIONAL_KEY));
+        result.push_back(DB_FindAttrExt(DCM_ImageOrientationPatient, IMAGE_LEVEL, OPTIONAL_KEY));
         result.push_back(DB_FindAttrExt(DCM_SOPClassUID, IMAGE_LEVEL, REQUIRED_KEY));
         result.push_back(DB_FindAttrExt(DCM_PrivateFileName, IMAGE_LEVEL, OPTIONAL_KEY));
         return result;

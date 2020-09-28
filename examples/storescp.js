@@ -10,7 +10,7 @@ addon.startScp(JSON.stringify(
         "peers": [ // peers needed for C-MOVE destination
                 {
                 "aet": "CONQUESTSRV1",
-                "ip" : "RYZEN7",
+                "ip" : "127.0.0.1",
                 "port": "5678"
                 }
             ],
