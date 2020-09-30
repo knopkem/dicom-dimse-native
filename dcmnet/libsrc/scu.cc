@@ -1478,7 +1478,6 @@ OFString DcmSCU::createStorageFilename(DcmDataset *dataset)
 
   // Create unique filename
   OFString name = sopInstanceUID;
-  name += ".dcm";
 
   OFString baseStr;
   OFStandard::combineDirAndFilename(baseStr, m_storageDir, studyInstanceUID, OFTrue);
