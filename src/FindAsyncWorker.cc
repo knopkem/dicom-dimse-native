@@ -246,7 +246,7 @@ void FindAsyncWorker::Execute(const ExecutionProgress &progress)
             }
             else if (vr == "IS" || vr == "SL" || vr == "SS" || vr == "UL" || vr == "US") {
                 if (value.length() == 0) {
-                    jsonValue.push_back({});
+                    jsonValue.push_back(nullptr);
                 }
                 else {
                     std::vector<std::string> splitValue = split(value, '\\');
@@ -255,14 +255,14 @@ void FindAsyncWorker::Execute(const ExecutionProgress &progress)
                             jsonValue.push_back(std::stoi(i));
                         }
                         catch (...) {
-                            jsonValue.push_back({});
+                            jsonValue.push_back(nullptr);
                         }
                     }
                 }
             }
             else if (vr == "DS" || vr == "FL" || vr == "FD") {
                 if (value.length() == 0) {
-                    jsonValue.push_back({});
+                    jsonValue.push_back(nullptr);
                 }
                 else {
                     std::vector<std::string> splitValue = split(value, '\\');
@@ -271,20 +271,25 @@ void FindAsyncWorker::Execute(const ExecutionProgress &progress)
                             jsonValue.push_back(std::stof(i));
                         }
                         catch (...) {
-                            jsonValue.push_back({});
+                            jsonValue.push_back(nullptr);
                         }
                     }
                 }
             }
             else {
-                jsonValue = split(value, '\\');
+                std::vector<std::string> vec = split(value, '\\');
+                if ( vec.size() == 0 || (vec.size() == 1 && vec[0].empty()) ) {
+                    jsonValue = {nullptr};
+                }
+                else {
+                    jsonValue = vec;
+                }
             }
 
-            v[keyName] = {
-                {"Value", jsonValue},
-                {"vr", vr}
-            };
-
+            v[keyName]["vr"] = vr;
+            if (!(jsonValue.size() == 1 &&  jsonValue[0] == nullptr)) {
+                v[keyName]["Value"] = jsonValue;
+            }
         }
         outJson.push_back(v);
         _jsonOutput = outJson.dump();

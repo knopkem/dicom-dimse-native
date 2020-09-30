@@ -8,6 +8,7 @@
 
 #include "sqlite3pp.h"
 
+#include <set>
 #include <map>
 #include <vector>
 #include <iostream>
@@ -57,9 +58,17 @@ namespace {
         return DICT->rdlock().findEntry(tag, NULL)->getTagName();
     }
 
-
     bool contains(const std::string& text, const std::string& value) {
         return (text.find(value) != std::string::npos);
+    }
+
+    bool contains(const std::vector<std::string>& list, const std::string& value) {
+        for (auto item : list) {
+            if (contains(item, value)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     bool replace(std::string& str, const std::string& from, const std::string& to) {
@@ -283,17 +292,35 @@ std::list< sQRes > DcmSQLiteDatabase::query(const std::list<DcmSmallDcmElm> & fi
     std::vector < std::string > whereBindings;
     std::vector < std::string > whereBindingNames;
 
+    DcmSmallDcmElm modInStudyElm;
+    DcmSmallDcmElm numStudiesElm;
+    DcmSmallDcmElm numSeriesElm;
 
-    for(auto qElm: findRequestList) {
+    for(auto e: findRequestList) {
 
-        if (tagLevel(qElm.XTag()) != currentLevel) {
+        if (tagLevel(e.XTag()) != currentLevel) {
             continue;
         }
 
-        if ( !qElm.valueField().empty() ) {
+        if (e.XTag() == DCM_ModalitiesInStudy) {
+            modInStudyElm = e;
+            continue;
+        }
 
-            std::string whereStr = getTagName( qElm.XTag() );
-            std::string valueStr = qElm.valueField();
+        if (e.XTag() == DCM_NumberOfStudyRelatedSeries) {
+            numStudiesElm = e;
+            continue;
+        }
+
+        if (e.XTag() == DCM_NumberOfSeriesRelatedInstances) {
+            numSeriesElm = e;
+            continue;
+        }
+
+        if ( !e.valueField().empty() ) {
+
+            std::string whereStr = getTagName( e.XTag() );
+            std::string valueStr = e.valueField();
 
             if (contains(valueStr, "*") || contains(valueStr, "?") || contains(valueStr, "^") || contains(valueStr, " ")) {
                 std::string whereColumnStr = whereStr + " LIKE UPPER( :" +  whereStr + " )";
@@ -304,7 +331,7 @@ std::list< sQRes > DcmSQLiteDatabase::query(const std::list<DcmSmallDcmElm> & fi
                 whereBindings.push_back(valueStr);
                 whereBindingNames.push_back(std::string(":") + whereStr);
             }
-            else if ( isDateOrTimeField(qElm.XTag()) && contains(valueStr, "-")) {
+            else if ( isDateOrTimeField(e.XTag()) && contains(valueStr, "-")) {
                 whereColumns.push_back(whereStr + std::string(" BETWEEN :" ) + whereStr + "1 AND :" + whereStr + "2");
                 whereBindings.push_back(firstp(valueStr));
                 whereBindings.push_back(secondp(valueStr));
@@ -318,8 +345,8 @@ std::list< sQRes > DcmSQLiteDatabase::query(const std::list<DcmSmallDcmElm> & fi
             }
         }
 
-        selectColumns.push_back(getTagName( qElm.XTag() ));
-        trackList.push_back( qElm.XTag() );
+        selectColumns.push_back(getTagName( e.XTag() ));
+        trackList.push_back( e.XTag() );
     }
 
     selectColumns.push_back("id");
@@ -331,17 +358,14 @@ std::list< sQRes > DcmSQLiteDatabase::query(const std::list<DcmSmallDcmElm> & fi
         + std::string(" WHERE ") + join(whereColumns, " AND ");
 
     sqlite3pp::query query(*d->db, prepare.c_str());
-    // DCMNET_WARN(prepare);
     for (int i = 0; i < whereBindings.size(); ++i) {
         const std::string bindValue = whereBindings.at(i);
         if (i == whereBindings.size() -1) {
             query.bind(":referenceId", std::stoi(bindValue));
-            // DCMNET_WARN("ref  : " + bindValue);
         }
         else {
             const std::string bindName = whereBindingNames.at(i);
             query.bind(bindName.c_str(), bindValue, sqlite3pp::copy);
-            // DCMNET_WARN(bindName + " : " + bindValue);
         }
     }
 
@@ -373,11 +397,101 @@ std::list< sQRes > DcmSQLiteDatabase::query(const std::list<DcmSmallDcmElm> & fi
         for (auto elm : preResults.resultList) {
             responseList.push_back(elm);
         }
-        res.resultList = responseList;
-        responseContainer.push_back(res);
+
+        bool discardResult = false;
+
+        int numberOfSeries = 0;
+        if (modInStudyElm.XTag() == DCM_ModalitiesInStudy) {
+            std::vector<std::string> modalities = modalitiesInStudy(res.id, numberOfSeries);
+            if (!modInStudyElm.valueField().empty()) {
+                if (!contains( modalities, modInStudyElm.valueField())) {
+                    discardResult = true;
+                }
+            }
+            DcmSmallDcmElm modalitiesInStudy(modInStudyElm.XTag(), join(modalities, "\\"));
+            responseList.push_back(modalitiesInStudy);
+        }
+
+        if (numStudiesElm.XTag() == DCM_NumberOfStudyRelatedSeries) {
+            if (numberOfSeries == 0)
+                modalitiesInStudy(res.id, numberOfSeries);
+            std::string numSeriesString;
+            numSeriesString = std::to_string(numberOfSeries);
+            if (!numStudiesElm.valueField().empty()) {
+                if (numSeriesString != numStudiesElm.valueField()) {
+                    discardResult = true;
+                }
+            }
+            DcmSmallDcmElm numberOfStudyRelatedSeries(numStudiesElm);
+            numberOfStudyRelatedSeries.setValue(numSeriesString);
+            responseList.push_back(numberOfStudyRelatedSeries);
+        }
+
+        if (numSeriesElm.XTag() == DCM_NumberOfSeriesRelatedInstances) {
+            std::string numberOfInstancesInSeries;
+            int nb = numSeriesInstances(res.id);
+            numberOfInstancesInSeries = std::to_string(nb);
+            if (!numSeriesElm.valueField().empty()) {
+                if (numberOfInstancesInSeries != numSeriesElm.valueField()) {
+                    discardResult = true;
+                }
+            }
+            DcmSmallDcmElm numberOfSeriesRelatedInstances(numSeriesElm);
+            numberOfSeriesRelatedInstances.setValue(numberOfInstancesInSeries);
+            responseList.push_back(numberOfSeriesRelatedInstances);
+        }
+
+        if (!discardResult) {
+            res.resultList = responseList;
+            responseContainer.push_back(res);
+        }
 
     }
     return responseContainer;
+}
+
+//--------------------------------------------------------------------------------------------
+
+std::vector<std::string> DcmSQLiteDatabase::modalitiesInStudy(long long studyReferenceId, int& seriesSearched) const
+{
+    seriesSearched = 0;
+    std::vector<std::string> resultString;
+    std::set<std::string> resultSet;
+   
+    std::string prepare = "SELECT " + getTagName(DCM_Modality) + " FROM " 
+        + levelName(SERIE_LEVEL) + " WHERE referenceId = :refId";
+
+    sqlite3pp::query query(*d->db, prepare.c_str());
+    query.bind(":refId", studyReferenceId);
+
+    for (sqlite3pp::query::iterator i = query.begin(); i != query.end(); ++i) {
+        for (int j = 0; j < query.column_count(); ++j) {
+            seriesSearched++;
+            resultSet.insert((*i).get<char const*>(j));
+        }
+    }
+
+    for(auto modality: resultSet) {
+        resultString.push_back(modality);
+    }
+    return resultString;
+}
+
+//--------------------------------------------------------------------------------------------
+
+int DcmSQLiteDatabase::numSeriesInstances(long long seriesReferenceId) const
+{
+    int result = 0;
+    std::string prepare = "SELECT " + getTagName(DCM_SOPInstanceUID) + " FROM "
+        + levelName(IMAGE_LEVEL) + " WHERE referenceId = :refId";
+
+    sqlite3pp::query query(*d->db, prepare.c_str());
+    query.bind(":refId", seriesReferenceId);
+
+    for (sqlite3pp::query::iterator i = query.begin(); i != query.end(); ++i) {
+        result++;
+    }
+    return result;
 }
 
 //--------------------------------------------------------------------------------------------

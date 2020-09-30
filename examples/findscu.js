@@ -119,6 +119,10 @@ addon.findScu(JSON.stringify(
                 "key": "00200013", 
                 "value": "",
             },
+            {
+                "key": "00280103", 
+                "value": "",
+            },
         ],
         "verbose": true    
     }

@@ -49,6 +49,10 @@ public:
 
 protected:
 
+    std::vector<std::string> DcmSQLiteDatabase::modalitiesInStudy(long long studyReferenceId, int& seriesSearched) const;
+
+    int DcmSQLiteDatabase::numSeriesInstances(long long seriesReferenceId) const;
+
     bool insertDb(const std::map< DB_FindAttrExt, std::string, DB_FindAttrExtCompare >& keyValueList);
 
     Db_Id insertpat(const std::map< DB_FindAttrExt, std::string, DB_FindAttrExtCompare >& keyValueList);
