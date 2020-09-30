@@ -277,13 +277,7 @@ void FindAsyncWorker::Execute(const ExecutionProgress &progress)
                 }
             }
             else {
-                std::vector<std::string> vec = split(value, '\\');
-                if ( vec.size() == 0 || (vec.size() == 1 && vec[0].empty()) ) {
-                    jsonValue = {nullptr};
-                }
-                else {
-                    jsonValue = vec;
-                }
+                jsonValue = split(value, '\\');
             }
 
             v[keyName]["vr"] = vr;
