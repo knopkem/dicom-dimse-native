@@ -31,6 +31,8 @@
 #include "dcmtk/dcmqrdb/dcmqrcbg.h"    /* for class DcmQueryRetrieveGetContext */
 #include "dcmtk/dcmqrdb/dcmqrcbs.h"    /* for class DcmQueryRetrieveStoreContext */
 
+#include <thread>
+#include <future>
 
 static void findCallback(
   /* in */
@@ -1108,7 +1110,7 @@ OFCondition DcmQueryRetrieveSCP::waitForAssociation(T_ASC_Network * theNet)
         if (options_.singleProcess_)
         {
             /* don't spawn a sub-process to handle the association */
-            cond = handleAssociation(assoc, options_.correctUIDPadding_);
+            std::async(std::launch::async, &DcmQueryRetrieveSCP::handleAssociation, this, assoc, options_.correctUIDPadding_);
         }
 #ifdef HAVE_FORK
         else

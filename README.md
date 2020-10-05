@@ -14,7 +14,6 @@ Nodejs native addon for DICOM DIMSE services using the DCMTK DICOM c++ toolkit.
 * C-Store as SCU and SCP
 
 # Roadmap:
-* multithreaded association handling (scp)
 * extended characterSet support
 * JPEG 2000 support (c-store scu)
 
@@ -34,7 +33,13 @@ run the examples:
 
 # PACS-server 
 
-## Supports: ECHO, FIND, MOVE, GET and STORE-SCP using sqlite db backend
+## Features:
+
+* ECHO, FIND, MOVE, GET and STORE-SCP
+* sqlite db backend
+* multithreaded association handling
+
+
 ```
 const dimse = require('dicom-dimse-native');
 
