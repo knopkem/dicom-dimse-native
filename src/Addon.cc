@@ -6,6 +6,8 @@
 #include "MoveAsyncWorker.h"
 #include "StoreAsyncWorker.h"
 #include "ServerAsyncWorker.h"
+#include "ParseAsyncWorker.h"
+#include "CompressAsyncWorker.h"
 
 #include <iostream>
 
@@ -56,6 +58,24 @@ Value DoStore(const CallbackInfo& info) {
     return info.Env().Undefined();
 }
 
+Value DoParse(const CallbackInfo& info) {
+    std::string input = info[0].As<String>().Utf8Value();
+    Function cb = info[1].As<Function>();
+
+    auto worker = new ParseAsyncWorker(input, cb);
+    worker->Queue();
+    return info.Env().Undefined();
+}
+
+Value DoCompress(const CallbackInfo& info) {
+    std::string input = info[0].As<String>().Utf8Value();
+    Function cb = info[1].As<Function>();
+
+    auto worker = new CompressAsyncWorker(input, cb);
+    worker->Queue();
+    return info.Env().Undefined();
+}
+
 Value StartScp(const CallbackInfo& info) {
     std::string input = info[0].As<String>().Utf8Value();
     Function cb = info[1].As<Function>();
@@ -79,6 +99,10 @@ Object Init(Env env, Object exports) {
                 Function::New(env, DoStore));
     exports.Set(String::New(env, "startScp"),
                 Function::New(env, StartScp));
+    exports.Set(String::New(env, "parseFile"),
+                Function::New(env, DoParse));
+    exports.Set(String::New(env, "recompress"),
+                Function::New(env, DoCompress));
     return exports;
 }
 
