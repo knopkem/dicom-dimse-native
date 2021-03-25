@@ -1,6 +1,6 @@
 {
   "name": "dicom-dimse-native",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "description": "native addon using DCMTK dicom toolkit",
   "main": "index.js",
   "scripts": {
@@ -35,13 +35,12 @@
   "dependencies": {
     "bindings": "^1.5.0",
     "node-addon-api": "^3.0.2",
-    "prebuild-install": "^5.3.5"
+    "prebuild-install": "^5.3.5",
+    "cmake-js": "^6.0.0"
   },
   "devDependencies": {
     "chai": "^4.2.0",
-    "cmake-js": "^6.0.0",
-    "mocha": "^7.2.0",
-    "node-cmake": "^2.5.1"
+    "mocha": "^7.2.0"
   },
   "repository": {
     "type": "git",
