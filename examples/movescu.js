@@ -5,16 +5,17 @@ addon.startScp(JSON.stringify(
         "source": {
             "aet": "DIMSE",
             "ip" : "127.0.0.1",
-            "port": "8888"
-        },
-        "peers": {
-            {
-            "aet": "SERVER",
-            "ip" : "127.0.0.1",
             "port": "9999"
+        },
+        "peers": [
+            {
+            "aet": "CONQUESTSRV1",
+            "ip" : "127.0.0.1",
+            "port": "5678"
             }
-            ]
+            ],
         "storagePath": "./data",
+        "permissive": false,
         "verbose": true
     }
     ), (result) => {
@@ -52,7 +53,7 @@ setTimeout(function() {
                     "value": "STUDY",
                 },
             ],
-            "destination" : "IMEBRA",
+            "destination" : "DIMSE",
             "verbose": true
         }
     ), (result) => {
