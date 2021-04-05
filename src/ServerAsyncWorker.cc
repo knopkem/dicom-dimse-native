@@ -120,7 +120,8 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
  
   DcmQueryRetrieveOptions options;
   options.net_ = network;
-
+  options.networkTransferSyntax_ = DcmXfer(in.netTransfer.c_str()).getXfer();
+  options.writeTransferSyntax_ = DcmXfer(in.writeTransfer.c_str()).getXfer();
 
   DcmQueryRetrieveSQLiteDatabaseHandleFactory factory(&cfg);
   DcmAssociationConfiguration associationConfiguration;

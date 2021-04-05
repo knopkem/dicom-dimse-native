@@ -15,6 +15,8 @@ addon.startScp(JSON.stringify(
                 }
             ],
         "storagePath": "./data",
+        "netTransfer": "1.2.840.10008.1.2.4.80", // preferred network transfer syntax (proposed to peers)
+        "writeTransfer": "1.2.840.10008.1.2.4.80", // write transfer syntax (storage only), keep empty to store original
         "permissive": true, // any AET can perform FIND,GET and STORE
         "verbose": true // verbose logging
     }
