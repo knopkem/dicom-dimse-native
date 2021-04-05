@@ -120,8 +120,12 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
  
   DcmQueryRetrieveOptions options;
   options.net_ = network;
-  options.networkTransferSyntax_ = DcmXfer(in.netTransfer.c_str()).getXfer();
-  options.writeTransferSyntax_ = DcmXfer(in.writeTransfer.c_str()).getXfer();
+  DcmXfer netTrans = in.netTransfer.empty() ? DcmXfer(EXS_Unknown) : DcmXfer(in.netTransfer.c_str());
+  DcmXfer writeTrans = in.writeTransfer.empty() ? DcmXfer(EXS_Unknown) : DcmXfer(in.writeTransfer.c_str());
+  std::cout << "preferred network transfer syntax: " << netTrans.getXferName() << std::endl;
+  std::cout << "write transfer syntax: " << writeTrans.getXferName() << std::endl;
+  options.networkTransferSyntax_ = netTrans.getXfer();
+  options.writeTransferSyntax_ = writeTrans.getXfer();
 
   DcmQueryRetrieveSQLiteDatabaseHandleFactory factory(&cfg);
   DcmAssociationConfiguration associationConfiguration;
