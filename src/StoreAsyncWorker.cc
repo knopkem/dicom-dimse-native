@@ -109,6 +109,10 @@ void StoreAsyncWorker::Execute(const ExecutionProgress &progress)
         return;
     }
 
+    DcmXfer netTransPropose = in.netTransferPropose.empty() ? DcmXfer(EXS_Unknown) : DcmXfer(in.netTransferPropose.c_str());
+    std::cout << "proposed network transfer syntax for outgoing associations: " << netTransPropose.getXferName() << std::endl;
+    m_networkTransferSyntax = netTransPropose.getXfer();
+
     bool success = sendStoreRequest(in.target.aet.c_str(), in.target.ip.c_str(), OFstatic_cast(Uint16, std::stoi(in.target.port)),
         in.source.aet.c_str(), in.source.ip.c_str(), OFstatic_cast(Uint16, std::stoi(in.source.port)) );
 

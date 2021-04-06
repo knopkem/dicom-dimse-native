@@ -167,8 +167,11 @@ void GetAsyncWorker::Execute(const ExecutionProgress &progress)
         SendInfo("storage path not set, defaulting to " + in.storagePath, progress);
     }
 
+    DcmXfer netTransPrefer = in.netTransferPrefer.empty() ? DcmXfer(EXS_Unknown) : DcmXfer(in.netTransferPrefer.c_str());
+    std::cout << "preferred (accepted) network transfer syntax for incoming associations: " << netTransPrefer.getXferName() << std::endl;
+
     OFCmdUnsignedInt opt_maxPDU = ASC_DEFAULTMAXPDU;
-    E_TransferSyntax opt_store_networkTransferSyntax = EXS_JPEGLSLossless;
+    E_TransferSyntax opt_store_networkTransferSyntax = netTransPrefer.getXfer();
     E_TransferSyntax opt_get_networkTransferSyntax = EXS_Unknown;
     DcmStorageMode opt_storageMode = DCMSCU_STORAGE_DISK;
     OFBool opt_showPresentationContexts = OFFalse;

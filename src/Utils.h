@@ -76,7 +76,8 @@ namespace ns {
         std::string storagePath;
         std::string sourcePath;
         std::string destination;
-        std::string netTransfer;
+        std::string netTransferPrefer;
+        std::string netTransferPropose;
         std::string writeTransfer; 
         std::vector<sTag> tags;
         std::vector<sIdent> peers;
@@ -144,7 +145,8 @@ namespace ns {
         in.destination = toString(j, "destination");
         in.storagePath = toString(j, "storagePath");
         in.sourcePath = toString(j, "sourcePath");
-        in.netTransfer = toString(j, "netTransfer");
+        in.netTransferPrefer = toString(j, "netTransferPrefer");
+        in.netTransferPropose = toString(j, "netTransferPropose");
         in.writeTransfer = toString(j, "writeTransfer");
         try {
             auto tags = j.at("tags");

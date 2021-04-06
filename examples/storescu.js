@@ -12,6 +12,7 @@ addon.storeScu(JSON.stringify(
             "ip" : "127.0.0.1",
             "port": "5678"
         },
+        "netTransferPropose": "1.2.840.10008.1.2.4.80", // proposed network transfer syntax (for outgoing associations - additional to default ts)
         "sourcePath": "./examples/dicom",
         "verbose": true
     }

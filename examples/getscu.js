@@ -22,6 +22,7 @@ addon.getScu(JSON.stringify(
                 "value": "STUDY",
             },
         ],
+        "netTransferPrefer": "1.2.840.10008.1.2.4.80", // preferred network transfer syntax (accepted ts - additional to default ts)
         "verbose": true
     }
 ), (result) => {

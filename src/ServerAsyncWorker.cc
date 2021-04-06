@@ -120,15 +120,20 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
  
   DcmQueryRetrieveOptions options;
   options.net_ = network;
-  DcmXfer netTrans = in.netTransfer.empty() ? DcmXfer(EXS_Unknown) : DcmXfer(in.netTransfer.c_str());
+  options.disableGetSupport_ = true;
+  DcmXfer netTransPrefer = in.netTransferPrefer.empty() ? DcmXfer(EXS_Unknown) : DcmXfer(in.netTransferPrefer.c_str());
+  DcmXfer netTransPropose = in.netTransferPropose.empty() ? DcmXfer(EXS_Unknown) : DcmXfer(in.netTransferPropose.c_str());
   DcmXfer writeTrans = in.writeTransfer.empty() ? DcmXfer(EXS_Unknown) : DcmXfer(in.writeTransfer.c_str());
-  std::cout << "preferred network transfer syntax: " << netTrans.getXferName() << std::endl;
-  std::cout << "write transfer syntax: " << writeTrans.getXferName() << std::endl;
-  options.networkTransferSyntax_ = netTrans.getXfer();
+  std::cout << "preferred (accepted) network transfer syntax for incoming associations: " << netTransPrefer.getXferName() << std::endl;
+  std::cout << "proposed network transfer syntax for outgoing associations: " << netTransPropose.getXferName() << std::endl;
+  std::cout << "write transfer syntax (recompress if different to accepted ts): " << writeTrans.getXferName() << std::endl;
+  options.networkTransferSyntax_ = netTransPrefer.getXfer();
+  options.networkTransferSyntaxOut_ = netTransPropose.getXfer();
   options.writeTransferSyntax_ = writeTrans.getXfer();
 
   DcmQueryRetrieveSQLiteDatabaseHandleFactory factory(&cfg);
   DcmAssociationConfiguration associationConfiguration;
+
   DcmQueryRetrieveSCP scp(cfg, options, factory, associationConfiguration);
   while (cond.good()) {
       cond = scp.waitForAssociation(net);
