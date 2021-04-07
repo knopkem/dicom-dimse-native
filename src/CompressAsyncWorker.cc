@@ -14,7 +14,7 @@
 #define INCLUDE_CSTRING
 #define INCLUDE_CSTDARG
 #include "dcmtk/ofstd/ofstdinc.h"
-
+#include "dcmtk/ofstd/offilsys.h"
 #include "dcmtk/dcmdata/cmdlnarg.h"
 #include "dcmtk/dcmdata/dcdict.h"
 #include "dcmtk/dcmdata/dcfilefo.h"
@@ -25,10 +25,43 @@
 #include "dcmtk/ofstd/ofconapp.h"
 #include "dcmtk/dcmdata/dcjson.h"
 #include "dcmtk/ofstd/ofstream.h"
+#include "dcmtk/dcmdata/dcvrui.h"
+#include "dcmtk/dcmdata/dcmetinf.h"
+#include "dcmtk/dcmdata/dcdeftag.h"
 
 #ifdef WITH_ZLIB
 #include <zlib.h>
 #endif
+
+namespace {
+  E_TransferSyntax lookForXfer(DcmMetaInfo *metainfo)
+  {
+      E_TransferSyntax newxfer = EXS_Unknown;
+      DcmStack stack;
+      /* check whether meta header is present (and non-empty, i.e. contains elements) */
+      if (metainfo && !metainfo->isEmpty())
+      {
+          if (metainfo->search(DCM_TransferSyntaxUID, stack).good())
+          {
+              DcmUniqueIdentifier *xferUI = OFstatic_cast(DcmUniqueIdentifier *, stack.top());
+              if (xferUI->getTag().getXTag() == DCM_TransferSyntaxUID)
+              {
+                  char *xferid = NULL;
+                  xferUI->getString(xferid);
+                  DcmXfer localXfer(xferid);      // decode to E_TransferSyntax
+                  newxfer = localXfer.getXfer();
+              }
+          } else {
+              /* there is no transfer syntax UID element in the meta header */
+              DCMNET_DEBUG("DcmFileFormat::lookForXfer() no TransferSyntax in MetaInfo");
+          }
+      } else {
+          /* no meta header present at all (or it is empty, i.e. contains no elements) */
+          DCMNET_DEBUG("DcmFileFormat::lookForXfer() no MetaInfo found");
+      }
+      return newxfer;
+  }
+}
 
 CompressAsyncWorker::CompressAsyncWorker(std::string data, Function &callback)
     : BaseAsyncWorker(data, callback) {
@@ -153,6 +186,11 @@ OFBool CompressAsyncWorker::recompress(const OFFilename& infile, const OFString&
     }
     OFString outfile = storePath + OFString("/") + OFString(sopInstanceUID);
     DCMNET_INFO(outfile);
+
+    if (OFpath(infile.getCharPointer()) == OFpath(outfile) && lookForXfer(dfile.getMetaInfo()) == prefXfer) {
+      DCMNET_INFO("file has correct ts already skipping...");
+      return OFTrue;
+    }
 
     OFCondition cond = dfile.chooseRepresentation(prefXfer, NULL);
     if (cond.bad() || !dfile.canWriteXfer(prefXfer)) {
