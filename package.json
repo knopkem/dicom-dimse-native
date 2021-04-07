@@ -1,10 +1,11 @@
 {
   "name": "dicom-dimse-native",
-  "version": "1.2.8",
+  "version": "1.2.9",
   "description": "native addon using DCMTK dicom toolkit",
   "main": "index.js",
   "scripts": {
-    "install": "npx prebuild-install -r napi || npx cmake-js compile",
+    "install": "prebuild-install -r napi || cmake-js compile",
+    "prebuild": "prebuild -t 4 -r napi --all --verbose --backend cmake-js",
     "example:echoscu": "node ./examples/echoscu.js",
     "example:findscu": "node ./examples/findscu.js",
     "example:getscu": "node ./examples/getscu.js",
@@ -34,13 +35,16 @@
   "license": "MIT",
   "dependencies": {
     "bindings": "^1.5.0",
-    "node-addon-api": "^3.0.2",
-    "prebuild-install": "^5.3.5",
-    "cmake-js": "^6.0.0"
+    "cmake-js": "^6.1.0",
+    "node-addon-api": "^3.1.0",
+    "prebuild-install": "^6.0.0"
   },
   "devDependencies": {
     "chai": "^4.2.0",
     "mocha": "^7.2.0"
+  },
+  "engines": {
+    "node": ">=10"
   },
   "repository": {
     "type": "git",
