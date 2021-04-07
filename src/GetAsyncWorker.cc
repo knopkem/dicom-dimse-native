@@ -168,7 +168,7 @@ void GetAsyncWorker::Execute(const ExecutionProgress &progress)
     }
 
     DcmXfer netTransPrefer = in.netTransferPrefer.empty() ? DcmXfer(EXS_Unknown) : DcmXfer(in.netTransferPrefer.c_str());
-    std::cout << "preferred (accepted) network transfer syntax for incoming associations: " << netTransPrefer.getXferName() << std::endl;
+    DCMNET_INFO("preferred (accepted) network transfer syntax for incoming associations: " << netTransPrefer.getXferName());
 
     OFCmdUnsignedInt opt_maxPDU = ASC_DEFAULTMAXPDU;
     E_TransferSyntax opt_store_networkTransferSyntax = netTransPrefer.getXfer();

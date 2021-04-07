@@ -124,9 +124,11 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
   DcmXfer netTransPrefer = in.netTransferPrefer.empty() ? DcmXfer(EXS_Unknown) : DcmXfer(in.netTransferPrefer.c_str());
   DcmXfer netTransPropose = in.netTransferPropose.empty() ? DcmXfer(EXS_Unknown) : DcmXfer(in.netTransferPropose.c_str());
   DcmXfer writeTrans = in.writeTransfer.empty() ? DcmXfer(EXS_Unknown) : DcmXfer(in.writeTransfer.c_str());
-  std::cout << "preferred (accepted) network transfer syntax for incoming associations: " << netTransPrefer.getXferName() << std::endl;
-  std::cout << "proposed network transfer syntax for outgoing associations: " << netTransPropose.getXferName() << std::endl;
-  std::cout << "write transfer syntax (recompress if different to accepted ts): " << writeTrans.getXferName() << std::endl;
+  
+  DCMNET_INFO("preferred (accepted) network transfer syntax for incoming associations: " << netTransPrefer.getXferName());
+  DCMNET_INFO("proposed network transfer syntax for outgoing associations: " << netTransPropose.getXferName());
+  DCMNET_INFO("write transfer syntax (recompress if different to accepted ts): " << writeTrans.getXferName());
+
   options.networkTransferSyntax_ = netTransPrefer.getXfer();
   options.networkTransferSyntaxOut_ = netTransPropose.getXfer();
   options.writeTransferSyntax_ = writeTrans.getXfer();

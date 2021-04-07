@@ -41,6 +41,11 @@ void ParseAsyncWorker::Execute(const ExecutionProgress &progress)
 
     EnableVerboseLogging(in.verbose);
 
+    if (in.sourcePath.empty()) {
+        SetErrorJson("No source path set");
+        return;
+    }
+
     OFFilename ifname(in.sourcePath.c_str());
     DcmFileFormat dfile;
     OFCondition status = dfile.loadFile(ifname, EXS_Unknown, EGL_noChange, DCM_MaxReadLength, ERM_autoDetect);

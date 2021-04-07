@@ -232,16 +232,6 @@ void MoveAsyncWorker::Execute(const ExecutionProgress &progress)
     if (!responses.empty())
     {
 
-        /* output final status report */
-        /*
-        std::cout << "Final status report from last C-MOVE message:" << std::endl;
-        RetrieveResponse *rsp = (*(--responses.end()));
-        std::cout << "Number of Remaining sub-operations : " << rsp->m_numberOfRemainingSubops << std::endl;
-        std::cout << "Number of Completed sub-operations : " << rsp->m_numberOfCompletedSubops << std::endl;
-        std::cout << "Number of Failed sub-operations    : " << rsp->m_numberOfFailedSubops << std::endl;
-        std::cout << "Number of Warning sub-operations   : " << rsp->m_numberOfWarningSubops << std::endl;
-        */
-
         /* delete responses */
         OFListIterator(RetrieveResponse *) iter = responses.begin();
         OFListConstIterator(RetrieveResponse *) last = responses.end();
