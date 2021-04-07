@@ -2,7 +2,7 @@ const addon = require('../index');
 
 addon.parseFile(JSON.stringify(
     {
-        "sourcePath": "./examples/dicom.dcm",
+        "sourcePath": "./examples/dicom.dcm", // single DICOM file only
         "verbose": true
     }
 ), (result) => {

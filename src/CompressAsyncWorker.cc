@@ -60,9 +60,15 @@ void CompressAsyncWorker::Execute(const ExecutionProgress &progress)
     /* create list of input files */
     DCMNET_INFO("determining input files ...");
 
-    OFStandard::searchDirectoryRecursively(OFString(in.sourcePath.c_str()), inputFiles, 
-        OFFilename() /*Pattern */, OFFilename() /*dirPrefix*/, OFTrue);
+    OFFilename sourcePath(in.sourcePath.c_str());
 
+    if (OFStandard::dirExists(sourcePath)) {
+      OFStandard::searchDirectoryRecursively(sourcePath, inputFiles, 
+        OFFilename() /*Pattern */, OFFilename() /*dirPrefix*/, OFTrue);
+    } 
+    else if (OFStandard::fileExists(sourcePath)) {
+      inputFiles.push_back(sourcePath);
+    }
  
     /* check whether there are any input files at all */
     if (inputFiles.empty())

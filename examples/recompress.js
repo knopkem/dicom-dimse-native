@@ -2,8 +2,8 @@ const addon = require('../index');
 
 addon.recompress(JSON.stringify(
     {
-        "sourcePath": "./examples/input",
-        "storagePath": "./examples/output",
+        "sourcePath": "./examples/input", // can point to directory or single dicom file
+        "storagePath": "./examples/output", // existing directory only
         "writeTransfer": "1.2.840.10008.1.2.4.80", // see supported ts below 
         "verbose": true
     }
