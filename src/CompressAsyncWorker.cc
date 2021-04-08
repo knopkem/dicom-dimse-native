@@ -61,6 +61,16 @@ namespace {
       }
       return newxfer;
   }
+
+  OFFilename convertToOsPath(OFFilename fpath) {
+    std::string fullPath(fpath.getCharPointer());
+#ifdef HAVE_WINDOWS_H
+    std::replace(fullPath.begin(),fullPath.end(),'/','\\');
+#else
+    std::replace(fullPath.begin(),fullPath.end(),'\\','/');
+#endif
+    return OFFilename(fullPath.c_str());
+  }
 }
 
 CompressAsyncWorker::CompressAsyncWorker(std::string data, Function &callback)
@@ -166,6 +176,7 @@ void CompressAsyncWorker::Execute(const ExecutionProgress &progress)
 
 OFBool CompressAsyncWorker::isDicomFile( const OFFilename &fname )
 {
+    // TODO: implement
     return OFTrue;
 }
 
@@ -184,18 +195,65 @@ OFBool CompressAsyncWorker::recompress(const OFFilename& infile, const OFString&
        DCMNET_WARN("Failed reading SOPInstanceUid in file: " << infile.getCharPointer());
        return OFFalse;
     }
-    OFString outfile = storePath + OFString("/") + OFString(sopInstanceUID);
-    DCMNET_INFO(outfile);
+    OFFilename outfile(storePath + OFString("/") + OFString(sopInstanceUID));
+    DCMNET_INFO("output: " << outfile.getCharPointer());
 
-    if (OFpath(infile.getCharPointer()) == OFpath(outfile) && lookForXfer(dfile.getMetaInfo()) == prefXfer) {
-      DCMNET_INFO("file has correct ts already skipping...");
-      return OFTrue;
+    // create paths that we can actually compare
+    OFpath inpath(convertToOsPath(infile.getCharPointer()).getCharPointer());
+    OFpath outpath(convertToOsPath(outfile.getCharPointer()).getCharPointer());
+
+    // check if input is same as output
+    bool isSameFile = false;
+    if (inpath == outpath) {
+      isSameFile = true;
+      // skip writing if input and output is the same and TS match already
+      if(lookForXfer(dfile.getMetaInfo()) == prefXfer) {
+        DCMNET_INFO("file has correct Xfer already skipping...");
+        return OFTrue;
+      }
     }
 
+    // check if conversion is possible
     OFCondition cond = dfile.chooseRepresentation(prefXfer, NULL);
     if (cond.bad() || !dfile.canWriteXfer(prefXfer)) {
       DCMNET_WARN("Failed compressing file: " << infile.getCharPointer());
       return OFFalse;
     }
-    return dfile.saveFile(outfile, prefXfer).good();
+
+    // just save the file if output is different
+    if (!isSameFile) {
+      cond = dfile.saveFile(outfile, prefXfer);
+      if (cond.bad()) {
+         DCMNET_WARN("Failed writing file to: " << outfile.getCharPointer());
+         return OFFalse;
+      }
+      return OFTrue;
+    }
+
+    // write to temp file
+    OFFilename tmpFile(OFString(outfile.getCharPointer()) + OFString("_"));
+    cond = dfile.saveFile(tmpFile, prefXfer);
+
+    if (cond.bad()) {
+      DCMNET_WARN("Failed writing file to: " << tmpFile.getCharPointer());
+      return OFFalse;
+    }
+
+    // delete original
+    bool success = OFStandard::deleteFile(outfile);
+
+    if (!success) {
+      DCMNET_WARN("Failed deleting original file: " << outfile.getCharPointer());
+      return OFFalse;
+    }
+
+    // rename to original 
+    success = OFStandard::renameFile(tmpFile, outfile);
+
+    if (!success) {
+      DCMNET_WARN("Failed remaing file: " << tmpFile.getCharPointer() << " to: " << outfile.getCharPointer());
+      return OFFalse;
+    }
+
+    return OFTrue;
 }
