@@ -121,6 +121,7 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
   DcmQueryRetrieveOptions options;
   options.net_ = network;
   options.disableGetSupport_ = true;
+  options.maxAssociations_ = 128;
   DcmXfer netTransPrefer = in.netTransferPrefer.empty() ? DcmXfer(EXS_Unknown) : DcmXfer(in.netTransferPrefer.c_str());
   DcmXfer netTransPropose = in.netTransferPropose.empty() ? DcmXfer(EXS_Unknown) : DcmXfer(in.netTransferPropose.c_str());
   DcmXfer writeTrans = in.writeTransfer.empty() ? DcmXfer(EXS_Unknown) : DcmXfer(in.writeTransfer.c_str());
@@ -128,6 +129,7 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
   DCMNET_INFO("preferred (accepted) network transfer syntax for incoming associations: " << netTransPrefer.getXferName());
   DCMNET_INFO("proposed network transfer syntax for outgoing associations: " << netTransPropose.getXferName());
   DCMNET_INFO("write transfer syntax (recompress if different to accepted ts): " << writeTrans.getXferName());
+  DCMNET_INFO("max associations: " << options.maxAssociations_);
 
   options.networkTransferSyntax_ = netTransPrefer.getXfer();
   options.networkTransferSyntaxOut_ = netTransPropose.getXfer();
