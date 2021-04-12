@@ -185,7 +185,7 @@ void MoveAsyncWorker::Execute(const ExecutionProgress &progress)
     DcmSCU scu;
     scu.setMaxReceivePDULength(ASC_DEFAULTMAXPDU);
     scu.setACSETimeout(60);
-    scu.setDIMSEBlockingMode(DIMSE_NONBLOCKING);
+    scu.setDIMSEBlockingMode(DIMSE_BLOCKING);
     scu.setDIMSETimeout(60);
     scu.setAETitle(in.source.aet.c_str());
     scu.setPeerHostName(in.target.ip.c_str());

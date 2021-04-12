@@ -619,7 +619,6 @@ bool DcmSQLiteDatabase::insertDb(const std::map< DB_FindAttrExt, std::string,
 
     if (!imgIdent.isNew) {
         DCMNET_WARN("instance already registered, ignoring");
-        return false;
     }
 
     return true;

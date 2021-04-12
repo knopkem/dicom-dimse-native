@@ -78,7 +78,7 @@ namespace ns {
         std::string destination;
         std::string netTransferPrefer;
         std::string netTransferPropose;
-        std::string writeTransfer; 
+        std::string writeTransfer;
         std::vector<sTag> tags;
         std::vector<sIdent> peers;
         bool verbose;
