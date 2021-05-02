@@ -120,6 +120,7 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
  
   DcmQueryRetrieveOptions options;
   options.net_ = network;
+  options.allowShutdown_ = true;
   options.disableGetSupport_ = true;
   options.maxAssociations_ = 128;
   DcmXfer netTransPrefer = in.netTransferPrefer.empty() ? DcmXfer(EXS_Unknown) : DcmXfer(in.netTransferPrefer.c_str());

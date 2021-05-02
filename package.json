@@ -12,6 +12,7 @@
     "example:movescu": "node ./examples/movescu.js",
     "example:storescu": "node ./examples/storescu.js",
     "example:storescp": "node ./examples/storescp.js",
+    "example:shutdownscu": "node ./examples/shutdownscu.js",
     "test": "mocha"
   },
   "keywords": [
