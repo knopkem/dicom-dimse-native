@@ -38,7 +38,7 @@
     "bindings": "^1.5.0",
     "cmake-js": "^6.1.0",
     "node-addon-api": "^3.1.0",
-    "prebuild-install": "^6.0.0"
+    "prebuild-install": "^6.1.2"
   },
   "devDependencies": {
     "chai": "^4.2.0",
