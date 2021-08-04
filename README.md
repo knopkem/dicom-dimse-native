@@ -14,6 +14,7 @@ Nodejs native addon for DICOM DIMSE services using the DCMTK DICOM c++ toolkit.
 * C-Store as SCU and SCP
 
 # Roadmap:
+* Worklist SCP and SCU
 * extended characterSet support
 * JPEG 2000 support (c-store scu)
 
