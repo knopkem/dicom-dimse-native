@@ -19,3 +19,5 @@ before_install:
   - make
   - cd ..
   - cmake --version
+
+script: echo "Success!"
