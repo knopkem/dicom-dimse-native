@@ -6,8 +6,9 @@
   "scripts": {
     "install": "npx prebuild-install -r napi || npx cmake-js compile",
     "prebuild": "npx prebuild -t 4 -r napi --all --verbose --backend cmake-js",
-    "example:echoscu": "node ./examples/echoscu.js",
-    "example:findscu": "node ./examples/findscu.js",
+    "build": "tsc",
+    "example:echoscu": "ts-node ./examples/echoscu.ts",
+    "example:findscu": "ts-node ./examples/findscu.ts",
     "example:getscu": "node ./examples/getscu.js",
     "example:movescu": "node ./examples/movescu.js",
     "example:storescu": "node ./examples/storescu.js",
@@ -51,5 +52,11 @@
     "napi_versions": [
       4
     ]
+  },
+  "devDependencies": {
+    "@types/node": "^16.11.3",
+    "ts-node": "^10.3.1",
+    "tsc": "^2.0.3",
+    "typescript": "^4.4.4"
   }
 }
