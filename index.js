@@ -1,6 +1,6 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseFile = exports.shutdownScu = exports.startScp = exports.storeScu = exports.moveScu = exports.getScu = exports.findScu = exports.echoScu = void 0;
+exports.__esModule = true;
+exports.recompress = exports.parseFile = exports.shutdownScu = exports.startStoreScp = exports.storeScu = exports.moveScu = exports.getScu = exports.findScu = exports.echoScu = void 0;
 var addon = require('bindings')('dcmtk.node');
 ;
 ;
@@ -31,10 +31,10 @@ function storeScu(options, callback) {
     addon.storeScu(JSON.stringify(options), callback);
 }
 exports.storeScu = storeScu;
-function startScp(options, callback) {
+function startStoreScp(options, callback) {
     addon.startScp(JSON.stringify(options), callback);
 }
-exports.startScp = startScp;
+exports.startStoreScp = startStoreScp;
 function shutdownScu(options, callback) {
     addon.shutdownScu(JSON.stringify(options), callback);
 }
@@ -43,3 +43,7 @@ function parseFile(options, callback) {
     addon.parseFile(JSON.stringify(options), callback);
 }
 exports.parseFile = parseFile;
+function recompress(options, callback) {
+    addon.recompress(JSON.stringify(options), callback);
+}
+exports.recompress = recompress;

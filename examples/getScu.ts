@@ -1,7 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-var index_1 = require("../index");
-var options = {
+import { getScu, getScuOptions } from '../index';
+
+const options: getScuOptions = {
     source: {
         aet: "DIMSE",
         ip: "127.0.0.1",
@@ -21,13 +20,11 @@ var options = {
             key: "00080052",
             value: "STUDY",
         },
-        {
-            key: "00100010",
-            value: "",
-        }
     ],
+    netTransferPrefer: "1.2.840.10008.1.2.4.80", // preferred network transfer syntax (accepted ts - additional to default ts)
     verbose: true
 };
-index_1.findScu(options, function (result) {
-    console.log(result);
+
+getScu(options, (result) => {
+    console.log(JSON.parse(result));
 });

@@ -24,8 +24,10 @@ export interface findScuOptions extends scuOptions {
 }
 export interface getScuOptions extends scuOptions {
     netTransferPrefer?: string;
+    tags: KeyValue[];
 }
 export interface moveScuOptions extends scuOptions {
+    tags: KeyValue[];
     destination: string;
     netTransferPrefer?: string;
 }
@@ -57,7 +59,7 @@ export declare function findScu(options: findScuOptions, callback: (result: stri
 export declare function getScu(options: getScuOptions, callback: (result: string) => void): void;
 export declare function moveScu(options: moveScuOptions, callback: (result: string) => void): void;
 export declare function storeScu(options: storeScuOptions, callback: (result: string) => void): void;
-export declare function startScp(options: storeScpOptions, callback: (result: string) => void): void;
+export declare function startStoreScp(options: storeScpOptions, callback: (result: string) => void): void;
 export declare function shutdownScu(options: shutdownScuOptions, callback: (result: string) => void): void;
 export declare function parseFile(options: parseOptions, callback: (result: string) => void): void;
 export {};

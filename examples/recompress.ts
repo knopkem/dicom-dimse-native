@@ -1,23 +1,4 @@
-const addon = require('../index');
-
-addon.recompress(JSON.stringify(
-    {
-        "sourcePath": "./examples/input", // can point to directory or single dicom file
-        "storagePath": "./examples/output", // existing directory only
-        "writeTransfer": "1.2.840.10008.1.2.4.80", // see supported ts below 
-        "verbose": true
-    }
-), (result) => {
-        if (result && result.length > 0) {
-            try
-            {
-                console.log(JSON.parse(result));
-            }
-            catch (e) {
-                console.log(e, result);
-            }
-        }
-});
+import { recompress, recompressOptions } from '../index';
 
 /*
 Supported Transfer Syntaxes:
@@ -31,3 +12,15 @@ Supported Transfer Syntaxes:
 1.2.840.10008.1.2.4.81  JPEG-LS Lossy (Near- Lossless) Image Compression
 1.2.840.10008.1.2.5     RLE Lossless
 */
+const options: recompressOptions =
+{
+    sourcePath: __dirname + "./input", // can point to directory or single dicom file
+    storagePath: "./examples/output", // existing directory only
+    writeTransfer: "1.2.840.10008.1.2.4.80", // see supported ts 
+    verbose: true
+};
+
+recompress(options, (result) => {
+    console.log(JSON.parse(result));
+});
+

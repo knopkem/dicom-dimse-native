@@ -29,5 +29,5 @@ const options : findScuOptions = {
 };
 
 findScu(options, (result) => {
-  console.log(result);
+  console.log(JSON.parse(result));
 });

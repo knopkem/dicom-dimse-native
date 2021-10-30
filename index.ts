@@ -32,9 +32,11 @@ export interface findScuOptions extends scuOptions {
 
 export interface getScuOptions extends scuOptions {
   netTransferPrefer?: string;
+  tags: KeyValue[];
 };
 
 export interface moveScuOptions extends scuOptions {
+  tags: KeyValue[];
   destination: string;
   netTransferPrefer?: string;
 };
@@ -88,7 +90,7 @@ export function storeScu(options: storeScuOptions, callback: (result: string) =>
   addon.storeScu(JSON.stringify(options), callback);
 }
 
-export function startScp(options: storeScpOptions, callback: (result: string) => void) {
+export function startStoreScp(options: storeScpOptions, callback: (result: string) => void) {
   addon.startScp(JSON.stringify(options), callback);
 }
 
@@ -100,3 +102,6 @@ export function parseFile(options: parseOptions, callback: (result: string) => v
   addon.parseFile(JSON.stringify(options), callback);
 }
 
+export function recompress(options: recompressOptions, callback: (result: string) => void) {
+  addon.recompress(JSON.stringify(options), callback);
+}
