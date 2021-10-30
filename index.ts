@@ -33,6 +33,7 @@ export interface findScuOptions extends scuOptions {
 export interface getScuOptions extends scuOptions {
   netTransferPrefer?: string;
   tags: KeyValue[];
+  storagePath?: string;
 };
 
 export interface moveScuOptions extends scuOptions {

@@ -1,4 +1,5 @@
 import { startStoreScp, storeScpOptions } from '../index';
+import p from 'path';
 
 const scpOptions: storeScpOptions = {
     source: {
@@ -13,10 +14,10 @@ const scpOptions: storeScpOptions = {
             port: "5678"
         }
     ],
-    storagePath: __dirname + "./data",
+    storagePath: p.join(__dirname, "data"),
     netTransferPrefer: "1.2.840.10008.1.2.4.80", // preferred network transfer syntax (accepted ts - additional to default ts)
     netTransferPropose: "1.2.840.10008.1.2.4.80", // proposed network transfer syntax (for outgoing associations - additional to default ts)
-    writeTransfer: "", // write transfer syntax (storage only, recompress on the fly), keep empty to store ts as original
+    writeTransfer: "", // write transfer syntax (storage only, recompress on the fly), keep empty (or leave out) to store ts as original
     permissive: false, // if true any AET can perform FIND,GET and STORE
     verbose: true
 };

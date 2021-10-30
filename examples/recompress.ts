@@ -1,4 +1,5 @@
 import { recompress, recompressOptions } from '../index';
+import p from "path";
 
 /*
 Supported Transfer Syntaxes:
@@ -14,8 +15,8 @@ Supported Transfer Syntaxes:
 */
 const options: recompressOptions =
 {
-    sourcePath: __dirname + "./input", // can point to directory or single dicom file
-    storagePath: "./examples/output", // existing directory only
+    sourcePath: p.join(__dirname, "dicom"), // can point to directory or single dicom file
+    storagePath: p.join(__dirname, "output"), // existing directory only
     writeTransfer: "1.2.840.10008.1.2.4.80", // see supported ts 
     verbose: true
 };

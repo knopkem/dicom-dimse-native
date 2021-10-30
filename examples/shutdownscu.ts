@@ -1,4 +1,5 @@
 import { startStoreScp, storeScpOptions, shutdownScu, shutdownScuOptions } from '../index';
+import p from 'path';
 
 const scpOptions: storeScpOptions = {
     source: {
@@ -13,7 +14,7 @@ const scpOptions: storeScpOptions = {
             port: "10000"
         }
     ],
-    storagePath: __dirname + "./data",
+    storagePath: p.join(__dirname, "data"),
     permissive: false, // permissive true would allow any scu to shut us down, we don't want this
     verbose: true
 };

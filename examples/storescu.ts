@@ -1,4 +1,5 @@
 import { storeScu, storeScuOptions } from '../index';
+import p from 'path';
 
 const options : storeScuOptions = { 
   source: {
@@ -12,7 +13,7 @@ const options : storeScuOptions = {
     port: "5678"
   },
   netTransferPropose: "1.2.840.10008.1.2.4.80", // proposed network transfer syntax (for outgoing associations - additional to default ts)
-  sourcePath: __dirname + "./dicom",
+  sourcePath: p.join(__dirname, "dicom"),
   verbose: true
 };
 
