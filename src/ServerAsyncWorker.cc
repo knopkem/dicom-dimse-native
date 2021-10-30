@@ -48,7 +48,7 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
     SendInfo("storage path not set, defaulting to " + in.storagePath, progress);
   }
 
-  int opt_port = std::stoi(in.source.port);
+  int opt_port = in.source.port;
   OFString callingAETitle = OFString(in.source.aet.c_str());
   const char *opt_respondingAETitle = in.source.aet.c_str();
   static OFString opt_outputDirectory =  OFString(in.storagePath.c_str());
@@ -113,7 +113,7 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
 
   DcmQueryRetriveConfigExt cfg;
   for (auto peer: in.peers) {
-    cfg.addPeer(peer.aet.c_str(), peer.ip.c_str(), std::stoi(peer.port));
+    cfg.addPeer(peer.aet.c_str(), peer.ip.c_str(), peer.port);
   }
   cfg.setStorageArea(in.storagePath.c_str());
   cfg.setPermissiveMode(in.permissive);

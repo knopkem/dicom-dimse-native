@@ -68,7 +68,7 @@ void StoreAsyncWorker::Execute(const ExecutionProgress &progress)
     // DCMNET_INFO("proposed network transfer syntax for outgoing associations: " << netTransPropose.getXferName());
     // m_networkTransferSyntax = netTransPropose.getXfer();
 
-    bool success = sendStoreRequest(in.target.aet.c_str(), in.target.ip.c_str(), OFstatic_cast(Uint16, std::stoi(in.target.port)), in.source.aet.c_str() );
+    bool success = sendStoreRequest(in.target.aet.c_str(), in.target.ip.c_str(), OFstatic_cast(Uint16, in.target.port), in.source.aet.c_str() );
 
     if (!success) {
         SetErrorJson("Failed to send DICOM files to target");

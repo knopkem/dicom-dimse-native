@@ -63,9 +63,9 @@ namespace ns {
     struct sIdent {
         std::string aet;
         std::string ip;
-        std::string port;
+        int port;
         inline bool valid() {
-            return !aet.empty() && !ip.empty() && !port.empty();
+            return !aet.empty() && !ip.empty() && port > 0;
         } 
     };
 
@@ -93,10 +93,29 @@ namespace ns {
             return in.at(key).get<std::string>();
         }
         catch(json::exception&) {
-
+            // no error log on purpose
         }
         return "";
     }
+
+    inline int toInt(const json& in, const std::string& key) {
+        try {
+            return in.at(key).get<int>();
+        }
+        catch(json::exception&) {
+            // no error log on purpose
+        }
+        // try again from string
+        try {
+            return std::stoi(in.at(key).get<std::string>());
+        }
+        catch(json::exception&) {
+            // no error log on purpose
+        }
+        // fail
+        return -1;
+    }
+
 
     static bool codecsRegistered = false;
 
@@ -129,7 +148,7 @@ namespace ns {
     inline void from_json(const json& j, sIdent& p) {
         p.aet = toString(j, "aet");
         p.ip = toString(j, "ip");
-        p.port = toString(j, "port");
+        p.port = toInt(j, "port");
     }
 
 

@@ -5,13 +5,13 @@ const scpOptions: storeScpOptions = {
     source: {
         aet: "DIMSE",
         ip: "127.0.0.1",
-        port: "9999",
+        port: 9999,
     },
     peers: [
         {
             aet: "CONQUESTSRV1",
             ip: "127.0.0.1",
-            port: "5678"
+            port: 5678
         }
     ],
     storagePath: p.join(__dirname, "data"),
@@ -35,12 +35,12 @@ setTimeout( () => {
         source: {
             aet: "DIMSE",
             ip: "127.0.0.1",
-            port: "9999"
+            port: 9999
         },
         target: {
             aet: "CONQUESTSRV1",
             ip: "127.0.0.1",
-            port: "5678"
+            port: 5678
         },
         tags: [
             {

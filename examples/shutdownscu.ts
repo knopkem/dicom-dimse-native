@@ -5,13 +5,13 @@ const scpOptions: storeScpOptions = {
     source: {
         aet: "DIMSE",
         ip: "127.0.0.1",
-        port: "9999",
+        port: 9999,
     },
     peers: [
         {
             aet: "SHUTDOWN_SCU",
             ip: "127.0.0.1",
-            port: "10000"
+            port: 10000
         }
     ],
     storagePath: p.join(__dirname, "data"),
@@ -29,12 +29,12 @@ const options: shutdownScuOptions = {
     source: {
         aet: "SHUTDOWN_SCU",
         ip: "127.0.0.1",
-        port: "10000"
+        port: 10000
     },
     target: {
         aet: "DIMSE",
         ip: "127.0.0.1",
-        port: "9999"
+        port: 9999
     },
     verbose: true
 };

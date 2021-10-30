@@ -3,7 +3,7 @@ const addon = require('bindings')('dcmtk.node');
 export interface Node {
     aet: string;
     ip: string;
-    port: string;
+    port: number;
 };
 
 export interface KeyValue {
