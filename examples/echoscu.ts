@@ -1,6 +1,6 @@
 import { echoScu, echoScuOptions } from '../index';
 
-const options : echoScuOptions = { 
+const options: echoScuOptions = {
   source: {
     aet: "DIMSE",
     ip: "127.0.0.1",

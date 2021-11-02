@@ -1,14 +1,16 @@
+import { Z_UNKNOWN } from "zlib";
+
 const addon = require('bindings')('dcmtk.node');
 
 export interface Node {
-    aet: string;
-    ip: string;
-    port: number;
+  aet: string;
+  ip: string;
+  port: number;
 };
 
 export interface KeyValue {
-    key: string;
-    value: string;
+  key: string;
+  value: string;
 }
 
 interface scuOptions {
@@ -59,7 +61,7 @@ export interface shutdownScuOptions extends scuOptions {
 };
 
 export interface parseOptions {
-  sourcePath : string;
+  sourcePath: string;
   verbose?: boolean;
 }
 
@@ -76,7 +78,7 @@ export function echoScu(options: echoScuOptions, callback: (result: string) => v
 }
 
 export function findScu(options: findScuOptions, callback: (result: string) => void) {
-    addon.findScu(JSON.stringify(options), callback);
+  addon.findScu(JSON.stringify(options), callback);
 }
 
 export function getScu(options: getScuOptions, callback: (result: string) => void) {

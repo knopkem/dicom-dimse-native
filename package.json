@@ -17,7 +17,7 @@
     "example:shutdownscu": "ts-node ./examples/shutdownscu.ts",
     "example:parse": "ts-node ./examples/parse.ts",
     "example:recompress": "ts-node ./examples/recompress.ts",
-    "test": "echo \"no test\" && exit 0"
+    "test": "jest"
   },
   "keywords": [
     "DICOM",
@@ -57,7 +57,10 @@
     ]
   },
   "devDependencies": {
+    "@types/jest": "^27.0.2",
     "@types/node": "^16.11.3",
+    "jest": "^27.3.1",
+    "ts-jest": "^27.0.7",
     "ts-node": "^10.3.1",
     "tsc": "^2.0.3",
     "tslib": "^2.3.1",

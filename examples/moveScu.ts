@@ -29,7 +29,7 @@ startStoreScp(scpOptions, (result) => {
 });
 
 // we need to wait a bit for the store scp to initialize 
-setTimeout( () => {
+setTimeout(() => {
     const moveOptions: moveScuOptions =
     {
         source: {

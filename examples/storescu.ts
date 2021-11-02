@@ -1,7 +1,7 @@
 import { storeScu, storeScuOptions } from '../index';
 import p from 'path';
 
-const options : storeScuOptions = { 
+const options: storeScuOptions = {
   source: {
     aet: "DIMSE",
     ip: "127.0.0.1",
