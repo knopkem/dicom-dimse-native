@@ -70,7 +70,7 @@ void ShutdownAsyncWorker::Execute(const ExecutionProgress &progress)
     int result = EXITCODE_NO_ERROR;
 
     const char *opt_peer = in.target.ip.c_str();
-    OFCmdUnsignedInt opt_port = std::stoi(in.target.port);
+    OFCmdUnsignedInt opt_port = in.target.port;
     const char *opt_peerTitle = in.target.aet.c_str();
     const char *opt_ourTitle = in.source.aet.c_str();
 

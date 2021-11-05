@@ -189,7 +189,7 @@ void MoveAsyncWorker::Execute(const ExecutionProgress &progress)
     scu.setDIMSETimeout(60);
     scu.setAETitle(in.source.aet.c_str());
     scu.setPeerHostName(in.target.ip.c_str());
-    scu.setPeerPort(std::stoi(in.target.port));
+    scu.setPeerPort(in.target.port);
     scu.setPeerAETitle(in.target.aet.c_str());
 
     scu.addPresentationContext(UID_MOVEStudyRootQueryRetrieveInformationModel, syntaxes);

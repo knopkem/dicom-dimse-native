@@ -209,7 +209,7 @@ void GetAsyncWorker::Execute(const ExecutionProgress &progress)
     scu.setDIMSETimeout(opt_dimse_timeout);
     scu.setAETitle(in.source.aet.c_str());
     scu.setPeerHostName(in.target.ip.c_str());
-    scu.setPeerPort(OFstatic_cast(Uint16, std::stoi(in.target.port)));
+    scu.setPeerPort(OFstatic_cast(Uint16, in.target.port));
     scu.setPeerAETitle(in.source.aet.c_str());
     scu.setVerbosePCMode(opt_showPresentationContexts);
 

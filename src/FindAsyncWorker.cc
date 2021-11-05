@@ -201,7 +201,7 @@ void FindAsyncWorker::Execute(const ExecutionProgress &progress)
     // process results, and finally tear down the association.
     cond = findscu.performQuery(
         in.target.ip.c_str(),
-        std::stoi(in.target.port),
+        in.target.port,
         in.source.aet.c_str(),
         in.target.aet.c_str(),
         UID_FINDStudyRootQueryRetrieveInformationModel,
