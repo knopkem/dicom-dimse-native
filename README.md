@@ -6,12 +6,17 @@
 # dicom-dimse-native
 Nodejs native addon for DICOM DIMSE services using the DCMTK DICOM c++ toolkit.
 
-# supported DIMSE services
+# Supported DIMSE services
 * C-Echo as SCU and SCP
 * C-Find as SCU and SCP
 * C-Move as SCU and SCP
 * C-Get  as SCU and SCP
 * C-Store as SCU and SCP
+
+# Features
+* typescript support
+* prebuilds for: mac, windows, linux
+* simple to use
 
 # Roadmap:
 * Worklist SCP and SCU
@@ -42,175 +47,62 @@ run the examples:
 
 
 ```
-const dimse = require('dicom-dimse-native');
+import { startStoreScp, storeScpOptions } from 'dicom-dimse-native';
 
-dimse.startScp(JSON.stringify(
-    {
-        "source": {
-            "aet": "DCMTK",
-            "ip" : "127.0.0.1",
-            "port": "9999"
-        },
-        "peers": [
-                {
-                "aet": "CONQUESTSRV1",
-                "ip" : "127.0.0.1",
-                "port": "5678"
-                },
-                {
-                "aet": "DCM4CHEE",
-                "ip" : "127.0.0.1",
-                "port": "11112"
-                }
-            ],
-        "storagePath": "./data" // Directory where incoming DICOM files will be stored
-    }
-    ), (result) => {
-        try {
-            console.log(JSON.parse(result));
+const scpOptions: storeScpOptions = {
+    source: {
+        aet: "MY_AET",
+        ip: "127.0.0.1",
+        port: 9999,
+    },
+    peers: [
+        {
+            aet: "TARGET_AET",
+            ip: "127.0.0.1",
+            port: 5678
         }
-        catch {
-            console.log(result);
-        }
+    ],
+    storagePath: p.join("path_to_storage_dir"),
+};
+
+startStoreScp(scpOptions, (result) => {
+    console.log(JSON.parse(result));
 });
 ```
 
 # Move-SCU
 ```
-dimse.moveScu(JSON.stringify(
+ const moveOptions: moveScuOptions =
     {
-        "source": {
-            "aet": "DCMTK",
-            "ip" : "127.0.0.1",
-            "port": "9999"
+        source: {
+            aet: "MY_AET",
+            ip: "127.0.0.1",
+            port: 9999
         },
-        "target": {
-            "aet": "CONQUESTSRV1",
-            "ip" : "127.0.0.1",
-            "port": "5678"
+        target: {
+            aet: "TARGET_AET",
+            ip: "127.0.0.1",
+            port: 5678
         },
-        "destination" : "DCMTK",
-        "tags" : [
+        tags: [
             {
-                "key": "0020000D", 
-                "value": "1.3.46.670589.11.0.1.1996082307380006",
+                key: "0020000D",
+                value: "1.3.46.670589.5.2.10.2156913941.892665384.993397",
             },
             {
-                "key": "00080052", 
-                "value": "STUDY",
+                key: "00080052",
+                value: "STUDY",
             },
-        ]
-    }
-), (result) => {
-    try {
+        ],
+        destination: "MY_AET", // e.g. sending to ourself
+        verbose: true
+    };
+    moveScu(moveOptions, (result) => {
         console.log(JSON.parse(result));
-    }
-    catch {
-        console.log(result);
-    }
-});
+    });
 ```
 
-# Get-SCU
-```
-dimse.getScu(JSON.stringify(
-    {
-        "source": {
-            "aet": "DCMTK",
-            "ip" : "127.0.0.1",
-            "port": "9999"
-        },
-        "target": {
-            "aet": "CONQUESTSRV1",
-            "ip" : "127.0.0.1",
-            "port": "5678"
-        },
-        "storagePath": "./data" // Directory where incoming DICOM files will be stored
-        "tags" : [
-            {
-                "key": "0020000D", 
-                "value": "1.3.46.670589.11.0.1.1996082307380006",
-            },
-            {
-                "key": "00080052", 
-                "value": "STUDY",
-            },
-        ]
-    }
-), (result) => {
-    try {
-        console.log(JSON.parse(result));
-    }
-    catch {
-        console.log(result);
-    }
-});
-```
-
-# Store-SCU
-```
-dimse.storeScu(JSON.stringify(
-    {
-        "source": {
-            "aet": "DCMTK",
-            "ip" : "127.0.0.1",
-            "port": "9999"
-        },
-        "target": {
-            "aet": "CONQUESTSRV1",
-            "ip" : "127.0.0.1",
-            "port": "5678"
-        },
-        "sourcePath": "./input" // Directory with DICOM files to be send
-    }
-), (result) => {
-    try {
-        console.log(JSON.parse(result));
-    }
-    catch {
-        console.log(result);
-    }
-});
-```
-
-# Find-SCU
-```
-dimse.findScu(JSON.stringify(
-    {
-        "source": {
-            "aet": "DCMTK",
-            "ip" : "127.0.0.1",
-            "port": "9999"
-        },
-        "target": {
-            "aet": "CONQUESTSRV1",
-            "ip" : "127.0.0.1",
-            "port": "5678"
-        },
-        "tags" : [
-            {
-                "key": "00100010", 
-                "value": "",
-            },
-            {
-                "key": "0020000D", 
-                "value": "1.3.46.670589.11.0.1.1996082307380006",
-            },
-            {
-                "key": "00080052", 
-                "value": "STUDY",
-            },
-        ]
-    }
-), (result) => {
-    try {
-        console.log(JSON.parse(result));
-    }
-    catch {
-        console.log(result);
-    }
-});
-```
+For more information see examples.
 
 # Result Format:
 ```
