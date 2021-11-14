@@ -210,7 +210,7 @@ void GetAsyncWorker::Execute(const ExecutionProgress &progress)
     scu.setAETitle(in.source.aet.c_str());
     scu.setPeerHostName(in.target.ip.c_str());
     scu.setPeerPort(OFstatic_cast(Uint16, in.target.port));
-    scu.setPeerAETitle(in.source.aet.c_str());
+    scu.setPeerAETitle(in.target.aet.c_str());
     scu.setVerbosePCMode(opt_showPresentationContexts);
 
     /* add presentation contexts for get and find (we do not actually need find...)

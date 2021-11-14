@@ -1,5 +1,3 @@
-import { Z_UNKNOWN } from "zlib";
-
 const addon = require('bindings')('dcmtk.node');
 
 export interface Node {
