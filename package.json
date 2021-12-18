@@ -40,7 +40,7 @@
   "license": "MIT",
   "dependencies": {
     "bindings": "^1.5.0",
-    "cmake-js": "^6.2.1",
+    "cmake-js": "^6.3.0",
     "node-addon-api": "^4.2.0",
     "prebuild-install": "^6.1.4"
   },
