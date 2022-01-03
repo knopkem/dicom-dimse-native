@@ -18,6 +18,7 @@ using json = nlohmann::json;
 #include "dcmtk/dcmnet/diutil.h"
 #include "dcmtk/dcmdata/dcdict.h"
 #include "dcmtk/dcmdata/dcostrmz.h"
+#include "dcmtk/dcmdata/dcdeftag.h"
 
 #ifdef WITH_ZLIB
 #include <zlib.h>
@@ -117,6 +118,22 @@ void FindScuCallback::callback(T_DIMSE_C_FindRQ *request, int &responseCount, T_
         OFLOG_INFO(rspLogger, "---------------------------");
         OFLOG_INFO(rspLogger, "Find Response: " << responseCount << " (" << DU_cfindStatusString(rsp->DimseStatus) << ")");
         OFLOG_INFO(rspLogger, DcmObject::PrintHelper(*responseIdentifiers));
+    }
+
+    // convert characterset if needed
+    OFString fromCharset;
+    OFString destCharset = "ISO_IR 100";
+    responseIdentifiers->findAndGetOFStringArray(DCM_SpecificCharacterSet, fromCharset, OFFalse);
+    if (fromCharset.empty()) {
+        OFLOG_WARN(rspLogger, "response does not contain specific character set, assuming " << destCharset);
+        if (responseIdentifiers->convertCharacterSet(destCharset, OFString("ISO_IR 192")).bad()) {
+            OFLOG_WARN(rspLogger, "failed to convert " << destCharset << " to utf8");
+        }
+    }
+    else {
+        if (responseIdentifiers->convertToUTF8().bad()) {
+            OFLOG_WARN(rspLogger, "failed to convert dataset to utf8");
+        }
     }
 
     ns::DicomObject responseItem;
