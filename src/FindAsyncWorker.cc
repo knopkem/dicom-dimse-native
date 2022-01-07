@@ -123,15 +123,19 @@ void FindScuCallback::callback(T_DIMSE_C_FindRQ *request, int &responseCount, T_
     }
 
     // convert characterset if requested
+    bool useSimpleUtf8Convert = true;
 #if DCMTK_ENABLE_CHARSET_CONVERSION == DCMTK_CHARSET_CONVERSION_ICONV
-      OFString sourceCharset = OFString(charset.c_str());
+      OFString sourceCharset;
+      responseIdentifiers->findAndGetOFStringArray(DCM_SpecificCharacterSet, sourceCharset, OFFalse);
+      if (sourceCharset.empty() && !charset.empty()) {
+        sourceCharset = OFString(charset.c_str());
+      }
       if (!sourceCharset.empty()) {
-          OFLOG_WARN(rspLogger, "specific character set to: " << sourceCharset);
           if (responseIdentifiers->convertCharacterSet(sourceCharset, OFString("ISO_IR 192")).bad()) {
               OFLOG_WARN(rspLogger, "failed to convert " << sourceCharset << " to ISO_IR 192");
+          } else {
+            useSimpleUtf8Convert = false;
           }
-      } else {
-        responseIdentifiers->convertToUTF8();
       }
 #endif
 
@@ -144,11 +148,7 @@ void FindScuCallback::callback(T_DIMSE_C_FindRQ *request, int &responseCount, T_
         if (status.good()) {
             ns::DicomElement cp;
             cp.xtag = element.xtag;
-#if DCMTK_ENABLE_CHARSET_CONVERSION == DCMTK_CHARSET_CONVERSION_ICONV
-            cp.value = std::string(value.c_str());
-#else
-            cp.value = std::string(to_utf8(value.c_str()));
-#endif
+            cp.value = useSimpleUtf8Convert ? to_utf8(value.c_str()) : std::string(value.c_str());
             responseItem.push_back(cp);
         }
     }

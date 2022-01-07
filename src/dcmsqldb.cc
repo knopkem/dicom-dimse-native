@@ -150,6 +150,7 @@ namespace {
         result.push_back(DB_FindAttrExt(DCM_NumberOfPatientRelatedInstances, PATIENT_LEVEL, OPTIONAL_KEY));
 
         // STUDY
+        result.push_back(DB_FindAttrExt(DCM_SpecificCharacterSet, STUDY_LEVEL, OPTIONAL_KEY));
         result.push_back(DB_FindAttrExt(DCM_StudyDate, STUDY_LEVEL, REQUIRED_KEY));
         result.push_back(DB_FindAttrExt(DCM_StudyTime, STUDY_LEVEL, REQUIRED_KEY));
         result.push_back(DB_FindAttrExt(DCM_StudyID, STUDY_LEVEL, REQUIRED_KEY));
@@ -295,10 +296,16 @@ std::list< sQRes > DcmSQLiteDatabase::query(const std::list<DcmSmallDcmElm> & fi
     DcmSmallDcmElm modInStudyElm;
     DcmSmallDcmElm numStudiesElm;
     DcmSmallDcmElm numSeriesElm;
+    DcmSmallDcmElm charsetElm;
 
     for(auto e: findRequestList) {
 
         if (tagLevel(e.XTag()) != currentLevel) {
+            continue;
+        }
+
+        if (e.XTag() == DCM_SpecificCharacterSet) {
+            charsetElm = e;
             continue;
         }
 
@@ -401,6 +408,12 @@ std::list< sQRes > DcmSQLiteDatabase::query(const std::list<DcmSmallDcmElm> & fi
         bool discardResult = false;
 
         int numberOfSeries = 0;
+
+        if (charsetElm.XTag() == DCM_SpecificCharacterSet) {
+            DcmSmallDcmElm specificCharset(charsetElm.XTag(), "ISO_IR 192");
+            responseList.push_back(specificCharset);
+        }
+
         if (modInStudyElm.XTag() == DCM_ModalitiesInStudy) {
             std::vector<std::string> modalities = modalitiesInStudy(res.id, numberOfSeries);
             if (!modInStudyElm.valueField().empty()) {
