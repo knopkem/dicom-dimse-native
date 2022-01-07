@@ -79,6 +79,7 @@ namespace ns {
         std::string netTransferPrefer;
         std::string netTransferPropose;
         std::string writeTransfer;
+        std::string charset;
         std::vector<sTag> tags;
         std::vector<sIdent> peers;
         bool verbose;
@@ -167,6 +168,7 @@ namespace ns {
         in.netTransferPrefer = toString(j, "netTransferPrefer");
         in.netTransferPropose = toString(j, "netTransferPropose");
         in.writeTransfer = toString(j, "writeTransfer");
+        in.charset = toString(j, "charset");
         try {
             auto tags = j.at("tags");
             for (json::iterator it = tags.begin(); it != tags.end(); ++it) {

@@ -28,6 +28,7 @@ export interface echoScuOptions extends scuOptions {
 
 export interface findScuOptions extends scuOptions {
   tags: KeyValue[];
+  charset?: string;
 };
 
 export interface getScuOptions extends scuOptions {

@@ -8,9 +8,9 @@ const options: storeScuOptions = {
     port: 9999
   },
   target: {
-    aet: "CONQUESTSRV1",
+    aet: "DIMSE",
     ip: "127.0.0.1",
-    port: 5678
+    port: 9999
   },
   netTransferPropose: "1.2.840.10008.1.2.4.80", // proposed network transfer syntax (for outgoing associations - additional to default ts)
   sourcePath: p.join(__dirname, "dicom"),

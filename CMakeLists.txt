@@ -1,6 +1,8 @@
+# Declare project
+project(DCMTK)
+
 cmake_minimum_required(VERSION 3.9)
-cmake_policy(SET CMP0042 NEW)
-set (CMAKE_CXX_STANDARD 11)
+message("CMAKE version used: ${CMAKE_VERSION}")
 
 
 #-------------------------------------DCMTK-----------------------------------
@@ -19,9 +21,18 @@ else()
 endif()
 cmake_policy(VERSION "${DCMTK_CMAKE_POLICY_VERSION}")
 
+cmake_policy(SET CMP0042 NEW)
+cmake_policy(SET CMP0115 OLD)
 
-# Declare project
-project(DCMTK)
+
+if(DEFINED ENV{LIB_ICONV})
+    set(libiconv $ENV{LIB_ICONV})
+    message("LIB_ICONV set to: ${libiconv}")
+    set(DCMTK_WITH_ICONV "ON")
+    set(WITH_LIBICONVINC libiconv)
+else()
+    message("NOTICE: To enable support for UTF-8 you need to build ICONV statically outside of this project and set LIB_ICONV environment to point to the install directory")
+endif()
 
 # Check the build system
 include(CMake/dcmtkPrepare.cmake NO_POLICY_SCOPE)
@@ -82,9 +93,7 @@ include(CMake/dcmtkAfterModules.cmake NO_POLICY_SCOPE)
 
 # Build a shared library named after the project from the files in `src/`
 file(GLOB SOURCE_FILES "src/*.cc" "src/*.c" "src/*.h")
-add_library(${PROJECT_NAME} SHARED 
-	${SOURCE_FILES}
-	)
+add_library(${PROJECT_NAME} SHARED  ${SOURCE_FILES})
 
 # Define dependency libraries
 #----------------------------

@@ -10,5 +10,4 @@ class FindAsyncWorker : public BaseAsyncWorker
         FindAsyncWorker(std::string data, Function &callback);
 
         void Execute(const ExecutionProgress& progress);
-
 };

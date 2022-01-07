@@ -89,6 +89,8 @@ public:
         T_DIMSE_C_FindRSP *rsp,
         DcmDataset *responseIdentifiers);
 
+    std::string charset;
+
 private:
     ns::DicomObject m_requestContainer;
     std::list<ns::DicomObject> *m_responseContainer;
@@ -120,21 +122,16 @@ void FindScuCallback::callback(T_DIMSE_C_FindRQ *request, int &responseCount, T_
         OFLOG_INFO(rspLogger, DcmObject::PrintHelper(*responseIdentifiers));
     }
 
-    // convert characterset if needed
-    OFString fromCharset;
-    OFString destCharset = "ISO_IR 100";
-    responseIdentifiers->findAndGetOFStringArray(DCM_SpecificCharacterSet, fromCharset, OFFalse);
-    if (fromCharset.empty()) {
-        OFLOG_WARN(rspLogger, "response does not contain specific character set, assuming " << destCharset);
-        if (responseIdentifiers->convertCharacterSet(destCharset, OFString("ISO_IR 192")).bad()) {
-            OFLOG_WARN(rspLogger, "failed to convert " << destCharset << " to utf8");
-        }
-    }
-    else {
-        if (responseIdentifiers->convertToUTF8().bad()) {
-            OFLOG_WARN(rspLogger, "failed to convert dataset to utf8");
-        }
-    }
+    // convert characterset if requested
+#if DCMTK_ENABLE_CHARSET_CONVERSION == DCMTK_CHARSET_CONVERSION_ICONV
+      OFString sourceCharset = OFString(charset.c_str());
+      if (!sourceCharset.empty()) {
+          OFLOG_WARN(rspLogger, "specific character set to: " << sourceCharset);
+          if (responseIdentifiers->convertCharacterSet(sourceCharset, OFString("ISO_IR 192")).bad()) {
+              OFLOG_WARN(rspLogger, "failed to convert " << sourceCharset << " to ISO_IR 192");
+          }
+      }
+#endif
 
     ns::DicomObject responseItem;
     for (const ns::DicomElement &element : m_requestContainer)
@@ -145,7 +142,11 @@ void FindScuCallback::callback(T_DIMSE_C_FindRQ *request, int &responseCount, T_
         if (status.good()) {
             ns::DicomElement cp;
             cp.xtag = element.xtag;
-            cp.value = to_utf8(std::string(value.c_str()));
+#if DCMTK_ENABLE_CHARSET_CONVERSION == DCMTK_CHARSET_CONVERSION_ICONV
+            cp.value = std::string(value.c_str());
+#else
+            cp.value = std::string(to_utf8(value.c_str()));
+#endif
             responseItem.push_back(cp);
         }
     }
@@ -213,6 +214,7 @@ void FindAsyncWorker::Execute(const ExecutionProgress &progress)
 
     std::list<ns::DicomObject> result;
     FindScuCallback callback(queryAttributes, &result);
+    callback.charset = in.charset;
 
     // do the main work: negotiate network association, perform C-FIND transaction,
     // process results, and finally tear down the association.
