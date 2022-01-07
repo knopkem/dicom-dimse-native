@@ -130,6 +130,8 @@ void FindScuCallback::callback(T_DIMSE_C_FindRQ *request, int &responseCount, T_
           if (responseIdentifiers->convertCharacterSet(sourceCharset, OFString("ISO_IR 192")).bad()) {
               OFLOG_WARN(rspLogger, "failed to convert " << sourceCharset << " to ISO_IR 192");
           }
+      } else {
+        responseIdentifiers->convertToUTF8();
       }
 #endif
 
