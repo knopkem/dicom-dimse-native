@@ -30,8 +30,8 @@ if(WIN32 AND NOT MINGW)
   mark_as_advanced(SNDFILE_DIR WITH_SNDFILEINC)
 
   # libiconv support: find out whether user has library
-  file(GLOB LIBICONV_DIR "${DCMTK_SOURCE_DIR}/../libiconv*")
-  find_path(WITH_LIBICONVINC "include/iconv.h" "${LIBICONV_DIR}" NO_DEFAULT_PATH)
+  #file(GLOB LIBICONV_DIR "${DCMTK_SOURCE_DIR}/../libiconv*")
+  #find_path(WITH_LIBICONVINC "include/iconv.h" "${LIBICONV_DIR}" NO_DEFAULT_PATH)
 
   # OpenJPEG support: find out whether user has library
   file(GLOB OPENJPEG_DIR "${DCMTK_SOURCE_DIR}/../openjpeg*")

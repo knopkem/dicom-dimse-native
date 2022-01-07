@@ -4,7 +4,6 @@ project(DCMTK)
 cmake_minimum_required(VERSION 3.9)
 message("CMAKE version used: ${CMAKE_VERSION}")
 
-
 #-------------------------------------DCMTK-----------------------------------
 
 # As of 2018-12-26 DCMTK has been validated to build with CMake 3.13.2 policies.
@@ -24,12 +23,12 @@ cmake_policy(VERSION "${DCMTK_CMAKE_POLICY_VERSION}")
 cmake_policy(SET CMP0042 NEW)
 cmake_policy(SET CMP0115 OLD)
 
-
 if(DEFINED ENV{LIB_ICONV})
-    set(libiconv $ENV{LIB_ICONV})
-    message("LIB_ICONV set to: ${libiconv}")
+    message("LIB_ICONV set to: $ENV{LIB_ICONV}")
     set(DCMTK_WITH_ICONV "ON")
-    set(WITH_LIBICONVINC libiconv)
+    set(WITH_LIBICONVINC $ENV{LIB_ICONV})
+    mark_as_advanced(DCMTK_WITH_ICONV)
+    mark_as_advanced(WITH_LIBICONVINC)
 else()
     message("NOTICE: To enable support for UTF-8 you need to build ICONV statically outside of this project and set LIB_ICONV environment to point to the install directory")
 endif()
