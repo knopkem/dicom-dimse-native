@@ -15,13 +15,14 @@ Nodejs native addon for DICOM DIMSE services using the DCMTK DICOM c++ toolkit.
 
 # Features
 * typescript support
+* build on solid c++ DICOM framework (DCMTK)
 * prebuilds for: mac, windows, linux
+* extended characterSet support
 * simple to use
 
 # Roadmap:
+* JPEG 2000 support (c-store scu/scp)
 * Worklist SCP and SCU
-* extended characterSet support
-* JPEG 2000 support (c-store scu)
 
 ## How to install
 This package uses prebuild to fetch precompiled binaries, so provided your platform is supported, all you need to do is:
