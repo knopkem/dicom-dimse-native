@@ -21,8 +21,10 @@ else()
 endif()
 cmake_policy(VERSION "${DCMTK_CMAKE_POLICY_VERSION}")
 
-#cmake_policy(SET CMP0042 NEW)
-#cmake_policy(SET CMP0115 OLD)
+if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.20.0")
+    cmake_policy(SET CMP0042 NEW)
+    cmake_policy(SET CMP0115 OLD)
+endif()
 
 if(DEFINED ENV{LIB_ICONV})
     message("LIB_ICONV set to: $ENV{LIB_ICONV}")
