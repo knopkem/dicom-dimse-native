@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1997-2018, OFFIS e.V.
+ *  Copyright (C) 1997-2011, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -34,6 +34,8 @@ class DJEncoderLossless;
 class DJEncoderP14SV1;
 class DJEncoderProgressive;
 class DJEncoderSpectralSelection;
+class DJEncoder2K;
+class DJEncoder2KLossLess;
 
 /** singleton class that registers encoders for all supported JPEG processes.
  */
@@ -51,9 +53,9 @@ public:
    *  @param pForcedBitDepth forced bit depth for image compression, 0 (auto) or 8/12/16
    *  @param pFragmentSize maximum fragment size (in kbytes) for compression, 0 for unlimited.
    *  @param pCreateOffsetTable create offset table during image compression?
-   *  @param pSampleFactors subsampling mode for lossy YCbCr color image compression
+   *  @param pSampleFactors subsampling mode for color image compression
    *  @param pWriteYBR422 flag indicating whether a compressed YBR color stream should
-   *    be marked as YBR_FULL_422 (if true) or YBR_FULL (if false) on DICOM level
+   *    be marked as YBR_FULL or YBR_FULL_422 on DICOM level
    *  @param pConvertToSC flag indicating whether image should be converted to
    *    Secondary Capture upon compression
    *  @param pWindowType mode for VOI transformation of monochrome images
@@ -79,8 +81,8 @@ public:
     int pForcedBitDepth = 0,
     Uint32 pFragmentSize = 0,
     OFBool pCreateOffsetTable = OFTrue,
-    E_SubSampling pSampleFactors = ESS_422,
-    OFBool pWriteYBR422 = OFTrue,
+    E_SubSampling pSampleFactors = ESS_444,
+    OFBool pWriteYBR422 = OFFalse,
     OFBool pConvertToSC = OFFalse,
     unsigned long pWindowType = 0,
     unsigned long pWindowParameter = 0,
@@ -129,6 +131,12 @@ private:
   /// pointer to encoder for lossless JPEG
   static DJEncoderLossless *enclol;
 
+    /// pointer to encoder for JPEG 2K
+  static DJEncoder2K *enc2K;
+
+  /// pointer to encoder for JPEG 2K LossLess
+  static DJEncoder2KLossLess *enc2KLoL;
+  
 };
 
 #endif

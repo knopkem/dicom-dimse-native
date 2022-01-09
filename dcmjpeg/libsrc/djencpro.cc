@@ -48,7 +48,10 @@ OFBool DJEncoderProgressive::isLosslessProcess() const
 {
   return OFFalse;
 }
-
+OFBool DJEncoderProgressive::isJPEG2000()
+{
+	return OFFalse;
+}
 
 void DJEncoderProgressive::createDerivationDescription(
   const DcmRepresentationParameter * toRepParam,
