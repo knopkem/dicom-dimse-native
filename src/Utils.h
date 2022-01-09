@@ -23,6 +23,8 @@ using json = nlohmann::json;
 #include "dcmtk/dcmdata/dcrleerg.h"     /* for DcmRLEEncoderRegistration */
 #include "dcmtk/dcmjpls/djdecode.h"     /* for dcmjpls decoder */
 #include "dcmtk/dcmjpls/djencode.h"     /* for dcmjpls encoder */
+#include "dcmtk/dcmj2k/djdecode.h"     /* for dcmj2k decoder*/
+#include "dcmtk/dcmj2k/djencode.h"     /* for dcmj2k encoder */
 
 namespace ns {
 
@@ -125,10 +127,12 @@ namespace ns {
             DcmRLEDecoderRegistration::registerCodecs();
             DJDecoderRegistration::registerCodecs();
             DJLSDecoderRegistration::registerCodecs();
+            FMJPEG2KDecoderRegistration::registerCodecs();
             
             DJEncoderRegistration::registerCodecs();
             DJLSEncoderRegistration::registerCodecs();
             DcmRLEEncoderRegistration::registerCodecs();
+            FMJPEG2KEncoderRegistration::registerCodecs();
             codecsRegistered = true;
         }
     }

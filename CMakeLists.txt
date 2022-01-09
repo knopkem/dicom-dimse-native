@@ -115,7 +115,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_JS_INC} ${NODE_ADDON_
 
 # Essential library files to link to a node addon
 # You should add this line in every CMake.js based project
-target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB})
+target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB} openjp2)
 
 # define NPI_VERSION
 add_definitions(-DNAPI_VERSION=4)
