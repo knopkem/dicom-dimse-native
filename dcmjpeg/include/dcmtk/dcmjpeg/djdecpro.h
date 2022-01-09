@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1997-2011, OFFIS e.V.
+ *  Copyright (C) 1997-2017, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -44,7 +44,12 @@ public:
    */
   virtual E_TransferSyntax supportedTransferSyntax() const;
 
-   virtual OFBool isJPEG2000() const;
+  /** returns true if the transfer syntax supported by this
+   *  codec is lossless.
+   *  @return lossless flag
+   */
+  virtual OFBool isLosslessProcess() const;
+
 private:
 
   /** creates an instance of the compression library to be used for decoding.

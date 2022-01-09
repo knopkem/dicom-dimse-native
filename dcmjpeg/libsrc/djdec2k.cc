@@ -59,7 +59,6 @@ E_TransferSyntax DJDecoderJP2k::supportedTransferSyntax() const
   return EXS_JPEG2000;
 }
 
-
 DJDecoder *DJDecoderJP2k::createDecoderInstance(
     const DcmRepresentationParameter * /* toRepParam */,
     const DJCodecParameter *cp,
@@ -69,9 +68,9 @@ DJDecoder *DJDecoderJP2k::createDecoderInstance(
 	return new DJDecompressJP2k(*cp, isYBR);
 }
 
-OFBool DJDecoderJP2k::isJPEG2000() const
+OFBool DJDecoderJP2k::isLosslessProcess() const
 {
-	return OFTrue;
+    return OFFalse;
 }
 
 // **************
@@ -138,7 +137,9 @@ DJDecoder *DJDecoderJP2kLossLess::createDecoderInstance(
 	return new DJDecompressJP2k(*cp, isYBR);
 }
 
-OFBool DJDecoderJP2kLossLess::isJPEG2000() const
+OFBool DJDecoderJP2kLossLess::isLosslessProcess() const
 {
-	return OFTrue;
+    return OFTrue;
 }
+
+

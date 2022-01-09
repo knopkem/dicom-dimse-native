@@ -44,7 +44,6 @@ public:
    */
   virtual E_TransferSyntax supportedTransferSyntax() const;
 
-  virtual OFBool isJPEG2000();
 private:
 
   /** returns true if the transfer syntax supported by this

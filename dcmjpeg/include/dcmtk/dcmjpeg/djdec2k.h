@@ -27,7 +27,7 @@ public:
    */
   virtual E_TransferSyntax supportedTransferSyntax() const;
   
-  virtual OFBool isJPEG2000() const;
+  virtual OFBool isLosslessProcess() const;
 
 virtual OFCondition encode(
     const E_TransferSyntax fromRepType,
@@ -79,7 +79,7 @@ public:
    */
   virtual E_TransferSyntax supportedTransferSyntax() const;
   
-  virtual OFBool isJPEG2000() const;
+  virtual OFBool isLosslessProcess() const;
   
 virtual OFCondition encode(
     const E_TransferSyntax fromRepType,

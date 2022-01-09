@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1997-2014, OFFIS e.V.
+ *  Copyright (C) 1997-2018, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -44,7 +44,7 @@ extern DCMTK_DCMJPEG_EXPORT OFLogger DCM_dcmjpegLogger;
 // include this file in doxygen documentation
 
 /** @file djutils.h
- *  @brief enumerations, error constants and helper functions for the dcmjpeg module
+ *  @brief type definitions and constants for the dcmjpeg module
  */
 
 
@@ -71,10 +71,10 @@ enum EJ_Mode
 
   /// JPEG lossless
   EJM_lossless,
-  
-   /// JPEG 2K
-  EJM_JP2K_lossy,
 
+  /// JPEG 2K
+  EJM_JP2K_lossy,
+    
   /// JPEG 2K lossless
   EJM_JP2K_lossless
 };
@@ -202,6 +202,8 @@ extern DCMTK_DCMJPEG_EXPORT const OFConditionConst EJ_IJG16_FrameBufferTooSmall;
 extern DCMTK_DCMJPEG_EXPORT const OFConditionConst EJ_UnsupportedPhotometricInterpretation;
 /// Codec does not support this kind of color conversion
 extern DCMTK_DCMJPEG_EXPORT const OFConditionConst EJ_UnsupportedColorConversion;
+/// Codec does not support this kind of bit depth
+extern DCMTK_DCMJPEG_EXPORT const OFConditionConst EJ_UnsupportedBitDepth;
 
 // reserved condition codes for IJG error messages
 const unsigned short EJCode_IJG8_Compression    = 0x0100;
@@ -224,6 +226,16 @@ public:
    *  @return photometric interpretation enum, EPI_Unknown if unknown string or attribute missing
    */
   static EP_Interpretation getPhotometricInterpretation(DcmItem *item);
+
+  /** adjusts the padding of a JPEG bitstream in the buffer that has odd length,
+   *  such that the End of Image (EOI) marker ends on an even byte boundary.
+   *  @param buffer pointer to buffer containing compressed JPEG bitstream
+   *  @param bufSize number of bytes used for the JPEG bitstream (including pad byte)
+   */
+  static void fixPadding(
+    Uint8 *buffer,
+    Uint32 bufSize);
+
 };
 
 #endif

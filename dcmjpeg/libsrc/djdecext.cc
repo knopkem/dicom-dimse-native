@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2001-2010, OFFIS e.V.
+ *  Copyright (C) 2001-2017, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -43,10 +43,11 @@ E_TransferSyntax DJDecoderExtended::supportedTransferSyntax() const
   return EXS_JPEGProcess2_4;
 }
 
-OFBool DJDecoderExtended::isJPEG2000() const
+OFBool DJDecoderExtended::isLosslessProcess() const
 {
-	return OFFalse;
+  return OFFalse;
 }
+
 DJDecoder *DJDecoderExtended::createDecoderInstance(
     const DcmRepresentationParameter * /* toRepParam */,
     const DJCodecParameter *cp,
