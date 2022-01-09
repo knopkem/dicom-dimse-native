@@ -39,11 +39,7 @@ endif()
 # Check the build system
 include(CMake/dcmtkPrepare.cmake NO_POLICY_SCOPE)
 
-#set(DCMTK_MODULES ofstd oflog dcmdata dcmimgle
-#  dcmimage dcmjpeg dcmjpls dcmtls dcmnet
-#  CACHE STRING "List of modules that should be built.")
-
-set(DCMTK_MODULES ofstd oflog dcmdata dcmnet dcmjpeg dcmjpls dcmimage dcmimgle dcmqrdb
+set(DCMTK_MODULES ofstd oflog dcmdata dcmnet dcmjpeg dcmjpls dcmimage dcmimgle dcmqrdb dcmj2k
   CACHE STRING "List of modules that should be built.")
 
 #-----------------------------------------------------------------------------
