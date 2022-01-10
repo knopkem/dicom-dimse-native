@@ -112,10 +112,10 @@ string(REPLACE "\"" "" NODE_ADDON_API_DIR ${NODE_ADDON_API_DIR})
 # Essential include files to build a node addon,
 # You should add this line in every CMake.js based project
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_JS_INC} ${NODE_ADDON_API_DIR})
-
+add_definitions(-DOPJ_STATIC)
 # Essential library files to link to a node addon
 # You should add this line in every CMake.js based project
-target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB} openjp2)
+target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB})
 
 # define NPI_VERSION
 add_definitions(-DNAPI_VERSION=4)

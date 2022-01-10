@@ -17,7 +17,7 @@ const options: recompressOptions =
 {
     sourcePath: p.join(__dirname, "dicom"), // can point to directory or single dicom file
     storagePath: p.join(__dirname, "output"), // existing directory only
-    writeTransfer: "1.2.840.10008.1.2.4.80", // see supported ts 
+    writeTransfer: "1.2.840.10008.1.2.4.91", // see supported ts 
     verbose: true
 };
 

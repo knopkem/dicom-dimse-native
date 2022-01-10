@@ -19,7 +19,7 @@
 #include <string.h>
 #include <limits>
 #include <algorithm>
-#include "fmjpeg2k/memory_file.h"
+#include "memory_file.h"
 
 OPJ_SIZE_T opj_read_from_memory(void * p_buffer, OPJ_SIZE_T p_nb_bytes, DecodeData* p_file);
 OPJ_SIZE_T opj_write_to_memory (void * p_buffer, OPJ_SIZE_T p_nb_bytes, DecodeData* p_file);

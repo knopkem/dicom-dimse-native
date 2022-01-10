@@ -41,7 +41,7 @@
 #include "dcmtk/dcmj2k/djerror.h"                 /* for private class DJLSError */
 
 // JPEG-2000 library (OpenJPEG) includes
-#include "openjpeg.h"
+#include "./openjp2/openjpeg.h"
 
 #include "dcmtk/dcmj2k/memory_file.h"
 

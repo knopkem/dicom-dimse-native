@@ -52,7 +52,7 @@ set(OPENJPEG_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/sparse_array.c
   ${CMAKE_CURRENT_SOURCE_DIR}/sparse_array.h
 )
-
+add_definitions(-DOPJ_STATIC)
 DCMTK_ADD_LIBRARY(openjp2 ${OPENJPEG_SRCS})
 
 

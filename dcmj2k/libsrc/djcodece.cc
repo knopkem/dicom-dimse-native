@@ -58,7 +58,7 @@
 #include "dcmtk/dcmimgle/dcmimage.h"  /* for class DicomImage */
 
 // JPEG-2000 library (OpenJPEG) includes
-#include "openjpeg.h"
+#include "./openjp2/openjpeg.h"
 #include "dcmtk/dcmj2k/memory_file.h"
 
 BEGIN_EXTERN_C

@@ -49,8 +49,6 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
   }
 
   int opt_port = in.source.port;
-  OFString callingAETitle = OFString(in.source.aet.c_str());
-  const char *opt_respondingAETitle = in.source.aet.c_str();
   static OFString opt_outputDirectory =  OFString(in.storagePath.c_str());
 
   T_ASC_Network *net;
