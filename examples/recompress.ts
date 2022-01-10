@@ -11,13 +11,15 @@ Supported Transfer Syntaxes:
 1.2.840.10008.1.2.4.70  JPEG Lossless, Nonhierarchical, First- Order Prediction
 1.2.840.10008.1.2.4.80  JPEG-LS Lossless Image Compression   <-- recommended
 1.2.840.10008.1.2.4.81  JPEG-LS Lossy (Near- Lossless) Image Compression
+1.2.840.10008.1.2.4.90  JPEG 2000 Image Compression (Lossless Only)	 
+1.2.840.10008.1.2.4.91  JPEG 2000 Image Compression
 1.2.840.10008.1.2.5     RLE Lossless
 */
 const options: recompressOptions =
 {
     sourcePath: p.join(__dirname, "dicom"), // can point to directory or single dicom file
     storagePath: p.join(__dirname, "output"), // existing directory only
-    writeTransfer: "1.2.840.10008.1.2.4.91", // see supported ts 
+    writeTransfer: "1.2.840.10008.1.2.4.90", // see supported ts 
     verbose: true
 };
 

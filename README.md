@@ -19,9 +19,9 @@ Nodejs native addon for DICOM DIMSE services using the DCMTK DICOM c++ toolkit.
 * prebuilds for: mac, windows, linux
 * extended characterSet support
 * simple to use
+* supports compression: JPEG, JPEG-LS, RLE, JPEG 2000
 
 # Roadmap:
-* JPEG 2000 support (c-store scu/scp)
 * Worklist SCP and SCU
 
 ## How to install
