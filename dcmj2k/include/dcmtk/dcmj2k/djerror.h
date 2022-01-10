@@ -20,7 +20,7 @@
 
 #include "dcmtk/config/osconfig.h"
 #include "djlsutil.h" /* For the OFCondition codes */
-#include "./openjp2/openjpeg.h" /* OpenJPEG include */
+#include "openjpeg.h" /* OpenJPEG include */
 
 /** Helper class for converting between dcmjpls and CharLS error codes
  */

@@ -1,4 +1,4 @@
-#include "./openjp2/openjpeg.h"
+#include "openjpeg.h"
 
 struct DecodeData {
 public:

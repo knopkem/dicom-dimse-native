@@ -63,7 +63,7 @@ int DcmQueryRetriveConfigExt::peerInAETitle(const char* calledAETitle, const cha
             return 1;
         }
     }
-    DCMNET_WARN("No matching AET found for AET:" << calledAETitle);
+    DCMNET_WARN("No matching AET found for calling AET:" << callingAETitle);
     return 0;
 }
 

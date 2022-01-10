@@ -129,6 +129,7 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
   DCMNET_INFO("proposed network transfer syntax for outgoing associations: " << netTransPropose.getXferName());
   DCMNET_INFO("write transfer syntax (recompress if different to accepted ts): " << writeTrans.getXferName());
   DCMNET_INFO("max associations: " << options.maxAssociations_);
+  DCMNET_INFO("permissive mode: " << in.permissive);
 
   options.networkTransferSyntax_ = netTransPrefer.getXfer();
   options.networkTransferSyntaxOut_ = netTransPropose.getXfer();
