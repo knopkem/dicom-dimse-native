@@ -8,7 +8,7 @@
 
 using namespace Napi;
 
-class BaseAsyncWorker : public AsyncProgressWorker<char>
+class BaseAsyncWorker : public AsyncProgressQueueWorker<char>
 {
     public:
         BaseAsyncWorker(std::string data, Function &callback);

@@ -6,7 +6,7 @@
 #include "dcmtk/oflog/oflog.h"
 
 
-BaseAsyncWorker::BaseAsyncWorker(std::string data, Function &callback) : AsyncProgressWorker<char>(callback),
+BaseAsyncWorker::BaseAsyncWorker(std::string data, Function &callback) : AsyncProgressQueueWorker<char>(callback),
                                                                            _input(data)
 {
         // disable verbose logging

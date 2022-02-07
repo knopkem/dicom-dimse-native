@@ -112,7 +112,7 @@ namespace
     {
         public:
 
-            NanNotifier(const AsyncProgressWorker<char>::ExecutionProgress& progress): _progress(progress) {
+            NanNotifier(const AsyncProgressQueueWorker<char>::ExecutionProgress& progress): _progress(progress) {
 
             }
             inline void sendMessage(const OFString& msg, const OFString& container) {
@@ -122,7 +122,7 @@ namespace
                 _progress.Send(msg2.c_str(), msg2.length());
             }
         private:
-        AsyncProgressWorker<char>::ExecutionProgress _progress;
+            AsyncProgressQueueWorker<char>::ExecutionProgress _progress;
 
     };
 } // namespace

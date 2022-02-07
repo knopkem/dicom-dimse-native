@@ -72,7 +72,7 @@ namespace ns {
     };
 
     struct sInput {
-        sInput() : verbose(false), permissive(false) {}
+        sInput() : verbose(false), permissive(false), storeOnly(false), writeFile(true) {}
         sIdent source;
         sIdent target;
         std::string storagePath;
@@ -86,6 +86,8 @@ namespace ns {
         std::vector<sIdent> peers;
         bool verbose;
         bool permissive;
+        bool storeOnly;
+        bool writeFile;
         inline bool valid() {
             return source.valid() && target.valid();
         }
@@ -193,6 +195,13 @@ namespace ns {
         try {
             in.verbose = j.at("verbose");
         } catch(...) {}
+        try {
+            in.storeOnly = j.at("storeOnly");
+        } catch (...) {}
+        try {
+            in.writeFile = j.at("writeFile");
+        }
+        catch (...) {}
         return in;
     }
 
@@ -204,7 +213,7 @@ namespace ns {
     };
  
     inline std::string createJsonResponse(eStatus status, const std::string& message, const json& j = {}) {
-  	std::string meaning = "success";
+    std::string meaning = "success";
         if (status == PENDING) {
             meaning = "pending";
         }

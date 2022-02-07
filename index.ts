@@ -54,6 +54,8 @@ export interface storeScpOptions extends scpOptions {
   netTransferPropose?: string;
   writeTransfer?: string;
   permissive?: boolean;
+  storeOnly?: boolean;
+  writeFile?: boolean;
 };
 
 export interface shutdownScuOptions extends scuOptions {
