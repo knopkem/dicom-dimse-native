@@ -146,8 +146,7 @@ void storeSCPCallback(void* callbackData, T_DIMSE_StoreProgress* progress, T_DIM
                 {
                     /* write data to buffer*/
                     dcmff->transferInit();
-
-                    cond = dcmff->getDataset()->write(buffStream, xfer, EET_ExplicitLength, &wcache);
+                    cond = dcmff->write(buffStream, xfer, EET_ExplicitLength, &wcache, EGL_recalcGL, EPD_withoutPadding, 0, 0, EWM_fileformat);
                     dcmff->transferEnd();
 
                     std::string encoded = base64_encode(reinterpret_cast<const unsigned char*>(buffer), length);
