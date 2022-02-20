@@ -225,7 +225,7 @@ DcmSQLiteDatabase::DcmSQLiteDatabase(const OFFilename& path) : d(new DcmSQLiteDa
 {
      std::string storage(path.getCharPointer());
      storage.append("/image.db");
-     d->db = new sqlite3pp::database(":memory:" /*storage.c_str()*/);
+     d->db = new sqlite3pp::database(storage.c_str());
      d->definedTags = definedAttribs();
      d->initialized = createTables();
 }

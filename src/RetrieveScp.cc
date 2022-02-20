@@ -49,7 +49,6 @@ using json = nlohmann::json;
 #include "base64.h"
 #include <iostream>
 
-
 struct StoreCallbackData
 {
     char* imageFileName;
@@ -131,13 +130,17 @@ void storeSCPCallback(void* callbackData, T_DIMSE_StoreProgress* progress, T_DIM
             }
             // else we store in buffer and send as base64
             else {
+                E_EncodingType encodingType = EET_ExplicitLength;
+
                 /* open file for output */
                 DcmFileFormat* dcmff = cbdata->dcmff;
-                Uint32 length = dcmff->getDataset()->calcElementLength(xfer, EET_ExplicitLength);
+                dcmff->validateMetaInfo(xfer, EWM_fileformat);
+                dcmff->removeInvalidGroups();
+                Uint32 length = dcmff->calcElementLength(xfer, encodingType);
+                
                 unsigned char* buffer;
                 buffer = new unsigned char[length];
 
-                DcmWriteCache wcache;
                 DcmOutputBufferStream buffStream(buffer, length);
 
                 /* check stream status */
@@ -145,19 +148,31 @@ void storeSCPCallback(void* callbackData, T_DIMSE_StoreProgress* progress, T_DIM
                 if (cond.good())
                 {
                     /* write data to buffer*/
-                    dcmff->transferInit();
-                    cond = dcmff->write(buffStream, xfer, EET_ExplicitLength, &wcache, EGL_recalcGL, EPD_withoutPadding, 0, 0, EWM_fileformat);
-                    dcmff->transferEnd();
+                    try
+                    {
+                      dcmff->transferInit();
+                      cond = dcmff->write(buffStream, xfer, encodingType, NULL, EGL_recalcGL, EPD_noChange, 0, 0, EWM_fileformat);
+                      dcmff->transferEnd();
+                    }
+                    catch(const std::exception& e)
+                    {
+                      std::cerr << "exception: " << e.what()  << std::endl;
+                    }
 
-                    std::string encoded = base64_encode(reinterpret_cast<const unsigned char*>(buffer), length);
-                    json v = json::object();
-                    v["StudyInstanceUID"] = studyInstanceUID.c_str();
-                    v["SeriesInstanceUID"] = seriesInstanceUID.c_str();
-                    v["SOPInstanceUID"] = sopInstanceUID.c_str();
-                    v["base64"] = encoded.c_str();
-                    std::string msg = ns::createJsonResponse(ns::PENDING, "BUFFER_STORAGE", v);
-                    cbdata->progress->Send(msg.c_str(), msg.length());
-                    delete buffer;
+                    if (cond.good()) {
+                        std::string encoded = base64_encode(reinterpret_cast<const unsigned char*>(buffer), length);
+                        json v = json::object();
+                        v["StudyInstanceUID"] = studyInstanceUID.c_str();
+                        v["SeriesInstanceUID"] = seriesInstanceUID.c_str();
+                        v["SOPInstanceUID"] = sopInstanceUID.c_str();
+                        v["base64"] = encoded.c_str();
+                        std::string msg = ns::createJsonResponse(ns::PENDING, "BUFFER_STORAGE", v);
+                        cbdata->progress->Send(msg.c_str(), msg.length());
+                    }
+                    delete[] buffer;
+                } 
+                if (cond.bad()) {
+                  std::cerr << cond.text() << std::endl;
                 }
             }
 
