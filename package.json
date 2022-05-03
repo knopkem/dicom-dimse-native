@@ -1,10 +1,11 @@
 {
   "name": "dicom-dimse-native",
-  "version": "2.3.2",
+  "version": "2.3.3",
   "description": "native addon using DCMTK dicom toolkit",
   "main": "index.js",
   "scripts": {
     "install": "npx prebuild-install -r napi || npx cmake-js compile",
+    "compile": "npx cmake-js compile",
     "prebuild": "npx prebuild -t 4 -r napi --all --verbose --backend cmake-js",
     "build": "tsc index.ts",
     "prepare": "npm run build",
@@ -53,7 +54,7 @@
   },
   "binary": {
     "napi_versions": [
-      4
+      6
     ]
   },
   "devDependencies": {

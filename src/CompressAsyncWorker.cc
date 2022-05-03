@@ -28,6 +28,8 @@
 #include "dcmtk/dcmdata/dcvrui.h"
 #include "dcmtk/dcmdata/dcmetinf.h"
 #include "dcmtk/dcmdata/dcdeftag.h"
+#include "dcmtk/dcmjpeg/djrploss.h"  /* for DJ_RPLossy */
+
 
 #ifdef WITH_ZLIB
 #include <zlib.h>
@@ -160,7 +162,7 @@ void CompressAsyncWorker::Execute(const ExecutionProgress &progress)
     bool validFileFound = false;
     while ((iter != enditer))
     {
-      if (recompress(*iter, OFString(in.storagePath.c_str()), writeTrans.getXfer()) ) {
+      if (recompress(*iter, OFString(in.storagePath.c_str()), writeTrans.getXfer(), in.compressionQuality) ) {
         validFileFound = true;
       }
       ++iter;
@@ -180,7 +182,7 @@ OFBool CompressAsyncWorker::isDicomFile( const OFFilename &fname )
     return OFTrue;
 }
 
-OFBool CompressAsyncWorker::recompress(const OFFilename& infile, const OFString& storePath, E_TransferSyntax prefXfer) {
+OFBool CompressAsyncWorker::recompress(const OFFilename& infile, const OFString& storePath, E_TransferSyntax prefXfer, int quality) {
     DcmFileFormat dfile;
     OFCondition status = dfile.loadFile(infile, EXS_Unknown, EGL_noChange, DCM_MaxReadLength, ERM_autoDetect);
     if (status.bad()) {
@@ -213,8 +215,13 @@ OFBool CompressAsyncWorker::recompress(const OFFilename& infile, const OFString&
       }
     }
 
+    // set quality factor
+    DcmXfer xfer(prefXfer);
+    DJ_RPLossy rp_lossy(OFstatic_cast(int, quality));
+    const DcmRepresentationParameter *rp = xfer.isLossy() ? &rp_lossy : nullptr;
+
     // check if conversion is possible
-    OFCondition cond = dfile.chooseRepresentation(prefXfer, NULL);
+    OFCondition cond = dfile.chooseRepresentation(prefXfer, rp);
     if (cond.bad() || !dfile.canWriteXfer(prefXfer)) {
       DCMNET_WARN("Failed compressing file: " << infile.getCharPointer());
       return OFFalse;
