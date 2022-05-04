@@ -118,6 +118,6 @@ add_definitions(-DOPJ_STATIC)
 target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB})
 
 # define NPI_VERSION
-add_definitions(-DNAPI_VERSION=4)
+add_definitions(-DNAPI_VERSION=6)
 
 

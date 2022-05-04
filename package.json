@@ -6,7 +6,7 @@
   "scripts": {
     "install": "npx prebuild-install -r napi || npx cmake-js compile",
     "compile": "npx cmake-js compile",
-    "prebuild": "npx prebuild -t 4 -r napi --all --verbose --backend cmake-js",
+    "prebuild": "npx prebuild -t 6 -r napi --all --verbose --backend cmake-js",
     "build": "tsc index.ts",
     "prepare": "npm run build",
     "example:echoscu": "ts-node ./examples/echoscu.ts",
