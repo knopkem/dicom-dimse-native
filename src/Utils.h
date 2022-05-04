@@ -72,7 +72,7 @@ namespace ns {
     };
 
     struct sInput {
-        sInput() : verbose(false), permissive(false), storeOnly(false), writeFile(true), compressionQuality(80) {}
+        sInput() : verbose(false), permissive(false), storeOnly(false), writeFile(true), lossyQuality(80) {}
         sIdent source;
         sIdent target;
         std::string storagePath;
@@ -84,7 +84,7 @@ namespace ns {
         std::string charset;
         std::vector<sTag> tags;
         std::vector<sIdent> peers;
-        int compressionQuality;
+        int lossyQuality;
         bool verbose;
         bool permissive;
         bool storeOnly;
@@ -204,7 +204,7 @@ namespace ns {
         }
         catch (...) {}
         try {
-            in.compressionQuality = toInt(j, "compressionQuality");
+            in.lossyQuality = toInt(j, "lossyQuality");
         }
         catch (...) {}
         return in;
