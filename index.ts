@@ -27,6 +27,7 @@ export interface echoScuOptions extends scuOptions {
 };
 
 export interface findScuOptions extends scuOptions {
+  netTransferPrefer?: string;
   tags: KeyValue[];
   charset?: string;
 };
