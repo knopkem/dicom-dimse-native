@@ -200,6 +200,10 @@ void FindAsyncWorker::Execute(const ExecutionProgress &progress)
         overrideKeys.push_back(key);
     }
 
+    // set preferred network transfer syntax
+    DcmXfer netTransPrefer = in.netTransferPrefer.empty() ? DcmXfer(EXS_Unknown) : DcmXfer(in.netTransferPrefer.c_str());
+    E_TransferSyntax pref_find_networkTransferSyntax = netTransPrefer.getXfer();
+
     OFStandard::initializeNetwork();
 
     // enabled or disable removal of trailing padding
@@ -226,7 +230,7 @@ void FindAsyncWorker::Execute(const ExecutionProgress &progress)
         in.source.aet.c_str(),
         in.target.aet.c_str(),
         UID_FINDStudyRootQueryRetrieveInformationModel,
-        EXS_Unknown,
+        pref_find_networkTransferSyntax,
         DIMSE_BLOCKING,
         30,
         ASC_DEFAULTMAXPDU,
