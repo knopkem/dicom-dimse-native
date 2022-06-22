@@ -99,6 +99,7 @@ target_link_libraries(${PROJECT_NAME} ${DCMTK_MODULES})
 
 # Gives our library file a .node extension without any "lib" prefix
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")
+set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/DELAYLOAD:node.exe" )
 
 # Include N-API wrappers
 execute_process(COMMAND node -p "require('node-addon-api').include"
