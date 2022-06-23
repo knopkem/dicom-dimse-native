@@ -72,7 +72,7 @@ namespace ns {
     };
 
     struct sInput {
-        sInput() : verbose(false), permissive(false), storeOnly(false), writeFile(true), lossyQuality(80) {}
+        sInput() : verbose(false), permissive(false), storeOnly(false), writeFile(true), lossyQuality(80), enableRecompression(false) {}
         sIdent source;
         sIdent target;
         std::string storagePath;
@@ -89,6 +89,7 @@ namespace ns {
         bool permissive;
         bool storeOnly;
         bool writeFile;
+        bool enableRecompression;
         inline bool valid() {
             return source.valid() && target.valid();
         }
@@ -201,6 +202,10 @@ namespace ns {
         } catch (...) {}
         try {
             in.writeFile = j.at("writeFile");
+        }
+        catch (...) {}
+        try {
+            in.enableRecompression = j.at("enableRecompression");
         }
         catch (...) {}
         try {

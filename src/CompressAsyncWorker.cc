@@ -174,7 +174,7 @@ void CompressAsyncWorker::Execute(const ExecutionProgress &progress)
   bool validFileFound = false;
   while ((iter != enditer))
   {
-    if (recompress(*iter, OFString(in.storagePath.c_str()), writeTrans.getXfer(), in.lossyQuality))
+    if (recompress(*iter, OFString(in.storagePath.c_str()), writeTrans.getXfer(), in.lossyQuality, in.enableRecompression))
     {
       validFileFound = true;
     }
@@ -196,7 +196,7 @@ OFBool CompressAsyncWorker::isDicomFile(const OFFilename &fname)
   return OFTrue;
 }
 
-OFBool CompressAsyncWorker::recompress(const OFFilename &infile, const OFString &storePath, E_TransferSyntax prefXfer, int quality)
+OFBool CompressAsyncWorker::recompress(const OFFilename &infile, const OFString &storePath, E_TransferSyntax _prefXfer, int quality, bool enableRecompression)
 {
   DcmFileFormat dfile;
   OFCondition status = dfile.loadFile(infile, EXS_Unknown, EGL_noChange, DCM_MaxReadLength, ERM_autoDetect);
@@ -223,11 +223,27 @@ OFBool CompressAsyncWorker::recompress(const OFFilename &infile, const OFString 
 
   // check if input is same as output
   bool isSameFile = false;
+  E_TransferSyntax originalXfer = lookForXfer(dfile.getMetaInfo());
+  E_TransferSyntax prefXfer = _prefXfer;
+
+  // check if already compressed
+  if (!enableRecompression) {
+    if (originalXfer == EXS_Unknown ||
+        originalXfer == EXS_LittleEndianImplicit ||
+        originalXfer == EXS_BigEndianImplicit ||
+        originalXfer == EXS_LittleEndianExplicit ||
+        originalXfer == EXS_BigEndianExplicit ||
+        originalXfer == EXS_DeflatedLittleEndianExplicit) {
+        DCMNET_INFO("Not recompressing file as this is disabled...");
+        prefXfer = originalXfer;
+        }
+  }
+  
   if (inpath == outpath)
   {
     isSameFile = true;
     // skip writing if input and output is the same and TS match already
-    if (lookForXfer(dfile.getMetaInfo()) == prefXfer)
+    if (originalXfer == prefXfer)
     {
       DCMNET_INFO("file has correct Xfer already skipping...");
       return OFTrue;
@@ -259,8 +275,13 @@ OFBool CompressAsyncWorker::recompress(const OFFilename &infile, const OFString 
   OFCondition cond = dfile.chooseRepresentation(prefXfer, rp);
   if (cond.bad() || !dfile.canWriteXfer(prefXfer))
   {
-    DCMNET_WARN("Failed compressing file: " << infile.getCharPointer());
-    return OFFalse;
+    DCMNET_WARN("Failed compressing file: " << infile.getCharPointer() << " keeping original");
+    cond = dfile.chooseRepresentation(originalXfer, NULL);
+  }
+
+  if (cond.bad()) {
+      DCMNET_WARN("Something went wrong");
+      return OFFalse;
   }
 
   // just save the file if output is different

@@ -72,6 +72,7 @@ export interface recompressOptions {
   storagePath: string;
   writeTransfer?: string;
   lossyQuality?: number;
+  enableRecompression?: boolean;
   verbose?: boolean;
 };
 

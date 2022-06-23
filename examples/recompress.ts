@@ -21,6 +21,7 @@ const options: recompressOptions =
     storagePath: p.join(__dirname, "output"), // existing directory only
     writeTransfer: "1.2.840.10008.1.2.4.51", // see supported ts 
     lossyQuality: 40, // only supported for JPEG Baseline (Processes 1, 2, 4) 0..100
+    enableRecompression: true, // change compression of already compressed images 
     verbose: true
 };
 

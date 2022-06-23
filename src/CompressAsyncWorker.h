@@ -20,5 +20,5 @@ class CompressAsyncWorker : public BaseAsyncWorker
 
     protected:
         OFBool isDicomFile( const OFFilename &fname );
-        OFBool recompress(const OFFilename& infile, const OFString& storePath, E_TransferSyntax prefXfer, int quality);
+        OFBool recompress(const OFFilename& infile, const OFString& storePath, E_TransferSyntax prefXfer, int quality, bool enableRecompression);
 };
