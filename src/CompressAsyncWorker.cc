@@ -227,15 +227,18 @@ OFBool CompressAsyncWorker::recompress(const OFFilename &infile, const OFString 
   E_TransferSyntax prefXfer = _prefXfer;
 
   // check if already compressed
-  if (!enableRecompression) {
-    if (originalXfer == EXS_Unknown ||
-        originalXfer == EXS_LittleEndianImplicit ||
-        originalXfer == EXS_BigEndianImplicit ||
-        originalXfer == EXS_LittleEndianExplicit ||
-        originalXfer == EXS_BigEndianExplicit ||
-        originalXfer == EXS_DeflatedLittleEndianExplicit) {
-        DCMNET_INFO("Not recompressing file as this is disabled...");
-        prefXfer = originalXfer;
+  if (!enableRecompression) 
+  {
+        DCMIMGLE_INFO("Recompressing files is disabled");
+    if (originalXfer != EXS_Unknown &&
+        originalXfer != EXS_LittleEndianImplicit &&
+        originalXfer != EXS_BigEndianImplicit &&
+        originalXfer != EXS_LittleEndianExplicit &&
+        originalXfer != EXS_BigEndianExplicit &&
+        originalXfer != EXS_DeflatedLittleEndianExplicit) 
+        {
+          DCMNET_INFO("File is compressed, not recompressing...");
+          prefXfer = originalXfer;
         }
   }
   
