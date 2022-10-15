@@ -54,6 +54,7 @@ DcmSCU::DcmSCU()
     , m_verbosePCMode(OFFalse)
     , m_datasetConversionMode(OFFalse)
     , m_progressNotificationMode(OFTrue)
+    , m_notifier(NULL)
 {
     OFStandard::initializeNetwork();
 }
@@ -98,6 +99,11 @@ DcmSCU::~DcmSCU()
     }
 
     OFStandard::shutdownNetwork();
+}
+
+void DcmSCU::setNotifier(DcmNotifier* ptr)
+{
+    m_notifier = ptr;
 }
 
 OFCondition DcmSCU::initNetwork()
@@ -1449,6 +1455,10 @@ void DcmSCU::notifyInstanceStored(const OFString& filename,
     DCMNET_DEBUG("  Filename: " << filename);
     DCMNET_DEBUG("  SOP Class UID: " << sopClassUID);
     DCMNET_DEBUG("  SOP Instance UID: " << sopInstanceUID);
+
+    if (m_notifier) {
+        m_notifier->sendMessage("Stored instance to disk", sopInstanceUID);
+    }
 }
 
 /* ************************************************************************* */

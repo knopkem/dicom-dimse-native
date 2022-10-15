@@ -31,6 +31,13 @@
 #include "dcmtk/dcmnet/dimse.h" /* DIMSE network layer */
 #include "dcmtk/ofstd/oflist.h"
 
+class DCMTK_DCMNET_EXPORT DcmNotifier
+{
+public:
+    virtual void sendMessage(const OFString& msg, const OFString& container) = 0;
+};
+
+
 // include this file in doxygen documentation
 
 /** @file scu.h
@@ -202,6 +209,11 @@ public:
     /** Virtual destructor
      */
     virtual ~DcmSCU();
+
+    /** Set a notifier object so progress can be reported
+     *  @param DcmNotifier needs concreate implementation of abstract class
+     */
+    void setNotifier(DcmNotifier* ptr);
 
     /** Add presentation context to be used for association negotiation
      *  @param abstractSyntax [in] Abstract syntax name in UID format
@@ -1068,6 +1080,9 @@ private:
 
     /// Progress notification mode (default: enabled)
     OFBool m_progressNotificationMode;
+
+    // object able to send messages
+    DcmNotifier* m_notifier;
 
     /** Returns next available message ID free to be used by SCU
      *  @return Next free message ID
