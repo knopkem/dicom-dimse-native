@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2018, OFFIS e.V.
+ *  Copyright (C) 1994-2022, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -26,6 +26,7 @@
 
 #include "dcmtk/ofstd/ofstream.h"
 #include "dcmtk/ofstd/ofstring.h"
+#include "dcmtk/ofstd/ofdiag.h"
 #include "dcmtk/dcmdata/dcdefine.h"
 
 /*
@@ -191,22 +192,34 @@ public:
 
 protected:
 
-    /// less-than operation comparing only group numbers
+    /** less-than operation comparing only group numbers
+     * @param key the object to compare to
+     */
     int groupLT(const DcmTagKey& key) const;
 
-    /// greater-than operation comparing only group numbers
+    /** greater-than operation comparing only group numbers
+     * @param key the object to compare to
+     */
     int groupGT(const DcmTagKey& key) const;
 
-    /// comparison operation comparing only group numbers
+    /** comparison operation comparing only group numbers
+     * @param key the object to compare to
+     */
     int groupEQ(const DcmTagKey& key) const;
 
-    /// less-than operation comparing only element numbers
+    /** less-than operation comparing only element numbers
+     * @param key the object to compare to
+     */
     int elementLT(const DcmTagKey& key) const;
 
-    /// greater-than operation comparing only element numbers
+    /** greater-than operation comparing only element numbers
+     * @param key the object to compare to
+     */
     int elementGT(const DcmTagKey& key) const;
 
-    /// comparison operation comparing only element numbers
+    /** comparison operation comparing only element numbers
+     * @param key the object to compare to
+     */
     int elementEQ(const DcmTagKey& key) const;
 
 private:
@@ -344,6 +357,9 @@ DcmTagKey::hash() const
 
 /* Comparisons */
 
+#include DCMTK_DIAGNOSTIC_PUSH
+#include DCMTK_DIAGNOSTIC_IGNORE_ATTRIBUTE_REDECLARATION
+
 inline int
 DcmTagKey::groupLT(const DcmTagKey& key) const
 {
@@ -415,5 +431,7 @@ DcmTagKey::operator >= (const DcmTagKey& key) const
 {
     return (*this > key) || (*this == key);
 }
+
+#include DCMTK_DIAGNOSTIC_POP
 
 #endif

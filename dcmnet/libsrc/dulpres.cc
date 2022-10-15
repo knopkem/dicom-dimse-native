@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2019, OFFIS e.V.
+ *  Copyright (C) 1994-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were partly developed by
@@ -62,19 +62,11 @@
 #include "dcmtk/ofstd/ofcond.h"
 #include "dcmtk/ofstd/ofstd.h"
 
-#define INCLUDE_CSTDLIB
-#define INCLUDE_CSTDIO
-#define INCLUDE_CSTRING
-#define INCLUDE_CERRNO
-#define INCLUDE_CSIGNAL
-#define INCLUDE_CSTDARG
-#include "dcmtk/ofstd/ofstdinc.h"
-
 #include "dcmtk/dcmnet/dicom.h"
 #include "dcmtk/dcmnet/cond.h"
 #include "dcmtk/dcmnet/lst.h"
 #include "dcmtk/dcmnet/dul.h"
-#include "dulstruc.h"
+#include "dcmtk/dcmnet/dulstruc.h"
 #include "dulpriv.h"
 #include "dulfsm.h"
 

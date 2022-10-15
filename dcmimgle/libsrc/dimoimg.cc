@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1996-2019 OFFIS e.V.
+ *  Copyright (C) 1996-2021 OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -36,11 +36,6 @@
 #include "dcmtk/dcmimgle/didocu.h"
 #include "dcmtk/dcmimgle/diutils.h"
 #include "dcmtk/dcmimgle/diregbas.h"
-
-#define INCLUDE_CMATH
-#define INCLUDE_CINTTYPES
-#include "dcmtk/ofstd/ofstdinc.h"
-
 
 /*---------------------*
  *  const definitions  *
@@ -535,36 +530,6 @@ DiMonoImage::DiMonoImage(const DiMonoImage *image,
         VoiLutData->addReference();
     if (PresLutData != NULL)
         PresLutData->addReference();
-}
-
-
-/*
- *   this implementation is necessary to avoid linker errors on NeXTSTEP (gcc 2.5.8)
- */
-
-DiMonoImage::DiMonoImage(const DiMonoImage &)
-  : DiImage(NULL),
-    WindowCenter(0),
-    WindowWidth(0),
-    WindowCount(0),
-    VoiLutCount(0),
-    ValidWindow(0),
-    VoiExplanation(),
-    VoiLutFunction(EFV_Default),
-    PresLutShape(ESP_Default),
-    MinDensity(Default_MinDensity),
-    MaxDensity(Default_MaxDensity),
-    Reflection(Default_Reflection),
-    Illumination(Default_Illumination),
-    VoiLutData(NULL),
-    PresLutData(NULL),
-    InterData(NULL),
-    DisplayFunction(NULL),
-    OutputData(NULL),
-    OverlayData(NULL)
-{
-    DCMIMGLE_FATAL("using unimplemented copy constructor in class DiMonoImage ... aborting");
-    abort();
 }
 
 
@@ -1936,7 +1901,7 @@ int DiMonoImage::createLinODPresentationLut(const unsigned long count, const int
                 *(p++) = OFstatic_cast(Uint16, (DiGSDFunction::getJNDIndex(la + l0 *
                     pow(OFstatic_cast(double, 10), -(dmin + OFstatic_cast(double, i) * density))) - jmin) * factor);
             }
-            PresLutData = new DiLookupTable(data, count, bits);
+            PresLutData = new DiLookupTable(data, count, OFstatic_cast(const Uint16, bits));
             return (PresLutData != NULL) && (PresLutData->isValid());
         }
     }
@@ -2063,8 +2028,8 @@ int DiMonoImage::writeImageToDataset(DcmItem &dataset,
                     dataset.putAndInsertUint16Array(DCM_PixelData, OFstatic_cast(const Uint16 *, pixel), count * 2 /*double-words*/);
                     break;
             }
-            dataset.putAndInsertUint16(DCM_BitsStored, bits);
-            dataset.putAndInsertUint16(DCM_HighBit, bits - 1);
+            dataset.putAndInsertUint16(DCM_BitsStored, OFstatic_cast(Uint16, bits));
+            dataset.putAndInsertUint16(DCM_HighBit, OFstatic_cast(Uint16, (bits - 1)));
             /* update other DICOM attributes */
             updateImagePixelModuleAttributes(dataset);
             result = 1;

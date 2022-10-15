@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2015-2016, OFFIS e.V.
+ *  Copyright (C) 2015-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -23,11 +23,19 @@
 
 #include "dcmtk/config/osconfig.h"    /* make sure OS specific configuration is included first */
 
-#define INCLUDE_CMATH
-#define INCLUDE_CFLOAT
-#define INCLUDE_IOSTREAM
-#include "dcmtk/ofstd/ofstdinc.h"
+#include <cfloat>
+#include <cmath>
+#include <climits>
+#include <csignal>
+#include <csetjmp>
+#include <iostream>
+
 #include "dcmtk/ofstd/oftypes.h"
+#include "dcmtk/ofstd/ofstream.h"
+
+#ifdef HAVE_IEEEFP_H
+#include <ieeefp.h>
+#endif
 
 #ifdef HAVE_WINDOWS_H
 #define WIN32_LEAN_AND_MEAN

@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2019, OFFIS e.V.
+ *  Copyright (C) 1994-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were partly developed by
@@ -79,13 +79,6 @@
 */
 
 #include "dcmtk/config/osconfig.h"    /* make sure OS specific configuration is included first */
-
-#define INCLUDE_CSTDLIB
-#define INCLUDE_CSTDIO
-#define INCLUDE_CSTRING
-#define INCLUDE_CSTDARG
-#define INCLUDE_UNISTD
-#include "dcmtk/ofstd/ofstdinc.h"
 
 #ifdef HAVE_UNIX_H
 #if defined(macintosh) && defined (HAVE_WINSOCK_H)
@@ -688,8 +681,11 @@ sendDcmDataset(
     Uint32 bytesTransmitted = 0;
     DUL_PDVLIST pdvList;
     DUL_PDV pdv;
+
+#if 0
     /* the following variable is currently unused, leave it for future use */
     unsigned long pdvCount = 0;
+#endif
     DcmWriteCache wcache;
 
     /* initialize some local variables (we want to use the association's send buffer */
@@ -807,7 +803,9 @@ sendDcmDataset(
 
             /* count the bytes and the amount of PDVs which were transmitted */
             bytesTransmitted += OFstatic_cast(Uint32, rtnLength);
+#if 0
             pdvCount += pdvList.count;
+#endif
 
             /* execute callback function to indicate progress */
             if (callback) {
@@ -1515,7 +1513,7 @@ DIMSE_receiveDataSetInMemory(
     DcmDataset *dset = NULL;
     DUL_PDV pdv;
     T_ASC_PresentationContextID pid = 0;
-    E_TransferSyntax xferSyntax;
+    E_TransferSyntax xferSyntax = EXS_Unknown;
     OFBool last = OFFalse;
     DIC_UL pdvCount = 0;
     DIC_UL bytesRead = 0;

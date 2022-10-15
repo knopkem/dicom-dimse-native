@@ -29,6 +29,7 @@
 #include "jinclude12.h"
 #include "jpeglib12.h"
 #include "jmemsys12.h"      /* import the system-dependent declarations */
+#include "dcmtk/ofstd/ofdiag.h"      /* for DCMTK_DIAGNOSTIC macros */
 
 #ifndef NO_GETENV
 #ifndef HAVE_STDLIB_H       /* <stdlib.h> should declare getenv() */
@@ -483,8 +484,6 @@ alloc_barray (j_common_ptr cinfo, int pool_id,
 }
 
 
-#ifdef NEED_DARRAY
-
 /*
  * Creation of 2-D difference arrays.
  * This is essentially the same as the code for sample arrays, above.
@@ -532,7 +531,6 @@ alloc_darray (j_common_ptr cinfo, int pool_id,
   return result;
 }
 
-#endif
 
 
 /*
@@ -1071,6 +1069,7 @@ self_destruct (j_common_ptr cinfo)
   jpeg_mem_term(cinfo);     /* system-dependent cleanup */
 }
 
+#include DCMTK_DIAGNOSTIC_IGNORE_CONST_EXPRESSION_WARNING
 
 /*
  * Memory manager initialization.
@@ -1121,9 +1120,7 @@ jinit_memory_mgr (j_common_ptr cinfo)
   mem->pub.alloc_large = alloc_large;
   mem->pub.alloc_sarray = alloc_sarray;
   mem->pub.alloc_barray = alloc_barray;
-#ifdef NEED_DARRAY
   mem->pub.alloc_darray = alloc_darray;
-#endif
   mem->pub.request_virt_sarray = request_virt_sarray;
   mem->pub.request_virt_barray = request_virt_barray;
   mem->pub.realize_virt_arrays = realize_virt_arrays;

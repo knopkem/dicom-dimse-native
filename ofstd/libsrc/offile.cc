@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2011-2016, OFFIS e.V.
+ *  Copyright (C) 2011-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -25,6 +25,16 @@
 
 #include "dcmtk/ofstd/offile.h"
 #include "dcmtk/ofstd/offilsys.h"
+#include "dcmtk/ofstd/ofutil.h"
+#include <cerrno>
+
+#ifdef __SUNPRO_CC
+BEGIN_EXTERN_C
+#include <stdio.h>
+END_EXTERN_C
+#else
+#include <cstdio>
+#endif
 
 #ifdef HAVE_WINDOWS_H
 #include "dcmtk/ofstd/ofchrenc.h"   /* for class OFCharacterEncoding */
@@ -61,13 +71,14 @@ OFFilename::OFFilename(const OFString &filename,
     set(filename, convert);
 }
 
-OFFilename::OFFilename(const OFpath &path)
+OFFilename::OFFilename(const OFpath &path,
+                       const OFBool convert)
   : filename_(NULL)
 #if (defined(WIDE_CHAR_FILE_IO_FUNCTIONS) || defined(WIDE_CHAR_MAIN_FUNCTION)) && defined(_WIN32)
   , wfilename_(NULL)
 #endif
 {
-    set(path.native(), OFTrue);
+    set(path, convert);
 }
 
 #if (defined(WIDE_CHAR_FILE_IO_FUNCTIONS) || defined(WIDE_CHAR_MAIN_FUNCTION)) && defined(_WIN32)
@@ -130,13 +141,9 @@ void OFFilename::clear()
 
 void OFFilename::swap(OFFilename &arg)
 {
-    char *charPointer = filename_;
-    filename_ = arg.filename_;
-    arg.filename_ = charPointer;
+    OFswap(filename_, arg.filename_);
 #if (defined(WIDE_CHAR_FILE_IO_FUNCTIONS) || defined(WIDE_CHAR_MAIN_FUNCTION)) && defined(_WIN32)
-    wchar_t *wideCharPointer = wfilename_;
-    wfilename_ = arg.wfilename_;
-    arg.wfilename_ = wideCharPointer;
+    OFswap(wfilename_, arg.wfilename_);
 #endif
 }
 
@@ -186,6 +193,13 @@ void OFFilename::set(const OFString &filename,
 }
 
 
+void OFFilename::set(const OFpath &path,
+                     const OFBool convert)
+{
+    set(path.native(), convert);
+}
+
+
 #if (defined(WIDE_CHAR_FILE_IO_FUNCTIONS) || defined(WIDE_CHAR_MAIN_FUNCTION)) && defined(_WIN32)
 void OFFilename::set(const wchar_t *filename,
                      const OFBool convert)
@@ -217,4 +231,42 @@ STD_NAMESPACE ostream &operator<<(STD_NAMESPACE ostream &stream,
     /* always output the 8-bit representation */
     stream << OFSTRING_GUARD(filename.getCharPointer());
     return stream;
+}
+
+OFBool OFFile::popen(const char *command, const char *modes)
+{
+  if (file_) fclose();
+#if defined(HAVE_POPEN) || defined(__SUNPRO_CC)
+  // SunPro defines popen() in a header file where CMake cannot find it, but it is there.
+  file_ = :: popen(command, modes);
+#else
+  file_ = _popen(command, modes);
+#endif
+  if (file_) popened_ = OFTrue; else storeLastError();
+  return (file_ != NULL);
+}
+
+int OFFile::fclose()
+{
+  int result = 0;
+  if (file_)
+  {
+    if (popened_)
+    {
+#if defined(HAVE_PCLOSE) || defined(__SUNPRO_CC)
+      // SunPro defines pclose() in a header file where CMake cannot find it, but it is there.
+      result = :: pclose(file_);
+#else
+      result = _pclose(file_);
+#endif
+    }
+    else
+    {
+      result = STDIO_NAMESPACE fclose(file_);
+    }
+    // After calling fclose() once, the FILE* is gone even if fclose() failed.
+    file_ = NULL;
+  }
+  if (result) storeLastError();
+  return result;
 }

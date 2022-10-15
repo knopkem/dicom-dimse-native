@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2019, OFFIS e.V.
+ *  Copyright (C) 1994-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -21,14 +21,6 @@
 
 
 #include "dcmtk/config/osconfig.h"    /* make sure OS specific configuration is included first */
-
-#define INCLUDE_CSTDLIB
-#define INCLUDE_CSTDIO
-#define INCLUDE_CSTRING
-#define INCLUDE_CCTYPE
-#define INCLUDE_LIBC
-#define INCLUDE_UNISTD
-#include "dcmtk/ofstd/ofstdinc.h"
 
 #include "dcmtk/ofstd/ofstream.h"
 #include "dcmtk/ofstd/ofcast.h"
@@ -104,7 +96,8 @@ static const char *DRTypeNames[] =
     "SURFACE SCAN",
     "TRACT",
     "ASSESSMENT",
-    "RADIOTHERAPY"
+    "RADIOTHERAPY",
+    "ANNOTATION"
 };
 
 static const short DIM_OF_DRTypeNames = OFstatic_cast(short, (sizeof(DRTypeNames) / sizeof(DRTypeNames[0])));
@@ -438,6 +431,7 @@ OFCondition DcmDirectoryRecord::checkHierarchy(const E_DirRecType upperRecord,
                 case ERT_Tract:
                 case ERT_Assessment:
                 case ERT_Radiotherapy:
+                case ERT_Annotation:
                 case ERT_Private:
                     l_error = EC_Normal;
                     break;
@@ -535,6 +529,7 @@ OFCondition DcmDirectoryRecord::checkHierarchy(const E_DirRecType upperRecord,
         case ERT_Tract:
         case ERT_Assessment:
         case ERT_Radiotherapy:
+        case ERT_Annotation:
         case ERT_Private:
             switch (lowerRecord)
             {

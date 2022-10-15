@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2002-2016, OFFIS e.V.
+ *  Copyright (C) 2002-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -31,9 +31,9 @@
 #include "dcmtk/dcmdata/dcswap.h"    /* for swapIfNecessary() */
 #include "dcmtk/dcmdata/dcdeftag.h"  /* for tag constants */
 #include "dcmtk/dcmdata/dcuid.h"     /* for OFFIS_DCMTK_VERSION */
+#include "dcmtk/ofstd/ofdiag.h"      /* for DCMTK_DIAGNOSTIC macros */
 
-#define INCLUDE_CSTDIO
-#include "dcmtk/ofstd/ofstdinc.h"
+#include DCMTK_DIAGNOSTIC_IGNORE_CONST_EXPRESSION_WARNING
 
 /* ------------------------------------------------------------ */
 
@@ -206,13 +206,13 @@ OFCondition DcmQuantColorTable::medianCut(
           double rl, gl, bl;
           DcmQuantPixel p;
 
-          p.assign(maxr - minr, 0, 0);
+          p.assign(OFstatic_cast(DcmQuantComponent, (maxr - minr)), 0, 0);
           rl = p.luminance();
 
-          p.assign(0, maxg - ming, 0);
+          p.assign(0, OFstatic_cast(DcmQuantComponent, (maxg - ming)), 0);
           gl = p.luminance();
 
-          p.assign(0, 0, maxb - minb);
+          p.assign(0, 0, OFstatic_cast(DcmQuantComponent, (maxb - minb)));
           bl = p.luminance();
 
           if ( rl >= gl && rl >= bl )
@@ -277,7 +277,7 @@ OFCondition DcmQuantColorTable::medianCut(
               minb = (minb < v ? minb : v);
               maxb = (minb > v ? minb : v);
           }
-          array[bi]->assign(( minr + maxr ) / 2, ( ming + maxg ) / 2, ( minb + maxb ) / 2);
+          array[bi]->assign(OFstatic_cast(DcmQuantComponent, (( minr + maxr ) / 2)), OFstatic_cast(DcmQuantComponent, (( ming + maxg ) / 2)), OFstatic_cast(DcmQuantComponent, (( minb + maxb ) / 2)));
       }
   }
   else if (repType == DcmRepresentativeColorType_default)

@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2001-2010, OFFIS e.V.
+ *  Copyright (C) 2001-2022, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -25,11 +25,17 @@
 #include "dcmtk/dcmdata/dcdeftag.h"        /* for DCM_ defines */
 #include "dcmtk/dcmdata/dcuid.h"           /* for UID_ defines */
 #include "dcmtk/dcmdata/libi2d/i2doutpl.h"
+#include "dcmtk/dcmdata/dcdatset.h"
 
 
 I2DOutputPlugNewSC::I2DOutputPlugNewSC()
 {
   DCMDATA_LIBI2D_DEBUG("I2DOutputPlugNewSC: Output plugin for new Multiframe Secondary Capture SOPs initialized");
+}
+
+
+I2DOutputPlugNewSC::~I2DOutputPlugNewSC()
+{
 }
 
 
@@ -46,7 +52,6 @@ void I2DOutputPlugNewSC::supportedSOPClassUIDs(OFList<OFString>& suppSOPs)
   suppSOPs.push_back(UID_MultiframeGrayscaleWordSecondaryCaptureImageStorage);
   suppSOPs.push_back(UID_MultiframeTrueColorSecondaryCaptureImageStorage);
 }
-
 
 
 OFCondition I2DOutputPlugNewSC::convert(DcmDataset &dataset) const
@@ -69,9 +74,9 @@ OFCondition I2DOutputPlugNewSC::convert(DcmDataset &dataset) const
   else
     cond = makeOFCondition(OFM_dcmdata, 18, OF_error, "I2DOutputPlugNewSC: Bits Allocated needs a value of 1, 8 or 16 for conversion");
 
-  cond = insertMultiFrameAttribs(&dataset);
   return cond;
 }
+
 
 OFString I2DOutputPlugNewSC::isValid(DcmDataset& dataset) const
 {
@@ -90,17 +95,6 @@ OFString I2DOutputPlugNewSC::isValid(DcmDataset& dataset) const
 }
 
 
-OFCondition I2DOutputPlugNewSC::insertMultiFrameAttribs(DcmDataset* targetDataset) const
-{
-  if (!targetDataset)
-    return EC_IllegalParameter;
-
-  // We only support 1 image Multi-frames so far
-  return targetDataset->putAndInsertOFStringArray(DCM_NumberOfFrames, "1");
-  // Frame Increment pointer is set later in the more specific SC Multi-frame Image context
-}
-
-
 OFCondition I2DOutputPlugNewSC::handle1BitSC(DcmDataset *dataset) const
 {
   if (!dataset)
@@ -109,7 +103,7 @@ OFCondition I2DOutputPlugNewSC::handle1BitSC(DcmDataset *dataset) const
   OFCondition cond; Uint16 u16 = 0; OFString str;
   cond = dataset->findAndGetOFStringArray(DCM_PhotometricInterpretation, str);
   if (cond.bad() || (str != "MONOCHROME2"))
-    return makeOFCondition(OFM_dcmdata, 18, OF_error, "I2DOutputPlugNewSC: Photometric interpretation does not fit SOP class");
+    return makeOFCondition(OFM_dcmdata, 18, OF_error, "I2DOutputPlugNewSC: Photometric Interpretation does not fit SOP class");
 
   cond = dataset->findAndGetUint16(DCM_SamplesPerPixel, u16);
   if (cond.bad() || (u16 != 1))
@@ -140,7 +134,7 @@ OFCondition I2DOutputPlugNewSC::handle8BitSC(DcmDataset *dataset) const
   OFCondition cond; Uint16 u16 = 0; OFString str;
   cond = dataset->findAndGetOFStringArray(DCM_PhotometricInterpretation, str);
   if (cond.bad())
-    return makeOFCondition(OFM_dcmdata, 18, OF_error, "I2DOutputPlugNewSC: Photometric interpretation not set for Pixel Data");
+    return makeOFCondition(OFM_dcmdata, 18, OF_error, "I2DOutputPlugNewSC: Photometric Interpretation not set for Pixel Data");
   if (str == "MONOCHROME2") // Mult-Frame Grayscale Byte SC Image
   {
     cond = dataset->findAndGetUint16(DCM_SamplesPerPixel, u16);
@@ -158,8 +152,10 @@ OFCondition I2DOutputPlugNewSC::handle8BitSC(DcmDataset *dataset) const
     cond = dataset->findAndGetUint16(DCM_PixelRepresentation, u16);
     if (cond.bad() || (u16 != 0))
       return makeOFCondition(OFM_dcmdata, 18, OF_error, "I2DOutputPlugNewSC: Pixel Representation does not fit SOP class");
+
     // For MONOCHROME2 and Bits Stored > 1, rescale slope/intercept/type have to be inserted
-    cond = insertSCMultiFrameAttribs(dataset);
+    cond = insertMonochromeAttribs(dataset);
+
     // Insert SOP Class UID
     if (cond.good())
       cond = dataset->putAndInsertOFStringArray(DCM_SOPClassUID, UID_MultiframeGrayscaleByteSecondaryCaptureImageStorage);
@@ -193,7 +189,7 @@ OFCondition I2DOutputPlugNewSC::handle8BitSC(DcmDataset *dataset) const
       cond = dataset->putAndInsertOFStringArray(DCM_SOPClassUID, UID_MultiframeTrueColorSecondaryCaptureImageStorage);
   }
   else
-    return makeOFCondition(OFM_dcmdata, 18, OF_error, "I2DOutputPlugNewSC: Photometric interpretation does not fit SOP class");
+    return makeOFCondition(OFM_dcmdata, 18, OF_error, "I2DOutputPlugNewSC: Photometric Interpretation does not fit SOP class");
 
   return cond;
 }
@@ -207,7 +203,7 @@ OFCondition I2DOutputPlugNewSC::handle16BitSC(DcmDataset *dataset) const
   OFCondition cond; Uint16 u16 = 0; OFString str;
   cond = dataset->findAndGetOFStringArray(DCM_PhotometricInterpretation, str);
   if (cond.bad() || (str != "MONOCHROME2"))
-    return makeOFCondition(OFM_dcmdata, 18, OF_error, "I2DOutputPlugNewSC: Photometric interpretation does not fit SOP class");
+    return makeOFCondition(OFM_dcmdata, 18, OF_error, "I2DOutputPlugNewSC: Photometric Interpretation does not fit SOP class");
 
   cond = dataset->findAndGetUint16(DCM_SamplesPerPixel, u16);
   if (cond.bad() || (u16 != 1))
@@ -228,14 +224,16 @@ OFCondition I2DOutputPlugNewSC::handle16BitSC(DcmDataset *dataset) const
 
   // Insert SOP Class UID
   cond = dataset->putAndInsertOFStringArray(DCM_SOPClassUID, UID_MultiframeGrayscaleWordSecondaryCaptureImageStorage);
+
   // For MONOCHROME2 and Bits Stored > 1, rescale slope/intercept/type have to be inserted
   if (cond.good())
-    cond = insertSCMultiFrameAttribs(dataset);
+    cond = insertMonochromeAttribs(dataset);
+
   return cond;
 }
 
 
-OFCondition I2DOutputPlugNewSC::insertSCMultiFrameAttribs(DcmDataset *targetDataset) const
+OFCondition I2DOutputPlugNewSC::insertMonochromeAttribs(DcmDataset *targetDataset) const
 {
   OFCondition cond;
   // Rescale Intercept, set to 0 (constant enumerated value)
@@ -255,6 +253,36 @@ OFCondition I2DOutputPlugNewSC::insertSCMultiFrameAttribs(DcmDataset *targetData
 }
 
 
-I2DOutputPlugNewSC::~I2DOutputPlugNewSC()
+OFBool I2DOutputPlugNewSC::supportsMultiframe() const
 {
+  return OFTrue;
+}
+
+
+OFCondition I2DOutputPlugNewSC::insertMultiFrameAttributes(
+  DcmDataset* targetDataset,
+  size_t numberOfFrames) const
+{
+  if ((!targetDataset) || (numberOfFrames == 0))
+    return EC_IllegalParameter;
+
+  // Note: Instead of FrameTime and FrameTimeVector, Multiframe Secondary Capture
+  // also supports (0018,2001) PageNumberVector as an attribute to which the FrameIncrementPointer
+  // may point. This might be useful for single-bit images, which are most likely scanned documents.
+  // Currently we always generate a FrameTime.
+
+  char numFrames[30];
+  OFStandard::snprintf(numFrames, 30, "%lu", numberOfFrames);
+  OFCondition cond = targetDataset->putAndInsertOFStringArray(DCM_NumberOfFrames, numFrames);
+
+  // Secondary Capture permits FrameTime and FrameIncrementPointer only when multiple frames are present.
+  if (numberOfFrames > 1)
+  {
+    char frameTime[30];
+    size_t fTime = (numberOfFrames > 1) ? DCMTK_I2D_Default_Frame_Time : 0;
+    OFStandard::snprintf(frameTime, 30, "%lu", fTime);
+    if (cond.good()) cond = targetDataset->putAndInsertOFStringArray(DCM_FrameTime, frameTime);
+    if (cond.good()) cond = targetDataset->putAndInsertTagKey(DCM_FrameIncrementPointer, DCM_FrameTime);
+  }
+  return cond;
 }

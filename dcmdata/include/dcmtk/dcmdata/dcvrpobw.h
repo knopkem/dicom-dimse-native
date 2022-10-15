@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2019, OFFIS e.V.
+ *  Copyright (C) 1994-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -43,7 +43,9 @@ public:
         const DcmTag & tag,
         const Uint32 len = 0);
 
-    /// copy constructor
+    /** copy constructor
+    * @param old the OBOW to copy
+    */
     DcmPolymorphOBOW(
         const DcmPolymorphOBOW & old);
 
@@ -208,7 +210,7 @@ public:
     virtual OFCondition putUint16Array(const Uint16 *vals, const unsigned long num);
 
     /** create an empty Uint8 array of given number of bytes and set it.
-     *  All array elements are initialized with a value of 0 (using 'memzero').
+     *  All array elements are initialized with a value of 0 (using 'memset').
      *  This method is only applicable to certain VRs, e.g. OB.
      *  @param numBytes number of bytes (8 bit) to be created
      *  @param bytes stores the pointer to the resulting buffer
@@ -220,7 +222,7 @@ public:
 
 
     /** create an empty Uint16 array of given number of words and set it.
-     *  All array elements are initialized with a value of 0 (using 'memzero').
+     *  All array elements are initialized with a value of 0 (using 'memset').
      *  This method is only applicable to OW data.
      *  @param numWords number of words (16 bit) to be created
      *  @param words stores the pointer to the resulting buffer

@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2002-2018, OFFIS e.V.
+ *  Copyright (C) 2002-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -44,351 +44,163 @@ using namespace std;
 #endif
 #endif
 
-/* Header files as defined in ISO/IEC 14882:1998, Section 17.4.1.2, Table 11
- * These are header files for the Standard C++ Library.
+/* Print an error message in case some user code still uses the now unsupported
+ * include macros. A clear error message is better than follow-up errors due to
+ * "suddenly" missing includes.
  */
 
-// define INCLUDE_ALGORITHM to include "ofalgo.h"
 #ifdef INCLUDE_ALGORITHM
-#include "dcmtk/ofstd/ofalgo.h"
+#error "Macro INCLUDE_ALGORITHM not supported anymore. Include 'dcmtk/ofstd/ofalgo.h' instead."
 #endif
 
-// we don't yet support <bitset>, <complex>, <deque>, <exception>, <functional>
-
-// all stream related headers are handled by "ofstream.h"
-#if defined(INCLUDE_IOSFWD) || defined(INCLUDE_IOSTREAM) || defined(INCLUDE_ISTREAM) || \
-    defined(INCLUDE_OSTREAM) || defined(INCLUDE_IOMANIP) || defined(INCLUDE_IOS) || \
-    defined(INCLUDE_FSTREAM) || defined(INCLUDE_SSTREAM)
-#include "dcmtk/ofstd/ofstream.h"
-#endif
-
-// we don't yet support <iterator>, <limits>
-
-// define INCLUDE_LIST to include "oflist.h"
-#ifdef INCLUDE_LIST
-#include "dcmtk/ofstd/oflist.h"
-#endif
-
-// define INCLUDE_LOCALE to include <locale> or <locale.h> if available
-#ifdef INCLUDE_LOCALE
-#ifdef USE_STD_CXX_INCLUDES
-#include <locale>
-#elif defined(HAVE_LOCALE_H)
-#include <locale.h>
-#endif
-#endif
-
-// we don't yet support <numeric>, <queue>, <set>
-
-// define INCLUDE_MAP to include "ofmap.h"
-#ifdef INCLUDE_MAP
-#include "dcmtk/ofstd/ofmap.h"
-#endif
-
-// define INCLUDE_MEMORY to include <memory> or <memory.h> if available
-#ifdef INCLUDE_MEMORY
-#ifdef USE_STD_CXX_INCLUDES
-#include <memory>
-#elif defined(HAVE_MEMORY_H)
-#include <memory.h>
-#endif
-#endif
-
-// define INCLUDE_NEW to include <new> or <new.h> if available
-#ifdef INCLUDE_NEW
-#ifdef USE_STD_CXX_INCLUDES
-#include <new>
-#elif defined(HAVE_NEW_H)
-#include <new.h>
-#endif
-#endif
-
-// define INCLUDE_STACK to include "ofstack.h"
-#ifdef INCLUDE_STACK
-#include "dcmtk/ofstd/ofstack.h"
-#endif
-
-// we don't yet support <stdexcept>
-
-// define INCLUDE_STREAMBUF to include <streambuf> or <streambuf.h> if available
-#ifdef INCLUDE_STREAMBUF
-#ifdef USE_STD_CXX_INCLUDES
-#include <streambuf>
-#elif defined(HAVE_STREAMBUF_H)
-#include <streambuf.h>
-#endif
-#endif
-
-// define INCLUDE_STRING to include "ofstring.h"
-#ifdef INCLUDE_STRING
-#include "dcmtk/ofstd/ofstring.h"
-#endif
-
-// we don't yet support <typeinfo>, <valarray>
-
-// define INCLUDE_VECTOR to include "ofvector.h"
-#ifdef INCLUDE_VECTOR
-#include "dcmtk/ofstd/ofvector.h"
-#endif
-
-
-/* Header files as defined in ISO/IEC 14882:1998, Section 17.4.1.2, Table 12
- * These are header files for the Standard C Library.
- */
-
-// define INCLUDE_CASSERT to include <cassert> or <assert.h> if available
 #ifdef INCLUDE_CASSERT
-#ifdef USE_STD_CXX_INCLUDES
-#include <cassert>
-#elif defined(HAVE_ASSERT_H)
-BEGIN_EXTERN_C
-#include <assert.h>
-END_EXTERN_C
-#endif
+#error "Macro INCLUDE_CASSERT not supported anymore. Include <cassert> directly."
 #endif
 
-// define INCLUDE_CCTYPE to include <cctype> or <ctype.h> if available
 #ifdef INCLUDE_CCTYPE
-#ifdef USE_STD_CXX_INCLUDES
-#include <cctype>
-#elif defined(HAVE_CTYPE_H)
-BEGIN_EXTERN_C
-#include <ctype.h>
-END_EXTERN_C
-#endif
+#error "Macro INCLUDE_CCTYPE not supported anymore. Include <cctype> directly."
 #endif
 
-// define INCLUDE_CERRNO  to include <cerrno> or <errno.h> if available
 #ifdef INCLUDE_CERRNO
-#ifdef USE_STD_CXX_INCLUDES
-#include <cerrno>
-#elif defined(HAVE_ERRNO_H)
-BEGIN_EXTERN_C
-#include <errno.h>
-END_EXTERN_C
-#endif
+#error "Macro INCLUDE_CERRNO not supported anymore. Include <cerrno> directly."
 #endif
 
-// define INCLUDE_CFLOAT  to include <cfloat> or <float.h> if available
 #ifdef INCLUDE_CFLOAT
-#ifdef USE_STD_CXX_INCLUDES
-#include <cfloat>
-#elif defined(HAVE_FLOAT_H)
-BEGIN_EXTERN_C
-#include <float.h>
-END_EXTERN_C
-#endif
+#error "Macro INCLUDE_CFLOAT not supported anymore. Include <cfloat> directly."
 #endif
 
-// define INCLUDE_CISO646 to include <ciso646> or <iso646.h> if available
-#ifdef INCLUDE_CISO646
-#ifdef USE_STD_CXX_INCLUDES
-#include <ciso646>
-#elif defined(HAVE_ISO646_H)
-BEGIN_EXTERN_C
-#include <iso646.h>
-END_EXTERN_C
-#endif
-#endif
-
-// define INCLUDE_CLIMITS to include <climits> or <limits.h> if available
-#ifdef INCLUDE_CLIMITS
-#ifdef USE_STD_CXX_INCLUDES
-#include <climits>
-#elif defined(HAVE_LIMITS_H)
-BEGIN_EXTERN_C
-#include <limits.h>
-END_EXTERN_C
-#endif
-#endif
-
-// define INCLUDE_CLOCALE to include <clocale> or <locale.h> if available
-#ifdef INCLUDE_CLOCALE
-#ifdef USE_STD_CXX_INCLUDES
-#include <clocale>
-#elif defined(HAVE_LOCALE_H)
-BEGIN_EXTERN_C
-#include <locale.h>
-END_EXTERN_C
-#endif
-#endif
-
-// define INCLUDE_CMATH to include <cmath> or <math.h> if available
-#ifdef INCLUDE_CMATH
-#if defined(USE_STD_CXX_INCLUDES) && defined(HAVE_CMATH)
-#include <cmath>
-#elif defined(HAVE_MATH_H)
-#ifndef INCLUDE_MATH_H_AS_CXX
-// some systems use C++ language features in <math.h>
-BEGIN_EXTERN_C
-#endif
-#include <math.h>
-#ifndef INCLUDE_MATH_H_AS_CXX
-END_EXTERN_C
-#endif
-#endif
-#endif
-
-// define INCLUDE_CSETJMP to include <csetjmp> or <setjmp.h> if available
-#ifdef INCLUDE_CSETJMP
-#ifdef USE_STD_CXX_INCLUDES
-#include <csetjmp>
-#elif defined(HAVE_SETJMP_H)
-BEGIN_EXTERN_C
-#include <setjmp.h>
-END_EXTERN_C
-#endif
-#endif
-
-// define INCLUDE_CSIGNAL to include <csignal> or <signal.h> if available
-#ifdef INCLUDE_CSIGNAL
-#ifdef USE_STD_CXX_INCLUDES
-#include <csignal>
-#elif defined(HAVE_SIGNAL_H)
-BEGIN_EXTERN_C
-#include <signal.h>
-END_EXTERN_C
-#endif
-#endif
-
-// define INCLUDE_CSTDARG to include <cstdarg> or <stdarg.h> if available
-#ifdef INCLUDE_CSTDARG
-#ifdef USE_STD_CXX_INCLUDES
-#include <cstdarg>
-#elif defined(HAVE_STDARG_H)
-BEGIN_EXTERN_C
-#include <stdarg.h>
-END_EXTERN_C
-#endif
-#endif
-
-// define INCLUDE_CSTDDEF to include <cstddef> or <stddef.h> if available
-#ifdef INCLUDE_CSTDDEF
-#if defined(USE_STD_CXX_INCLUDES) && defined(HAVE_CSTDDEF)
-#include <cstddef>
-#elif defined(HAVE_STDDEF_H)
-BEGIN_EXTERN_C
-#include <stddef.h>
-END_EXTERN_C
-#endif
-#endif
-
-// define INCLUDE_CSTDDINT to include <cstdint>, <stdint.h> or <sys/types.h> if available
-#ifdef INCLUDE_CSTDINT
-#if defined(USE_STD_CXX_INCLUDES) && defined(HAVE_CSTDINT)
-#include <cstdint>
-#elif defined(HAVE_STDINT_H)
-#include <stdint.h>
-#elif defined(HAVE_SYS_TYPES_H)
-#include <sys/types.h>
-#endif
-#endif
-
-// define INCLUDE_CINTTYPES to include <cinttypes> or <inttypes.h> if available
 #ifdef INCLUDE_CINTTYPES
-// TODO: see DCMTK issues 762, 774 and 778
-//#ifdef USE_STD_CXX_INCLUDES
-//#include <cinttypes>
-//#elif defined(HAVE_INTTYPES_H)
-#ifdef HAVE_INTTYPES_H
-BEGIN_EXTERN_C
-#include <inttypes.h>
-END_EXTERN_C
-#endif
+#error "Macro INCLUDE_CINTTYPES not supported anymore. Include <inttypes.h> (C99) or <cinttypes> (C++11) directly."
 #endif
 
-// define INCLUDE_CSTDIO to include <cstdio> or <stdio.h> if available
+#ifdef INCLUDE_CISO646
+#error "Macro INCLUDE_CISO646 not supported anymore. Include <ciso646> directly."
+#endif
+
+#ifdef INCLUDE_CLIMITS
+#error "Macro INCLUDE_CLIMITS not supported anymore. Include <climits> directly."
+#endif
+
+#ifdef INCLUDE_CLOCALE
+#error "Macro INCLUDE_CLOCALE not supported anymore. Include <clocale> directly."
+#endif
+
+#ifdef INCLUDE_CMATH
+#error "Macro INCLUDE_CMATH not supported anymore. Include <cmath> directly."
+#endif
+
+#ifdef INCLUDE_CSETJMP
+#error "Macro INCLUDE_CSETJMP not supported anymore. Include <csetjmp> directly."
+#endif
+
+#ifdef INCLUDE_CSIGNAL
+#error "Macro INCLUDE_CSIGNAL not supported anymore. Include <csignal> directly."
+#endif
+
+#ifdef INCLUDE_CSTDARG
+#error "Macro INCLUDE_CSTDARG not supported anymore. Include <cstdarg> directly."
+#endif
+
+#ifdef INCLUDE_CSTDDEF
+#error "Macro INCLUDE_CSTDDEF not supported anymore. Include <cstddef> directly."
+#endif
+
+#ifdef INCLUDE_CSTDINT
+#error "Macro INCLUDE_CSTDINT not supported anymore. Include <cstdint> directly."
+#endif
+
 #ifdef INCLUDE_CSTDIO
-#ifdef USE_STD_CXX_INCLUDES
-#include <cstdio>
-#elif defined(HAVE_STDIO_H)
-BEGIN_EXTERN_C
-#include <stdio.h>
-END_EXTERN_C
-#endif
-// MSVC6 doesn't know vsnprintf(), but it does know _vsnprintf()
-#if defined(_WIN32) && !defined(HAVE_VSNPRINTF)
-#define vsnprintf _vsnprintf
-#endif
+#error "Macro INCLUDE_CSTDIO not supported anymore. Include <cstdio> directly."
 #endif
 
-// define INCLUDE_CSTDLIB to include <cstdlib> or <stdlib.h> if available
 #ifdef INCLUDE_CSTDLIB
-#ifdef USE_STD_CXX_INCLUDES
-#include <cstdlib>
-#elif defined(HAVE_STDLIB_H)
-/* workaround for bug in Borland C++ Builder */
-#ifndef __BORLANDC__
-BEGIN_EXTERN_C
-#endif
-#include <stdlib.h>
-#ifndef __BORLANDC__
-END_EXTERN_C
-#endif
-#endif
+#error "Macro INCLUDE_CSTDLIB not supported anymore. Include <cstdlib> directly."
 #endif
 
-// define INCLUDE_CSTRING to include <cstring> or <string.h> if available
 #ifdef INCLUDE_CSTRING
-#ifdef USE_STD_CXX_INCLUDES
-#include <cstring>
-#elif defined(HAVE_STRING_H)
-BEGIN_EXTERN_C
-#include <string.h>
-END_EXTERN_C
-#endif
-// Some platforms define additional string functions like bzero or
-// strcasecmp in <strings.h>, so we always include this file if available.
-#ifdef HAVE_STRINGS_H
-BEGIN_EXTERN_C
-#include <strings.h>
-END_EXTERN_C
-#endif
+#error "Macro INCLUDE_CSTRING not supported anymore. Include <cstring> directly."
 #endif
 
-// define INCLUDE_CTIME to include <ctime> or <time.h> if available
 #ifdef INCLUDE_CTIME
-#ifdef USE_STD_CXX_INCLUDES
-#include <ctime>
-#elif defined(HAVE_TIME_H)
-BEGIN_EXTERN_C
-#include <time.h>
-END_EXTERN_C
-#endif
+#error "Macro INCLUDE_CTIME not supported anymore. Include <ctime> directly."
 #endif
 
-// define INCLUDE_CWCTYPE to include <cwctype> or <wctype.h> if available
 #ifdef INCLUDE_CWCTYPE
-#ifdef USE_STD_CXX_INCLUDES
-#include <cwctype>
-#elif defined(HAVE_WCTYPE_H)
-BEGIN_EXTERN_C
-#include <wctype.h>
-END_EXTERN_C
-#endif
+#error "Macro INCLUDE_CWCTYPE not supported anymore. Include <cwctype> directly."
 #endif
 
+#ifdef INCLUDE_FSTREAM
+#error "Macro INCLUDE_FSTREAM not supported anymore. Include 'dcmtk/ofstd/ofstream.h' instead."
+#endif
 
-/* Headers other than ISO C++, such as BSD and Posix.1 headers */
+#ifdef INCLUDE_IOMANIP
+#error "Macro INCLUDE_IOMANIP not supported anymore. Include 'dcmtk/ofstd/ofstream.h' instead."
+#endif
 
-// define INCLUDE_LIBC to include <libc.h> if available
+#ifdef INCLUDE_IOS
+#error "Macro INCLUDE_IOS not supported anymore. Include 'dcmtk/ofstd/ofstream.h' instead."
+#endif
+
+#ifdef INCLUDE_IOSFWD
+#error "Macro INCLUDE_IOSFWD not supported anymore. Include 'dcmtk/ofstd/ofstream.h' instead."
+#endif
+
+#ifdef INCLUDE_IOSTREAM
+#error "Macro INCLUDE_IOSTREAM not supported anymore. Include 'dcmtk/ofstd/ofstream.h' instead."
+#endif
+
+#ifdef INCLUDE_ISTREAM
+#error "Macro INCLUDE_ISTREAM not supported anymore. Include 'dcmtk/ofstd/ofstream.h' instead."
+#endif
+
 #ifdef INCLUDE_LIBC
-#ifdef HAVE_LIBC_H
-#ifndef INCLUDE_LIBC_H_AS_CXX
-BEGIN_EXTERN_C
-#endif
-#include <libc.h>
-#ifndef INCLUDE_LIBC_H_AS_CXX
-END_EXTERN_C
-#endif
-#endif
+#error "Macro INCLUDE_LIBC not supported anymore. Include <libc.h> directly."
 #endif
 
-// define INCLUDE_UNISTD to include <unistd.h> if available
-#ifdef INCLUDE_UNISTD
-#ifdef HAVE_UNISTD_H
-BEGIN_EXTERN_C
-#include <unistd.h>
-END_EXTERN_C
+#ifdef INCLUDE_LIST
+#error "Macro INCLUDE_LIST not supported anymore. Include 'dcmtk/ofstd/oflist.h' instead."
 #endif
+
+#ifdef INCLUDE_LOCALE
+#error "Macro INCLUDE_LOCALE not supported anymore. Include <locale> directly."
+#endif
+
+#ifdef INCLUDE_MAP
+#error "Macro INCLUDE_MAP not supported anymore. Include 'dcmtk/ofstd/ofmap.h' instead."
+#endif
+
+#ifdef INCLUDE_MEMORY
+#error "Macro INCLUDE_MEMORY not supported anymore. Include <memory> directly."
+#endif
+
+#ifdef INCLUDE_NEW
+#error "Macro INCLUDE_NEW not supported anymore. Include <new> directly."
+#endif
+
+#ifdef INCLUDE_OSTREAM
+#error "Macro INCLUDE_OSTREAM not supported anymore. Include 'dcmtk/ofstd/ofstream.h' instead."
+#endif
+
+#ifdef INCLUDE_SSTREAM
+#error "Macro INCLUDE_SSTREAM not supported anymore. Include 'dcmtk/ofstd/ofstream.h' instead."
+#endif
+
+#ifdef INCLUDE_STACK
+#error "Macro INCLUDE_STACK not supported anymore. Include 'dcmtk/ofstd/ofstack.h' instead."
+#endif
+
+#ifdef INCLUDE_STREAMBUF
+#error "Macro INCLUDE_STREAMBUF not supported anymore. Include <streambuf> directly."
+#endif
+
+#ifdef INCLUDE_STRING
+#error "Macro INCLUDE_STRING not supported anymore. Include 'dcmtk/ofstd/ofstring.h' instead."
+#endif
+
+#ifdef INCLUDE_UNISTD
+#error "Macro INCLUDE_UNISTD not supported anymore. Include <unistd.h> directly."
+#endif
+
+#ifdef INCLUDE_VECTOR
+#error "Macro INCLUDE_VECTOR not supported anymore. Include 'dcmtk/ofstd/ofvector.h' instead."
 #endif

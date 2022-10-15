@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2019, OFFIS e.V.
+ *  Copyright (C) 1994-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were partly developed by
@@ -80,12 +80,6 @@
 */
 
 #include "dcmtk/config/osconfig.h"    /* make sure OS specific configuration is included first */
-
-#define INCLUDE_CSTDLIB
-#define INCLUDE_CSTDIO
-#define INCLUDE_CSTRING
-#define INCLUDE_CSTDARG
-#include "dcmtk/ofstd/ofstdinc.h"
 
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
@@ -180,13 +174,17 @@ DIMSE_storeUser(
     DIMSE_PrivateUserContext callbackCtx;
     DIMSE_ProgressCallback privCallback = NULL;
     T_DIMSE_StoreProgress progress;
+    progress.state = DIMSE_StoreBegin;
+    progress.callbackCount = 0;
+    progress.progressBytes = 0;
+    progress.totalBytes = 0;
 
     /* if there is no image file or no data set, no data can be sent */
     if (imageFileName == NULL && imageDataSet == NULL) return DIMSE_NULLKEY;
 
     /* initialize the variables which represent DIMSE C-STORE request and DIMSE C-STORE response messages */
-    bzero((char*)&req, sizeof(req));
-    bzero((char*)&rsp, sizeof(rsp));
+    memset((char*)&req, 0, sizeof(req));
+    memset((char*)&rsp, 0, sizeof(rsp));
 
     /* set corresponding values in the request message variable */
     req.CommandField = DIMSE_C_STORE_RQ;
@@ -319,7 +317,7 @@ DIMSE_sendStoreResponse(T_ASC_Association * assoc,
     T_DIMSE_Message     rsp;
 
     /* create response message */
-    bzero((char*)&rsp, sizeof(rsp));
+    memset((char*)&rsp, 0, sizeof(rsp));
     rsp.CommandField = DIMSE_C_STORE_RSP;
     response->MessageIDBeingRespondedTo = request->MessageID;
     OFStandard::strlcpy(response->AffectedSOPClassUID, request->AffectedSOPClassUID, sizeof(response->AffectedSOPClassUID));
@@ -404,9 +402,15 @@ DIMSE_storeProvider( T_ASC_Association *assoc,
     DcmDataset *statusDetail = NULL;
     T_DIMSE_StoreProgress progress;
 
+    /* initialize progress struct */
+    progress.state = DIMSE_StoreBegin;
+    progress.callbackCount = 1;
+    progress.progressBytes = 0;
+    progress.totalBytes = 0;
+
     /* initialize the C-STORE-RSP message variable */
-    bzero((char*)&response, sizeof(response));
-    response.DimseStatus = STATUS_Success;      /* assume */
+    memset((char*)&response, 0, sizeof(response));
+    response.DimseStatus = STATUS_STORE_Success;      /* assume */
     response.MessageIDBeingRespondedTo = request->MessageID;
     response.DataSetType = DIMSE_DATASET_NULL;  /* always for C-STORE-RSP */
     OFStandard::strlcpy(response.AffectedSOPClassUID, request->AffectedSOPClassUID, sizeof(response.AffectedSOPClassUID));
@@ -420,9 +424,6 @@ DIMSE_storeProvider( T_ASC_Association *assoc,
         /* only if caller requires */
         privCallback = privateProviderCallback; /* function defined above */
         callbackCtx.callbackData = callbackData;
-        progress.state = DIMSE_StoreBegin;
-        progress.callbackCount = 1;
-        progress.progressBytes = 0;
         progress.totalBytes = dcmGuessModalityBytes(request->AffectedSOPClassUID);
         callbackCtx.progress = &progress;
         callbackCtx.request = request;
@@ -492,7 +493,7 @@ DIMSE_storeProvider( T_ASC_Association *assoc,
 
     /* depending on the error status, set the success indicating flag in the response message */
     if (cond == EC_Normal) {
-        response.DimseStatus = STATUS_Success;
+        response.DimseStatus = STATUS_STORE_Success;
     } else if (cond == DIMSE_OUTOFRESOURCES) {
         response.DimseStatus = STATUS_STORE_Refused_OutOfResources;
     } else {

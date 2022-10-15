@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1996-2018, OFFIS e.V.
+ *  Copyright (C) 1996-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -36,10 +36,6 @@
 #include "dcmtk/dcmimage/dicoopxt.h"
 #include "dcmtk/dcmimage/dilogger.h"
 #include "dcmtk/dcmimgle/diutils.h"
-
-#define INCLUDE_CINTTYPES
-#include "dcmtk/ofstd/ofstdinc.h"
-
 
 /*----------------*
  *  constructors  *
@@ -586,7 +582,7 @@ int DiColorImage::writeImageToDataset(DcmItem &dataset,
 #endif
                 dataset.putAndInsertString(DCM_NumberOfFrames, numBuf);
                 dataset.putAndInsertUint16(DCM_SamplesPerPixel, 3);
-                dataset.putAndInsertUint16(DCM_PlanarConfiguration, planarConfig);
+                dataset.putAndInsertUint16(DCM_PlanarConfiguration, OFstatic_cast(const Uint16, planarConfig));
                 /* set pixel encoding and data */
                 switch (InterData->getRepresentation())
                 {
@@ -615,8 +611,8 @@ int DiColorImage::writeImageToDataset(DcmItem &dataset,
                         dataset.putAndInsertUint16(DCM_PixelRepresentation, 1);
                         break;
                 }
-                dataset.putAndInsertUint16(DCM_BitsStored, BitsPerSample);
-                dataset.putAndInsertUint16(DCM_HighBit, BitsPerSample - 1);
+                dataset.putAndInsertUint16(DCM_BitsStored, OFstatic_cast(Uint16, BitsPerSample));
+                dataset.putAndInsertUint16(DCM_HighBit, OFstatic_cast(Uint16, (BitsPerSample - 1)));
                 /* update other DICOM attributes */
                 updateImagePixelModuleAttributes(dataset);
                 result = 1;

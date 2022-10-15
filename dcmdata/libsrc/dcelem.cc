@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2019, OFFIS e.V.
+ *  Copyright (C) 1994-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -22,11 +22,6 @@
 
 #include "dcmtk/config/osconfig.h"    /* make sure OS specific configuration is included first */
 
-#define INCLUDE_NEW
-#define INCLUDE_CSTDLIB
-#define INCLUDE_CSTRING
-#include "dcmtk/ofstd/ofstdinc.h"
-
 #include "dcmtk/ofstd/ofdefine.h"
 
 #include "dcmtk/ofstd/ofstd.h"
@@ -43,6 +38,8 @@
 #include "dcmtk/dcmdata/dcdeftag.h"
 #include "dcmtk/dcmdata/vrscan.h"
 #include "dcmtk/dcmdata/dcpath.h"
+
+#include <cstring>                      /* for memset() */
 
 #define SWAPBUFFER_SIZE 16  /* sufficient for all DICOM VRs as per the 2007 edition */
 
@@ -1131,7 +1128,7 @@ OFCondition DcmElement::createEmptyValue(const Uint32 length)
 
         // initialize <length> bytes (which may be odd), not Length (which is always even)
         if (fValue)
-            memzero(fValue, size_t(length));
+            memset(fValue, 0, size_t(length));
         else
             errorFlag = EC_MemoryExhausted;
     }
@@ -1176,7 +1173,7 @@ OFCondition DcmElement::read(DcmInputStream &inStream,
             {
                 /* Return error code if we are are not ignoring parsing errors */
                 if (!dcmIgnoreParsingErrors.get())
-                    errorFlag = EC_StreamNotifyClient;
+                    errorFlag = EC_StreamNotifyClient; // should we rather return EC_InvalidStream?
                 /* In any case, make sure that calling the load value routine on this
                  * element will fail later. For that, create the stream factory that
                  * the load routine will use. Otherwise it would not realize
@@ -1304,15 +1301,15 @@ OFCondition DcmElement::write(DcmOutputStream &outStream,
 
     if ((elemLength) > 0xffff && (! myvalidvr.usesExtendedLengthEncoding()) && outXfer.isExplicitVR())
     {
-      /* special case: we are writing in explicit VR, the VR of this
-       * element uses a 2-byte length encoding, but the element length is
-       * too large for a 2-byte length field. We need to write this element
-       * as VR=UN (or VR=OB if the generation of UN is disabled).
-       * In this method, the variable "vr" is only used to determine the
-       * output byte order, which is always the same for OB and UN.
-       * Therefore, we do not need to distinguish between these two.
-       */
-       vr = EVR_UN;
+        /* special case: we are writing in explicit VR, the VR of this
+         * element uses a 2-byte length encoding, but the element length is
+         * too large for a 2-byte length field. We need to write this element
+         * as VR=UN (or VR=OB if the generation of UN is disabled).
+         * In this method, the variable "vr" is only used to determine the
+         * output byte order, which is always the same for OB and UN.
+         * Therefore, we do not need to distinguish between these two.
+         */
+        vr = EVR_UN;
     }
 
     /* In case the transfer state is not initialized, this is an illegal call */
@@ -1661,7 +1658,7 @@ void DcmElement::writeJsonOpener(STD_NAMESPACE ostream &out,
     /* write attribute tag */
     out << ++format.indent() << "\""
         << STD_NAMESPACE hex << STD_NAMESPACE setfill('0')
-        << STD_NAMESPACE setw(4) << tag.getGTag();
+        << STD_NAMESPACE setw(4) << STD_NAMESPACE uppercase << tag.getGTag();
     /* write "ggggeeee" (no comma, upper case!) */
     /* for private element numbers, zero out 2 first element digits */
     /* or output full element number "eeee" */
@@ -1816,14 +1813,21 @@ OFCondition DcmElement::getPartialValue(void *targetBuffer,
     // initialize the cache with new stream
     if (!readStream)
     {
+      // create input stream object
       readStream = fLoadValue->create();
 
       // check that read stream is non-NULL
       if (readStream == NULL) return EC_InvalidStream;
 
       // check that stream status is OK
-      if (readStream->status().bad()) return readStream->status();
+      if (readStream->status().bad())
+      {
+        OFCondition result = readStream->status();
+        delete readStream;
+        return result;
+      }
 
+      // readStream will be deleted when the cache is deleted
       cache->init(readStream, this);
     }
 
@@ -1851,7 +1855,7 @@ OFCondition DcmElement::getPartialValue(void *targetBuffer,
       partialvalue = OFstatic_cast(Uint32, valueWidth - partialoffset);
 
       // we need to read a single data element into the swap buffer
-      if (valueWidth != OFstatic_cast(size_t, readStream->read(swapBuffer, valueWidth)))
+      if (valueWidth != OFstatic_cast(size_t, readStream->read(swapBuffer, OFstatic_cast(offile_off_t, valueWidth))))
           return EC_InvalidStream;
 
       // swap to desired byte order. fByteOrder contains the byte order in file.
@@ -1926,7 +1930,7 @@ OFCondition DcmElement::getPartialValue(void *targetBuffer,
       }
 
       // we need to read a single data element into the swap buffer
-      if (partialBytesToRead != OFstatic_cast(size_t, readStream->read(swapBuffer, partialBytesToRead)))
+      if (partialBytesToRead != OFstatic_cast(size_t, readStream->read(swapBuffer, OFstatic_cast(offile_off_t, partialBytesToRead))))
           return EC_InvalidStream;
 
       if (appendDuplicateByte)

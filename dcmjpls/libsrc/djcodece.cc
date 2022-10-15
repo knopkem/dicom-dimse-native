@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2007-2019, OFFIS e.V.
+ *  Copyright (C) 2007-2022, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -28,9 +28,6 @@
 #include "dcmtk/ofstd/ofstream.h"
 #include "dcmtk/ofstd/offile.h"      /* for class OFFile */
 #include "dcmtk/ofstd/ofbmanip.h"
-
-#define INCLUDE_CMATH
-#include "dcmtk/ofstd/ofstdinc.h"
 
 // dcmdata includes
 #include "dcmtk/dcmdata/dcdatset.h"  /* for class DcmDataset */
@@ -108,7 +105,8 @@ OFCondition DJLSEncoderBase::decode(
     DcmPixelSequence * /* pixSeq */,
     DcmPolymorphOBOW& /* uncompressedPixelData */,
     const DcmCodecParameter * /* cp */,
-    const DcmStack& /* objStack */) const
+    const DcmStack& /* objStack */,
+    OFBool& /* removeOldRep */ ) const
 {
   // we are an encoder only
   return EC_IllegalCall;
@@ -138,7 +136,8 @@ OFCondition DJLSEncoderBase::encode(
     const DcmRepresentationParameter * /* toRepParam */,
     DcmPixelSequence * & /* toPixSeq */,
     const DcmCodecParameter * /* cp */,
-    DcmStack & /* objStack */) const
+    DcmStack& /* objStack */,
+    OFBool& /* removeOldRep */ ) const
 {
   // we don't support re-coding for now.
   return EC_IllegalCall;
@@ -150,10 +149,16 @@ OFCondition DJLSEncoderBase::encode(
     const DcmRepresentationParameter * toRepParam,
     DcmPixelSequence * & pixSeq,
     const DcmCodecParameter *cp,
-    DcmStack & objStack) const
+    DcmStack& objStack,
+    OFBool& removeOldRep) const
 {
   OFCondition result = EC_Normal;
   DJLSRepresentationParameter defRep;
+
+  // this codec may modify the DICOM header such that the previous pixel
+  // representation is not valid anymore. Indicate this to the caller
+  // to trigger removal.
+  removeOldRep = OFTrue;
 
   // retrieve pointer to dataset from parameter stack
   DcmStack localStack(objStack);
@@ -685,14 +690,20 @@ OFCondition DJLSEncoderBase::compressRawFrame(
     case DJLSCodecParameter::interleaveLine:
       jls_params.ilv = ILV_LINE;
       break;
+#ifdef ENABLE_DCMJPLS_INTERLEAVE_NONE
     case DJLSCodecParameter::interleaveNone:
       jls_params.ilv = ILV_NONE;
       break;
+#endif
     case DJLSCodecParameter::interleaveDefault:
     default:
       // In default mode we just never convert the image to another
       // interleave-mode. Instead, we use what is already there.
+#ifdef ENABLE_DCMJPLS_INTERLEAVE_NONE
       jls_params.ilv = ilv;
+#else
+      jls_params.ilv = (ilv == ILV_NONE ? ILV_LINE : ilv);
+#endif
       break;
   }
 
@@ -708,7 +719,7 @@ OFCondition DJLSEncoderBase::compressRawFrame(
   if ((jls_params.ilv == ILV_NONE && (ilv == ILV_SAMPLE || ilv == ILV_LINE)) ||
       (ilv == ILV_NONE && (jls_params.ilv == ILV_SAMPLE || jls_params.ilv == ILV_LINE)))
   {
-    DCMJPLS_DEBUG("Converting image from " << (ilv == ILV_NONE ? "color-by-plane" : "color-by-pixel")
+    DCMJPLS_DEBUG("converting image from " << (ilv == ILV_NONE ? "color-by-plane" : "color-by-pixel")
           << " to " << (jls_params.ilv == ILV_NONE ? "color-by-plane" : "color-by-pixel"));
 
     frameBuffer = new Uint8[frameSize];
@@ -770,7 +781,7 @@ OFCondition DJLSEncoderBase::losslessCookedEncode(
   if (result.good()) result = dataset->findAndGetUint16(DCM_BitsAllocated, bitsAllocated);
   if (result.bad()) return result;
 
-  // The cooked encoder only handles the following photometic interpretations
+  // The cooked encoder only handles the following photometric interpretations
   if (photometricInterpretation != "MONOCHROME1" &&
       photometricInterpretation != "MONOCHROME2" &&
       photometricInterpretation != "RGB" &&
@@ -808,12 +819,12 @@ OFCondition DJLSEncoderBase::losslessCookedEncode(
 
   if (bitsStored > 16)
   {
-    DCMJPLS_WARN("Cannot compress image with " << bitsStored << " bits/sample: JPEG-LS supports max. 16 bits.");
+    DCMJPLS_WARN("cannot compress image with " << bitsStored << " bits/sample: JPEG-LS supports max. 16 bits");
     return EC_JLSUnsupportedBitDepth;
   }
   if (bitsStored < 2)
   {
-    DCMJPLS_WARN("Cannot compress image with " << bitsStored << " bit/sample: JPEG-LS requires at least 2 bits.");
+    DCMJPLS_WARN("cannot compress image with " << bitsStored << " bit/sample: JPEG-LS requires at least 2 bits");
     return EC_JLSUnsupportedBitDepth;
   }
 
@@ -906,8 +917,8 @@ OFCondition DJLSEncoderBase::losslessCookedEncode(
         result = dataset->putAndInsertUint16(DCM_BitsAllocated, 16);
       else
         result = dataset->putAndInsertUint16(DCM_BitsAllocated, 8);
-    if (result.good()) result = dataset->putAndInsertUint16(DCM_BitsStored, bitsPerSample);
-    if (result.good()) result = dataset->putAndInsertUint16(DCM_HighBit, bitsPerSample-1);
+    if (result.good()) result = dataset->putAndInsertUint16(DCM_BitsStored, OFstatic_cast(Uint16, bitsPerSample));
+    if (result.good()) result = dataset->putAndInsertUint16(DCM_HighBit, OFstatic_cast(Uint16, (bitsPerSample-1)));
     if (result.good())
     {
       if (photometricInterpretation == "RGB" || photometricInterpretation == "YBR_FULL")
@@ -1089,7 +1100,7 @@ OFCondition DJLSEncoderBase::compressCookedFrame(
   // Unset: jls_params.jfif (thumbnail, dpi)
 
   // set parameters T1, T2, T3, MAXVAL and RESET
-  setCustomParameters(jls_params.custom, depth, nearLosslessDeviation, djcp);
+  setCustomParameters(jls_params.custom, OFstatic_cast(Uint16, depth), nearLosslessDeviation, djcp);
 
   switch (djcp->getJplsInterleaveMode())
   {
@@ -1099,9 +1110,11 @@ OFCondition DJLSEncoderBase::compressCookedFrame(
     case DJLSCodecParameter::interleaveLine:
       jls_params.ilv = ILV_LINE;
       break;
+#ifdef ENABLE_DCMJPLS_INTERLEAVE_NONE
     case DJLSCodecParameter::interleaveNone:
       jls_params.ilv = ILV_NONE;
       break;
+#endif
     case DJLSCodecParameter::interleaveDefault:
     default:
       // Default for the cooked encoder is always ILV_LINE
@@ -1117,15 +1130,18 @@ OFCondition DJLSEncoderBase::compressCookedFrame(
 
   Uint8 *frameBuffer = NULL;
   Uint8 *framePointer = buffer;
+
+#ifdef ENABLE_DCMJPLS_INTERLEAVE_NONE
   // Do we have to convert the image to color-by-plane now?
   if (jls_params.ilv == ILV_NONE && jls_params.components != 1)
   {
-    DCMJPLS_DEBUG("Converting image from color-by-pixel to color-by-plane");
+    DCMJPLS_DEBUG("converting image from color-by-pixel to color-by-plane");
 
     frameBuffer = new Uint8[buffer_size];
     framePointer = frameBuffer;
     result = convertToUninterleaved(frameBuffer, buffer, samplesPerPixel, width, height, jls_params.bitspersample);
   }
+#endif
 
   size_t compressed_buffer_size = buffer_size + 1024;
   BYTE *compressed_buffer = new BYTE[compressed_buffer_size];
@@ -1159,7 +1175,7 @@ OFCondition DJLSEncoderBase::convertToUninterleaved(
     Uint32 height,
     Uint16 bitsAllocated) const
 {
-  Uint8 bytesAllocated = bitsAllocated / 8;
+  Uint8 bytesAllocated = OFstatic_cast(Uint8, (bitsAllocated / 8));
   Uint32 planeSize = width * height * bytesAllocated;
 
   if (bitsAllocated % 8 != 0)
@@ -1184,7 +1200,7 @@ OFCondition DJLSEncoderBase::convertToSampleInterleaved(
     Uint32 height,
     Uint16 bitsAllocated) const
 {
-  Uint8 bytesAllocated = bitsAllocated / 8;
+  Uint8 bytesAllocated = OFstatic_cast(Uint8, (bitsAllocated / 8));
   Uint32 planeSize = width * height * bytesAllocated;
 
   if (bitsAllocated % 8 != 0)

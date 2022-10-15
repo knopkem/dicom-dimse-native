@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2018, OFFIS e.V.
+ *  Copyright (C) 2018-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -26,9 +26,6 @@
 
 #include "dcmtk/config/osconfig.h"
 
-#define INCLUDE_CASSERT
-#include "dcmtk/ofstd/ofstdinc.h"
-
 /** @file ofassert.h
  *  Including run time and compile time assertion features and implementing
  *  fallback implementations for the ones that are not available.
@@ -39,7 +36,7 @@
 #define OFstatic_assert static_assert
 #else // HAVE_STATIC_ASSERT
 template<OFBool>
-class OFstatic_assert_t;
+struct OFstatic_assert_t;
 template<>
 struct OFstatic_assert_t<OFTrue> { OFstatic_assert_t( const char* = OFnullptr ) {} };
 #define OFstatic_assert( E, M ) OFstatic_assert_t<E>(M);

@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2012, OFFIS e.V.
+ *  Copyright (C) 1994-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -27,11 +27,6 @@
 #include "dcmtk/ofstd/ofstd.h"
 #include "dcmtk/dcmdata/dcvrui.h"
 #include "dcmtk/dcmdata/dcuid.h"
-
-#define INCLUDE_CSTRING
-#define INCLUDE_CCTYPE
-#include "dcmtk/ofstd/ofstdinc.h"
-
 
 #define MAX_UI_LENGTH 64
 
@@ -181,7 +176,15 @@ OFCondition DcmUniqueIdentifier::putString(const char *stringVal,
     if ((stringVal != NULL) && (stringVal[0] == '='))
     {
         uid = dcmFindUIDFromName(stringVal + 1);
-        uidLen = (uid != NULL) ? OFstatic_cast(Uint32, strlen(uid)) : 0;
+        /* check whether UID name could be mapped to a UID number */
+        if (uid == NULL)
+        {
+            DCMDATA_DEBUG("DcmUniqueIdentifier::putString() cannot map UID name '"
+                << OFSTRING_GUARD(stringVal + 1) << "' to UID value");
+            /* return with an error */
+            return EC_UnknownUIDName;
+        } else
+            uidLen = OFstatic_cast(Uint32, strlen(uid));
     }
     /* call inherited method to set the UID string */
     return DcmByteString::putString(uid, uidLen);

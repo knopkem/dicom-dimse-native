@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2018, OFFIS e.V.
+ *  Copyright (C) 1994-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were partly developed by
@@ -71,15 +71,6 @@
 #include <ws2tcpip.h>
 #endif
 
-#define INCLUDE_CSTDLIB
-#define INCLUDE_CSTDIO
-#define INCLUDE_CSTRING
-#define INCLUDE_CERRNO
-#define INCLUDE_CSIGNAL
-#define INCLUDE_CTIME
-#define INCLUDE_UNISTD
-#include "dcmtk/ofstd/ofstdinc.h"
-
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
@@ -109,11 +100,12 @@ END_EXTERN_C
 #endif
 
 #include "dcmtk/ofstd/ofstream.h"
+#include "dcmtk/ofstd/ofstdinc.h"
 #include "dcmtk/dcmnet/dicom.h"
 #include "dcmtk/dcmnet/lst.h"
 #include "dcmtk/dcmnet/cond.h"
 #include "dcmtk/dcmnet/dul.h"
-#include "dulstruc.h"
+#include "dcmtk/dcmnet/dulstruc.h"
 #include "dulpriv.h"
 #include "dulfsm.h"
 #include "dcmtk/ofstd/ofbmanip.h"
@@ -122,7 +114,10 @@ END_EXTERN_C
 #include "dcmtk/dcmnet/dcmtrans.h"
 #include "dcmtk/dcmnet/dcmlayer.h"
 #include "dcmtk/dcmnet/diutil.h"
+#include "dcmtk/dcmnet/helpers.h"
 #include "dcmtk/ofstd/ofsockad.h" /* for class OFSockAddr */
+#include <ctime>
+
 
 /* At least Solaris doesn't define this */
 #ifndef INADDR_NONE
@@ -310,10 +305,7 @@ findPresentationCtx(LST_HEAD ** lst, DUL_PRESENTATIONCONTEXTID contextID);
 PRV_SCUSCPROLE *
 findSCUSCPRole(LST_HEAD ** lst, char *abstractSyntax);
 
-void destroyPresentationContextList(LST_HEAD ** l);
-void destroyUserInformationLists(DUL_USERINFO * userInfo);
-
-static FSM_Event_Description Event_Table[] = {
+static volatile FSM_Event_Description Event_Table[] = {
     {A_ASSOCIATE_REQ_LOCAL_USER, "A-ASSOCIATE request (local user)"},
     {TRANS_CONN_CONFIRM_LOCAL_USER, "Transport conn confirmation (local)"},
     {A_ASSOCIATE_AC_PDU_RCV, "A-ASSOCIATE-AC PDU (on transport)"},
@@ -335,7 +327,7 @@ static FSM_Event_Description Event_Table[] = {
     {INVALID_PDU, "Unrecognized/invalid PDU"}
 };
 
-static FSM_FUNCTION FSM_FunctionTable[] = {
+static volatile FSM_FUNCTION FSM_FunctionTable[] = {
     {AE_1, AE_1_TransportConnect, "AE 1 Transport Connect"},
     {AE_2, AE_2_SendAssociateRQPDU, "AE 2 Send Associate RQ PDU"},
     {AE_3, AE_3_AssociateConfirmationAccept, "AE 3 Associate Confirmation Accept"},
@@ -370,7 +362,7 @@ static FSM_FUNCTION FSM_FunctionTable[] = {
     {AR_10, AR_10_ConfirmRelease, "AR 10 Confirm Release"}
 };
 
-static FSM_ENTRY StateTable[DUL_NUMBER_OF_EVENTS][DUL_NUMBER_OF_STATES] = {
+static volatile FSM_ENTRY StateTable[DUL_NUMBER_OF_EVENTS][DUL_NUMBER_OF_STATES] = {
     {
         // EVENT,                    STATE,  ACTION,   NEXT_STATE
         {A_ASSOCIATE_REQ_LOCAL_USER, STATE1, AE_1, STATE4, "", "", NULL},
@@ -750,7 +742,7 @@ PRV_StateMachine(PRIVATE_NETWORKKEY ** network,
                  PRIVATE_ASSOCIATIONKEY ** association, int event, int state,
                  void *params)
 {
-    FSM_ENTRY
+    volatile FSM_ENTRY
         * entry;
 
     /* check if the given event is valid, if not return an error */
@@ -777,8 +769,8 @@ PRV_StateMachine(PRIVATE_NETWORKKEY ** network,
 
     /* dump information if required */
     DCMNET_TRACE("DUL  FSM Table: State: " << state << " Event: " << event << OFendl
-            << "DUL  Event:  " << entry->eventName << OFendl
-            << "DUL  Action: " << entry->actionName);
+            << "DUL  Event:  " << OFconst_cast(const char *, entry->eventName) << OFendl
+            << "DUL  Action: " << OFconst_cast(const char *, entry->actionName));
 
     /* if the state table's entry specifies an action function, execute this function and return */
     /* it's result value. If there is no action function defined, return a corresponding error. */
@@ -1021,7 +1013,7 @@ AE_3_AssociateConfirmationAccept(PRIVATE_NETWORKKEY ** /*network*/,
 
         }
 
-        destroyPresentationContextList(&assoc.presentationContextList);
+        destroyAssociatePDUPresentationContextList(&assoc.presentationContextList);
         destroyUserInformationLists(&assoc.userInfo);
         service->peerMaxPDU = assoc.userInfo.maxLength.maxLength;
         (*association)->maxPDV = assoc.userInfo.maxLength.maxLength;
@@ -1238,7 +1230,7 @@ AE_6_ExamineAssociateRequest(PRIVATE_NETWORKKEY ** /*network*/,
                assoc.userInfo.implementationVersionName.data, 16 + 1);
         (*association)->associationState = DUL_ASSOC_ESTABLISHED;
 
-        destroyPresentationContextList(&assoc.presentationContextList);
+        destroyAssociatePDUPresentationContextList(&assoc.presentationContextList);
         destroyUserInformationLists(&assoc.userInfo);
 
         /* If this PDU is ok with us */
@@ -2266,7 +2258,7 @@ requestAssociationTCP(PRIVATE_NETWORKKEY ** network,
           return makeDcmnetCondition(DULC_UNKNOWNHOST, OF_error, buf2);
         }
     }
-    server.setPort(OFstatic_cast(unsigned short, htons(port)));
+    server.setPort(OFstatic_cast(unsigned short, htons(OFstatic_cast(unsigned short, port))));
 
     // get global connection timeout
     Sint32 connectTimeout = dcmConnectionTimeout.get();
@@ -2486,7 +2478,11 @@ requestAssociationTCP(PRIVATE_NETWORKKEY ** network,
          */
 
 #ifdef DONT_DISABLE_NAGLE_ALGORITHM
+#ifdef _MSC_VER
+#pragma message("The macro DONT_DISABLE_NAGLE_ALGORITHM is not supported anymore. See 'macros.txt' for details.")
+#else
 #warning The macro DONT_DISABLE_NAGLE_ALGORITHM is not supported anymore. See "macros.txt" for details.
+#endif
 #endif
 
 #ifdef DISABLE_NAGLE_ALGORITHM
@@ -2522,15 +2518,7 @@ requestAssociationTCP(PRIVATE_NETWORKKEY ** network,
 #endif
         }
 
-       DcmTransportLayerStatus tcsStatus;
-       if (TCS_ok != (tcsStatus = (*association)->connection->clientSideHandshake()))
-       {
-         DCMNET_ERROR("TLS client handshake failed");
-         OFString msg = "DUL secure transport layer: ";
-         msg += (*association)->connection->errorString(tcsStatus);
-         return makeDcmnetCondition(DULC_TLSERROR, OF_error, msg.c_str());
-       }
-       return EC_Normal;
+        return (*association)->connection->clientSideHandshake();
     }
 }
 
@@ -2599,7 +2587,7 @@ sendAssociationRQTCP(PRIVATE_NETWORKKEY ** /*network*/,
       }
     }
 
-    destroyPresentationContextList(&associateRequest.presentationContextList);
+    destroyAssociatePDUPresentationContextList(&associateRequest.presentationContextList);
     destroyUserInformationLists(&associateRequest.userInfo);
     if (cond.bad())
         return cond;
@@ -2682,7 +2670,7 @@ sendAssociationACTCP(PRIVATE_NETWORKKEY ** /*network*/,
       }
     }
 
-    destroyPresentationContextList(&associateReply.presentationContextList);
+    destroyAssociatePDUPresentationContextList(&associateReply.presentationContextList);
     destroyUserInformationLists(&associateReply.userInfo);
 
     if (cond.bad()) return cond;
@@ -3476,7 +3464,7 @@ readPDUHeadTCP(PRIVATE_ASSOCIATIONKEY ** association,
 {
     unsigned long
         length;
-    static unsigned char
+    static const unsigned char
         legalPDUTypes[] = {
         DUL_TYPEASSOCIATERQ, DUL_TYPEASSOCIATEAC,
         DUL_TYPEASSOCIATERJ, DUL_TYPEDATA,
@@ -3692,6 +3680,19 @@ defragmentTCP(DcmTransportConnection *connection, DUL_BLOCKOPTIONS block, time_t
         /* we actually did receive data or an error occurred */
         do
         {
+#if 0
+            /* the original patch submitted for DCMTK issue #1006 contains a sleep statement here
+             * that should actually not be necessary. We're leaving it in the code for now
+             * with this comment. If your code (in non-blocking mode, on Windows) works if
+             * and only if this gets enabled, please let us know: <bugs@dcmtk.org> */
+#ifdef HAVE_WINSOCK_H
+            if (OFStandard::getLastNetworkErrorCode().value() == WSAEWOULDBLOCK)
+            {
+                Sleep(1);
+            }
+#endif
+#endif
+
             /* if DUL_NOBLOCK is specified as a blocking option, we only want to wait a certain
              * time for receiving data over the network. If no data was received during that time,
              * DUL_READTIMEOUT shall be returned. Note that if DUL_BLOCK is specified the application
@@ -3710,7 +3711,11 @@ defragmentTCP(DcmTransportConnection *connection, DUL_BLOCKOPTIONS block, time_t
             /* data has become available, now call read(). */
             bytesRead = connection->read((char*)b, size_t(l));
 
-        } while (bytesRead == -1 && OFStandard::getLastNetworkErrorCode().value() == DCMNET_EINTR);
+        } while ((bytesRead == -1 && OFStandard::getLastNetworkErrorCode().value() == DCMNET_EINTR)
+#ifdef HAVE_WINSOCK_H
+                 || (bytesRead == -1 && (OFStandard::getLastNetworkErrorCode().value() == WSAEWOULDBLOCK))
+#endif
+                 );
 
         /* if we actually received data, move the buffer pointer to its own end, update the variable */
         /* that determines the end of the first loop, and update the reference parameter return variable */
@@ -3987,49 +3992,4 @@ findSCUSCPRole(LST_HEAD ** lst, char *abstractSyntax)
         role = (PRV_SCUSCPROLE*)LST_Next(lst);
     }
     return NULL;
-}
-
-void
-destroyPresentationContextList(LST_HEAD ** l)
-{
-    PRV_PRESENTATIONCONTEXTITEM
-    * prvCtx;
-    DUL_SUBITEM
-        * subItem;
-
-    if (*l == NULL)
-        return;
-
-    prvCtx = (PRV_PRESENTATIONCONTEXTITEM*)LST_Dequeue(l);
-    while (prvCtx != NULL) {
-        subItem = (DUL_SUBITEM*)LST_Dequeue(&prvCtx->transferSyntaxList);
-        while (subItem != NULL) {
-            free(subItem);
-            subItem = (DUL_SUBITEM*)LST_Dequeue(&prvCtx->transferSyntaxList);
-        }
-        LST_Destroy(&prvCtx->transferSyntaxList);
-        free(prvCtx);
-        prvCtx = (PRV_PRESENTATIONCONTEXTITEM*)LST_Dequeue(l);
-    }
-    LST_Destroy(l);
-}
-
-void
-destroyUserInformationLists(DUL_USERINFO * userInfo)
-{
-    PRV_SCUSCPROLE
-    * role;
-
-    role = (PRV_SCUSCPROLE*)LST_Dequeue(&userInfo->SCUSCPRoleList);
-    while (role != NULL) {
-        free(role);
-        role = (PRV_SCUSCPROLE*)LST_Dequeue(&userInfo->SCUSCPRoleList);
-    }
-    LST_Destroy(&userInfo->SCUSCPRoleList);
-
-    /* extended negotiation */
-    delete userInfo->extNegList; userInfo->extNegList = NULL;
-
-    /* user identity negotiation */
-    delete userInfo->usrIdent; userInfo->usrIdent = NULL;
 }

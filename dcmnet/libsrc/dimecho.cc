@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2018, OFFIS e.V.
+ *  Copyright (C) 1994-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were partly developed by
@@ -82,11 +82,6 @@
 
 #include "dcmtk/config/osconfig.h"    /* make sure OS specific configuration is included first */
 
-#define INCLUDE_CSTDLIB
-#define INCLUDE_CSTDIO
-#define INCLUDE_CSTRING
-#include "dcmtk/ofstd/ofstdinc.h"
-
 #include "dcmtk/dcmnet/diutil.h"
 #include "dcmtk/dcmnet/dimse.h"     /* always include the module header */
 #include "dcmtk/dcmnet/cond.h"
@@ -117,8 +112,8 @@ DIMSE_echoUser(
         return makeDcmnetCondition(DIMSEC_NOVALIDPRESENTATIONCONTEXTID, OF_error, buf);
     }
 
-    bzero((char*)&req, sizeof(req));
-    bzero((char*)&rsp, sizeof(rsp));
+    memset((char*)&req, 0, sizeof(req));
+    memset((char*)&rsp, 0, sizeof(rsp));
 
     req.CommandField = DIMSE_C_ECHO_RQ;
     req.msg.CEchoRQ.MessageID = msgId;
@@ -159,7 +154,7 @@ DIMSE_sendEchoResponse(T_ASC_Association * assoc,
 {
     T_DIMSE_Message rsp;
 
-    bzero((char*)&rsp, sizeof(rsp));
+    memset((char*)&rsp, 0, sizeof(rsp));
 
     rsp.CommandField = DIMSE_C_ECHO_RSP;
     rsp.msg.CEchoRSP.MessageIDBeingRespondedTo = req->MessageID;

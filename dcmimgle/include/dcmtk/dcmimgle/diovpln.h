@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1996-2018, OFFIS e.V.
+ *  Copyright (C) 1996-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -28,10 +28,6 @@
 #include "dcmtk/ofstd/ofcast.h"
 
 #include "dcmtk/dcmimgle/diutils.h"
-
-#define INCLUDE_CSTDDEF
-#include "dcmtk/ofstd/ofstdinc.h"
-
 
 /*------------------------*
  *  forward declarations  *
@@ -317,6 +313,16 @@ class DCMTK_DCMIMGLE_EXPORT DiOverlayPlane
         return Mode;
     }
 
+    /** check whether overlay plane is a multi-frame overlay.
+     *  (see DICOM PS3.3 for definition of "Multi-frame Overlay")
+     *
+     ** @return true if plane is a multi-frame overlay, false otherwise
+     */
+    inline int isMultiframe() const
+    {
+        return MultiframeOverlay;
+    }
+
     /** check whether overlay plane is embedded in the pixel data
      *
      ** @return true if plane is embedded, false otherwise
@@ -357,14 +363,16 @@ class DCMTK_DCMIMGLE_EXPORT DiOverlayPlane
      *  Overlay plane is clipped to the area specified by the four min/max coordinates.
      *  Memory isn't handled internally and must therefore be deleted from calling program.
      *
-     ** @param  frame  number of frame
-     *  @param  xmin   x-coordinate of the top left hand corner
-     *  @param  ymin   y-coordinate of the top left hand corner
-     *  @param  xmax   x-coordinate of the bottom right hand corner
-     *  @param  ymax   y-coordinate of the bottom right hand corner
-     *  @param  bits   number of bits (stored) in the resulting array
-     *  @param  fore   foreground color used for the plane (0x00-0xff)
-     *  @param  back   transparent background color (0x00-0xff)
+     ** @param  frame      number of frame
+     *  @param  xmin       x-coordinate of the top left hand corner
+     *  @param  ymin       y-coordinate of the top left hand corner
+     *  @param  xmax       x-coordinate of the bottom right hand corner
+     *  @param  ymax       y-coordinate of the bottom right hand corner
+     *  @param  bits       number of bits (stored) in the resulting array
+     *  @param  fore       foreground color used for the plane (0..2^bits-1)
+     *  @param  back       transparent background color (0..2^bits-1)
+     *  @param  useOrigin  use overlay plane's origin for calculating the start position
+     *                     if true (default), ignore it otherwise
      *
      ** @return pointer to pixel data if successful, NULL otherwise
      */
@@ -375,7 +383,8 @@ class DCMTK_DCMIMGLE_EXPORT DiOverlayPlane
                   const Uint16 ymax,
                   const int bits,
                   const Uint16 fore,
-                  const Uint16 back);
+                  const Uint16 back,
+                  const OFBool useOrigin = OFTrue);
 
     /** create overlay plane data in (6xxx,3000) format.
      *  (1 bit allocated and stored, foreground color is 1, background color is 0,
@@ -410,11 +419,14 @@ class DCMTK_DCMIMGLE_EXPORT DiOverlayPlane
 
     /** set internal 'cursor' to a specific position
      *
-     ** @param  x  new x-coordinate to start from
-     *  @param  y  new y-coordinate to start from
+     ** @param  x          new x-coordinate to start from
+     *  @param  y          new y-coordinate to start from
+     *  @param  useOrigin  use overlay plane's origin for calculating the start position
+     *                     if true (default), ignore it otherwise
      */
     inline void setStart(const Uint16 x,
-                         const Uint16 y);
+                         const Uint16 y,
+                         const OFBool useOrigin = OFTrue);
 
 
  protected:
@@ -481,7 +493,9 @@ class DCMTK_DCMIMGLE_EXPORT DiOverlayPlane
     /// y-coordinate of first pixel in surrounding memory buffer
     unsigned int StartTop;
 
-    /// true, if overlay data in embedded in pixel data
+    /// true if overlay plane is a multi-frame overlay
+    int MultiframeOverlay;
+    /// true if overlay data is embedded in pixel data
     int EmbeddedData;
 
     /// pointer to current element of 'Data'
@@ -506,8 +520,12 @@ inline int DiOverlayPlane::reset(const unsigned long frame)
     int result = 0;
     if (Valid && (Data != NULL))
     {
-        const Uint32 frameNumber = OFstatic_cast(Uint32, FirstFrame + frame);
+        /* check for multi-frame overlay */
+        const Uint32 frameNumber = (MultiframeOverlay) ? OFstatic_cast(Uint32, FirstFrame + frame) : 0;
         DCMIMGLE_TRACE("reset overlay plane in group 0x" << STD_NAMESPACE hex << GroupNumber << " to start position");
+        /* special case: single frame overlay for multi-frame image */
+        if (!MultiframeOverlay && (frame > 0))
+            DCMIMGLE_TRACE("  using single frame overlay for multi-frame image (see CP-1974)");
         DCMIMGLE_TRACE("  frameNumber: " << frameNumber << " (" << FirstFrame << "+" << frame
             << "), ImageFrameOrigin: " << ImageFrameOrigin << ", NumberOfFrames: " << NumberOfFrames);
         if ((frameNumber >= ImageFrameOrigin) && (frameNumber < ImageFrameOrigin + NumberOfFrames))
@@ -534,28 +552,38 @@ inline int DiOverlayPlane::reset(const unsigned long frame)
 inline int DiOverlayPlane::getNextBit()
 {
     int result;
-    if (BitsAllocated == 16)                                        // optimization
-        result = OFstatic_cast(int, *(Ptr++) & (1 << BitPosition));
+    if (BitsAllocated == 16)                     // optimization
+        result = *(Ptr++) & (1 << BitPosition);
     else
     {
-        Ptr = StartPtr + (BitPos >> 4);                             // div 16
-        result = OFstatic_cast(int, *Ptr & (1 << (BitPos & 0xf)));  // mod 16
-        BitPos += BitsAllocated;                                    // next bit
+        Ptr = StartPtr + (BitPos >> 4);          // div 16
+        result = *Ptr & (1 << (BitPos & 0xf));   // mod 16
+        BitPos += BitsAllocated;                 // next bit
     }
     return result;
 }
 
 
 inline void DiOverlayPlane::setStart(const Uint16 x,
-                                     const Uint16 y)
+                                     const Uint16 y,
+                                     const OFBool useOrigin)
 {
-    if (BitsAllocated == 16)
-        Ptr = StartPtr + OFstatic_cast(unsigned long, y - Top) * OFstatic_cast(unsigned long, Columns) +
-            OFstatic_cast(unsigned long, x - Left);
-    else
-        BitPos = StartBitPos + (OFstatic_cast(unsigned long, y - Top) * OFstatic_cast(unsigned long, Columns) +
-            OFstatic_cast(unsigned long, x - Left)) * OFstatic_cast(unsigned long, BitsAllocated);
+    if (useOrigin)
+    {
+        if (BitsAllocated == 16)
+            Ptr = StartPtr + OFstatic_cast(unsigned long, y - Top) * OFstatic_cast(unsigned long, Columns) +
+                OFstatic_cast(unsigned long, x - Left);
+        else
+            BitPos = StartBitPos + (OFstatic_cast(unsigned long, y - Top) * OFstatic_cast(unsigned long, Columns) +
+                OFstatic_cast(unsigned long, x - Left)) * OFstatic_cast(unsigned long, BitsAllocated);
+    } else {
+        if (BitsAllocated == 16)
+            Ptr = StartPtr + OFstatic_cast(unsigned long, y) * OFstatic_cast(unsigned long, Columns) +
+                OFstatic_cast(unsigned long, x);
+        else
+            BitPos = StartBitPos + (OFstatic_cast(unsigned long, y) * OFstatic_cast(unsigned long, Columns) +
+                OFstatic_cast(unsigned long, x)) * OFstatic_cast(unsigned long, BitsAllocated);
+    }
 }
-
 
 #endif

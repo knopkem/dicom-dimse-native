@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2007-2019, OFFIS e.V.
+ *  Copyright (C) 2007-2022, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -81,8 +81,16 @@ OFCondition DJLSDecoderBase::decode(
     DcmPixelSequence * pixSeq,
     DcmPolymorphOBOW& uncompressedPixelData,
     const DcmCodecParameter * cp,
-    const DcmStack& objStack) const
+    const DcmStack& objStack,
+    OFBool& removeOldRep) const
 {
+
+  // this codec may modify the DICOM header such that the previous pixel
+  // representation is not valid anymore, e.g. in the case of color images
+  // where the planar configuration can change. Indicate this to the caller
+  // to trigger removal.
+  removeOldRep = OFTrue;
+
   // retrieve pointer to dataset from parameter stack
   DcmStack localStack(objStack);
   (void)localStack.pop();  // pop pixel data element from stack
@@ -172,7 +180,7 @@ OFCondition DJLSDecoderBase::decode(
       {
         // frame is incomplete. Nevertheless skip to next frame.
         // This permits decompression of faulty multi-frame images.
-        DCMJPLS_WARN("JPEG-LS bitstream invalid or incomplete, ignoring (but image is likely to be incomplete).");
+        DCMJPLS_WARN("JPEG-LS bitstream invalid or incomplete, ignoring (but image is likely to be incomplete)");
         result = EC_Normal;
       }
 
@@ -278,7 +286,7 @@ OFCondition DJLSDecoderBase::decodeFrame(
   if (result.good())
   {
     // We got all the data we need from the dataset, let's start decoding
-    DCMJPLS_DEBUG("Starting to decode frame " << frameNo << " with fragment " << currentItem);
+    DCMJPLS_DEBUG("starting to decode frame " << frameNo << " with fragment " << currentItem);
     result = decodeFrame(fromPixSeq, djcp, dataset, frameNo, currentItem, buffer, bufSize,
         imageFrames, imageColumns, imageRows, imageSamplesPerPixel, bytesPerSample);
   }
@@ -328,12 +336,15 @@ OFCondition DJLSDecoderBase::decodeFrame(
 
   if (imageSamplesPerPixel > 1)
   {
+    // get planar configuration from dataset
+    imagePlanarConfiguration = 2; // invalid value
+    // warn on invalid value; should we also warn on missing attribute or value?
+    if (dataset->findAndGetUint16(DCM_PlanarConfiguration, imagePlanarConfiguration).good() && (imagePlanarConfiguration != 0))
+      DCMJPLS_WARN("invalid value for PlanarConfiguration " << DCM_PlanarConfiguration << ", should be \"0\"");
+
     switch (cp->getPlanarConfiguration())
     {
       case EJLSPC_restore:
-        // get planar configuration from dataset
-        imagePlanarConfiguration = 2; // invalid value
-        dataset->findAndGetUint16(DCM_PlanarConfiguration, imagePlanarConfiguration);
         // determine auto default if not found or invalid
         if (imagePlanarConfiguration > 1)
           imagePlanarConfiguration = determinePlanarConfiguration(imageSopClass, imagePhotometricInterpretation);
@@ -420,11 +431,15 @@ OFCondition DJLSDecoderBase::decodeFrame(
 
       if (result.good() && imageSamplesPerPixel == 3)
       {
+        if (params.colorTransform != 0)
+        {
+          DCMJPLS_WARN("Color Transformation " << params.colorTransform << " is a non-standard HP/JPEG-LS extension");
+        }
         if (imagePlanarConfiguration == 1 && params.ilv != ILV_NONE)
         {
           // The dataset says this should be planarConfiguration == 1, but
           // it isn't -> convert it.
-          DCMJPLS_WARN("different planar configuration in JPEG stream, converting to \"1\"");
+          DCMJPLS_DEBUG("different planar configuration in JPEG-LS bitstream, converting to \"1\"");
           if (bytesPerSample == 1)
             result = createPlanarConfiguration1Byte(OFreinterpret_cast(Uint8*, buffer), imageColumns, imageRows);
           else
@@ -434,7 +449,7 @@ OFCondition DJLSDecoderBase::decodeFrame(
         {
           // The dataset says this should be planarConfiguration == 0, but
           // it isn't -> convert it.
-          DCMJPLS_WARN("different planar configuration in JPEG stream, converting to \"0\"");
+          DCMJPLS_DEBUG("different planar configuration in JPEG-LS bitstream, converting to \"0\"");
           if (bytesPerSample == 1)
             result = createPlanarConfiguration0Byte(OFreinterpret_cast(Uint8*, buffer), imageColumns, imageRows);
           else
@@ -470,7 +485,8 @@ OFCondition DJLSDecoderBase::encode(
     const DcmRepresentationParameter * /* toRepParam */,
     DcmPixelSequence * & /* pixSeq */,
     const DcmCodecParameter * /* cp */,
-    DcmStack & /* objStack */) const
+    DcmStack & /* objStack */,
+    OFBool& /* removeOldRep */) const
 {
   // we are a decoder only
   return EC_IllegalCall;
@@ -484,7 +500,8 @@ OFCondition DJLSDecoderBase::encode(
     const DcmRepresentationParameter * /* toRepParam */,
     DcmPixelSequence * & /* toPixSeq */,
     const DcmCodecParameter * /* cp */,
-    DcmStack & /* objStack */) const
+    DcmStack & /* objStack */,
+    OFBool& /* removeOldRep */) const
 {
   // we don't support re-coding for now.
   return EC_IllegalCall;

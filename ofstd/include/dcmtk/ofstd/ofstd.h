@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2000-2019, OFFIS e.V.
+ *  Copyright (C) 2000-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -33,13 +33,16 @@
 #include "dcmtk/ofstd/oflimits.h"   /* for OFnumeric_limits<T>::max() */
 #include "dcmtk/ofstd/oferror.h"
 
-#define INCLUDE_CASSERT
-#define INCLUDE_CSTDLIB
-#define INCLUDE_CSTDIO
-#define INCLUDE_CSTRING
-#define INCLUDE_CSTDARG
-#define INCLUDE_UNISTD
-#include "dcmtk/ofstd/ofstdinc.h"
+#include <cassert>
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
+#include <cstdarg>
+#ifdef HAVE_UNISTD_H
+BEGIN_EXTERN_C
+#include <unistd.h>
+END_EXTERN_C
+#endif
 
 BEGIN_EXTERN_C
 #ifdef HAVE_SYS_TYPES_H
@@ -144,39 +147,39 @@ class DCMTK_OFSTD_EXPORT OFStandard
 #endif
     }
 
-    /* Standard C99 formatted string output function.
-     * This is an implementation of the snprintf(3) function as defined in the
-     * C99 standard. Like all functions of the  printf() family, it produces
-     * output according to a format string. Output is written to the character
-     * array passed as parameter str. The function never writes more than size
-     * bytes and guarantees that the result will be NUL terminated, although
-     * it may be truncated if the buffer provided is too small.
-     * @param str string buffer to write to
-     * @param size size of string buffer, in bytes
-     * @param format printf() format string
-     * @param ... parameters to be formatted
-     * @return number of characters that have been written (if the buffer is
-     *   large enough) or the number of characters that would have been
-     *   written (if the buffer is too small), in both cases not including
-     *   the final NUL character.
+    /** Standard C99 formatted string output function.
+     *  This is an implementation of the snprintf(3) function as defined in the
+     *  C99 standard. Like all functions of the  printf() family, it produces
+     *  output according to a format string. Output is written to the character
+     *  array passed as parameter str. The function never writes more than size
+     *  bytes and guarantees that the result will be NUL terminated, although
+     *  it may be truncated if the buffer provided is too small.
+     *  @param str string buffer to write to
+     *  @param size size of string buffer, in bytes
+     *  @param format printf() format string
+     *  @param ... parameters to be formatted
+     *  @return number of characters that have been written (if the buffer is
+     *    large enough) or the number of characters that would have been
+     *    written (if the buffer is too small), in both cases not including
+     *    the final NUL character.
      */
     static int snprintf(char *str, size_t size, const char *format, ...);
 
-    /* Standard C99 formatted string output function.
-     * This is an implementation of the snprintf(3) function as defined in the
-     * C99 standard. Like all functions of the  printf() family, it produces
-     * output according to a format string. Output is written to the character
-     * array passed as parameter str. The function never writes more than size
-     * bytes and guarantees that the result will be NUL terminated, although
-     * it may be truncated if the buffer provided is too small.
-     * @param str string buffer to write to
-     * @param size size of string buffer, in bytes
-     * @param format printf() format string
-     * @param ap parameters to be formatted
-     * @return number of characters that have been written (if the buffer is
-     *   large enough) or the number of characters that would have been
-     *   written (if the buffer is too small), in both cases not including
-     *   the final NUL character.
+    /** Standard C99 formatted string output function.
+     *  This is an implementation of the snprintf(3) function as defined in the
+     *  C99 standard. Like all functions of the  printf() family, it produces
+     *  output according to a format string. Output is written to the character
+     *  array passed as parameter str. The function never writes more than size
+     *  bytes and guarantees that the result will be NUL terminated, although
+     *  it may be truncated if the buffer provided is too small.
+     *  @param str string buffer to write to
+     *  @param size size of string buffer, in bytes
+     *  @param format printf() format string
+     *  @param ap parameters to be formatted
+     *  @return number of characters that have been written (if the buffer is
+     *    large enough) or the number of characters that would have been
+     *    written (if the buffer is too small), in both cases not including
+     *    the final NUL character.
      */
     static int vsnprintf(char *str, size_t size, const char *format, va_list ap);
 
@@ -981,7 +984,7 @@ class DCMTK_OFSTD_EXPORT OFStandard
      *    be OFTrue.
      *  @tparam Count the number of digits to extract. Must be greater zero
      *    and less or equal to OFnumeric_limits<T>::digits10
-     *  @param string a pointer to a character array to extract digits from.
+     *  @tparam string a pointer to a character array to extract digits from.
      *  @return a value of type T that is equivalent to the number represented
      *    by the digits.
      *  @details
@@ -1020,7 +1023,7 @@ class DCMTK_OFSTD_EXPORT OFStandard
     static OFTypename OFenable_if
     <
         OFnumeric_limits<T>::is_integer && ( Count > 1 ) &&
-             OFnumeric_limits<T>::digits10 >= Count,
+             OFstatic_cast(size_t, OFnumeric_limits<T>::digits10) >= Count,
         T
     >::type extractDigits(const char* string)
     {
@@ -1150,6 +1153,17 @@ class DCMTK_OFSTD_EXPORT OFStandard
      *  @return the last error code as OFerror_code object.
      */
     static OFerror_code getLastNetworkErrorCode();
+
+   /** Method that ensures that the current thread is actually sleeping for the
+    *  defined number of seconds (at least).
+    *  The problem with the regular sleep() function called from
+    *  OFStandard::sleep is that it might be interrupted by signals or a
+    *  network timeout (depending on the operating system). This methods
+    *  re-executes OFStandard's sleep method until the desired number of
+    *  seconds have elapsed.
+    *  @param seconds The number of seconds to sleep (at least)
+    */
+    static void forceSleep(Uint32 seconds);
 
  private:
 

@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2018, OFFIS e.V.
+ *  Copyright (C) 2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -21,9 +21,10 @@
 
 #include "dcmtk/config/osconfig.h"
 
-#define INCLUDE_CLIMITS
-#define INCLUDE_CASSERT
-#include "dcmtk/ofstd/ofstdinc.h"
+#include <cstring>
+#include <cassert>
+#include <climits>
+
 #include "dcmtk/ofstd/offilsys.h"
 
 #ifdef _WIN32
@@ -66,17 +67,47 @@ OFpath::OFpath( OFrvalue_ref(OFpath) rhs )
     m_NativeString.swap( OFrvalue_access( rhs ).m_NativeString );
 }
 
-OFpath::OFpath( const char* const cstr )
+OFpath::OFpath( const char* const cstr, format fmt )
 : m_NativeString( cstr )
 {
-
+#ifdef _WIN32
+    convertSeparator(fmt);
+#endif
 }
 
-OFpath::OFpath( const OFString& string )
+OFpath::OFpath( const OFString& string, format fmt )
 : m_NativeString( string )
 {
-
+#ifdef _WIN32
+    convertSeparator(fmt);
+#endif
 }
+
+#ifdef _WIN32
+void OFpath::convertSeparator( format fmt )
+{
+    size_t pos = OFString_npos;
+    switch( fmt )
+    {
+    case native_format:
+        return;
+    case auto_format:
+        pos = m_NativeString.find_first_of( "\\/" );
+        if( pos == OFString_npos || m_NativeString[pos] == preferred_separator )
+            return;
+        break;
+    default:
+    case generic_format:
+        pos = m_NativeString.find( '/' );
+        if( pos == OFString_npos )
+            return;
+        break;
+    }
+    m_NativeString[pos] = preferred_separator;
+    for( pos = m_NativeString.find( '/', pos + 1 ); pos != OFString_npos; pos = m_NativeString.find( '/', pos + 1 ) )
+        m_NativeString[pos] = preferred_separator;
+}
+#endif
 
 OFpath& OFpath::operator=( const OFpath& rhs )
 {

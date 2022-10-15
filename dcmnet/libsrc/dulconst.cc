@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2018, OFFIS e.V.
+ *  Copyright (C) 1994-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were partly developed by
@@ -67,17 +67,12 @@
 
 #include "dcmtk/config/osconfig.h"    /* make sure OS specific configuration is included first */
 
-#define INCLUDE_CSTDLIB
-#define INCLUDE_CSTDIO
-#define INCLUDE_CSTRING
-#include "dcmtk/ofstd/ofstdinc.h"
-
 #include "dcmtk/dcmnet/dicom.h"
 #include "dcmtk/dcmnet/cond.h"
 #include "dcmtk/dcmnet/diutil.h"
 #include "dcmtk/dcmnet/lst.h"
 #include "dcmtk/dcmnet/dul.h"
-#include "dulstruc.h"
+#include "dcmtk/dcmnet/dulstruc.h"
 #include "dulpriv.h"
 #include "dcmtk/ofstd/ofconsol.h"
 
@@ -669,7 +664,7 @@ constructSubItem(char *name, unsigned char type,
     if (strlen(name) < 1 || strlen(name) > 64)
     {
         char buf[1024];
-        sprintf(buf,"Illegal service parameter: %s", name);
+        OFStandard::snprintf(buf, 1024, "Illegal service parameter: %s", name);
         return makeDcmnetCondition(DULC_ILLEGALSERVICEPARAMETER, OF_error, buf);
     }
     subItem->type = type;
@@ -1141,7 +1136,7 @@ constructSCUSCPSubItem(char *name, unsigned char type, unsigned char scuRole,
     if (strlen(name) < 1 || strlen(name) > 64)
     {
         char buf[1024];
-        sprintf(buf,"Illegal service parameter: %s", name);
+        OFStandard::snprintf(buf, 1024, "Illegal service parameter: %s", name);
         return makeDcmnetCondition(DULC_ILLEGALSERVICEPARAMETER, OF_error, buf);
     }
 

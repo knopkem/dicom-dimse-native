@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1998-2018, OFFIS e.V.
+ *  Copyright (C) 1998-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -32,13 +32,6 @@
 #include "dcmtk/dcmnet/diutil.h"
 #include "dcmtk/ofstd/ofvector.h"
 
-#define INCLUDE_CSTDLIB
-#define INCLUDE_CSTDIO
-#define INCLUDE_CSTRING
-#define INCLUDE_CTIME
-#define INCLUDE_CERRNO
-#define INCLUDE_CSIGNAL
-#include "dcmtk/ofstd/ofstdinc.h"
 #include "dcmtk/ofstd/oftimer.h"
 
 BEGIN_EXTERN_C
@@ -75,9 +68,15 @@ DcmTransportConnection::DcmTransportConnection(DcmNativeSocketType openSocket)
 {
   if (theSocket >= 0)
   {
+
 #ifdef DISABLE_SEND_TIMEOUT
+#ifdef _MSC_VER
+#pragma message("Warning: The macro DISABLE_SEND_TIMEOUT is not supported anymore. See 'macros.txt' for details.")
+#else
 #warning The macro DISABLE_SEND_TIMEOUT is not supported anymore. See "macros.txt" for details.
 #endif
+#endif
+
     /* get global timeout for the send() function */
     const Sint32 sendTimeout = dcmSocketSendTimeout.get();
     if (sendTimeout >= 0)
@@ -105,8 +104,13 @@ DcmTransportConnection::DcmTransportConnection(DcmNativeSocketType openSocket)
       }
     }
 #ifdef DISABLE_RECV_TIMEOUT
+#ifdef _MSC_VER
+#pragma message("Warning: The macro DISABLE_RECV_TIMEOUT is not supported anymore. See 'macros.txt' for details.")
+#else
 #warning The macro DISABLE_RECV_TIMEOUT is not supported anymore. See "macros.txt" for details.
 #endif
+#endif
+
     /* get global timeout for the recv() function */
     const Sint32 recvTimeout = dcmSocketReceiveTimeout.get();
     if (recvTimeout >= 0)
@@ -319,19 +323,19 @@ DcmTCPConnection::~DcmTCPConnection()
   close();
 }
 
-DcmTransportLayerStatus DcmTCPConnection::serverSideHandshake()
+OFCondition DcmTCPConnection::serverSideHandshake()
 {
-  return TCS_ok;
+  return EC_Normal;
 }
 
-DcmTransportLayerStatus DcmTCPConnection::clientSideHandshake()
+OFCondition DcmTCPConnection::clientSideHandshake()
 {
-  return TCS_ok;
+  return EC_Normal;
 }
 
-DcmTransportLayerStatus DcmTCPConnection::renegotiate(const char * /* newSuite */ )
+OFCondition DcmTCPConnection::renegotiate(const char * /* newSuite */ )
 {
-  return TCS_ok;
+  return EC_Normal;
 }
 
 ssize_t DcmTCPConnection::read(void *buf, size_t nbyte)
@@ -354,7 +358,12 @@ ssize_t DcmTCPConnection::write(void *buf, size_t nbyte)
 
 void DcmTCPConnection::close()
 {
-  if (getSocket() != -1)
+  closeTransportConnection();
+}
+
+void DcmTCPConnection::closeTransportConnection()
+{
+  if (getSocket() != OFstatic_cast(DcmNativeSocketType, (-1)))
   {
 #ifdef HAVE_WINSOCK_H
     (void) shutdown(getSocket(), 1 /* SD_SEND */);
@@ -363,7 +372,7 @@ void DcmTCPConnection::close()
     (void) ::close(getSocket());
 #endif
   /* forget about this socket (now closed) */
-    setSocket(-1);
+    setSocket(OFstatic_cast(DcmNativeSocketType, (-1)));
   }
 }
 
@@ -404,7 +413,7 @@ OFBool DcmTCPConnection::networkDataAvailable(int timeout)
       t.tv_usec = 0;
 
 #ifdef DCMTK_HAVE_POLL
-  struct pollfd pfd[] = 
+  struct pollfd pfd[] =
   {
     { getSocket(), POLLIN, 0 }
   };
@@ -463,27 +472,3 @@ OFString& DcmTCPConnection::dumpConnectionParameters(OFString& str)
   str = "Transport connection: TCP/IP, unencrypted.";
   return str;
 }
-
-const char *DcmTCPConnection::errorString(DcmTransportLayerStatus code)
-{
-  switch (code)
-  {
-    case TCS_ok:
-      return "no error";
-      /* break; */
-    case TCS_noConnection:
-      return "no secure connection in place";
-      /* break; */
-    case TCS_tlsError:
-      return "TLS error";
-      /* break; */
-    case TCS_illegalCall:
-      return "illegal call";
-      /* break; */
-    case TCS_unspecifiedError:
-      return "unspecified error";
-      /* break; */
-  }
-  return "unknown error code";
-}
-

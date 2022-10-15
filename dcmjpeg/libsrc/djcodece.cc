@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2001-2019, OFFIS e.V.
+ *  Copyright (C) 2001-2022, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -47,9 +47,7 @@
 // dcmimgle includes
 #include "dcmtk/dcmimgle/dcmimage.h"  /* for class DicomImage */
 
-#define INCLUDE_CMATH
-#include "dcmtk/ofstd/ofstdinc.h"
-
+#include <cmath>
 
 DJCodecEncoder::DJCodecEncoder()
 : DcmCodec()
@@ -81,7 +79,8 @@ OFCondition DJCodecEncoder::decode(
   DcmPixelSequence * /* pixSeq */,
   DcmPolymorphOBOW& /* uncompressedPixelData */,
   const DcmCodecParameter * /* cp */,
-  const DcmStack& /* objStack */) const
+  const DcmStack& /* objStack */,
+  OFBool& /* removeOldRep */ ) const
 {
   // we are an encoder only
   return EC_IllegalCall;
@@ -111,7 +110,8 @@ OFCondition DJCodecEncoder::encode(
   const DcmRepresentationParameter * /* toRepParam */,
   DcmPixelSequence * & /* toPixSeq */,
   const DcmCodecParameter * /* cp */,
-  DcmStack & /* objStack */) const
+  DcmStack & /* objStack */,
+  OFBool& /* removeOldRep */) const
 {
   // we don't support re-coding for now
   return EC_IllegalCall;
@@ -124,9 +124,16 @@ OFCondition DJCodecEncoder::encode(
   const DcmRepresentationParameter * toRepParam,
   DcmPixelSequence * & pixSeq,
   const DcmCodecParameter *cp,
-  DcmStack & objStack) const
+  DcmStack & objStack,
+  OFBool& removeOldRep) const
 {
   OFCondition result = EC_Normal;
+
+  // this codec may modify the DICOM header such that the previous pixel
+  // representation is not valid anymore. Indicate this to the caller
+  // to trigger removal.
+  removeOldRep = OFTrue;
+
   // assume we can cast the codec parameter to what we need
   const DJCodecParameter *djcp = OFreinterpret_cast(const DJCodecParameter*, cp);
 
@@ -165,15 +172,16 @@ OFCondition DJCodecEncoder::encode(
         // YCbCr color image
         result = encodeColorImage(OFTrue, OFreinterpret_cast(DcmItem*, dataset), toRepParam, pixSeq, djcp, compressionRatio);
         break;
-      case EPI_Unknown:
-        // unknown color model - bail out
-        result = EJ_UnsupportedPhotometricInterpretation;
-        break;
       case EPI_Missing:
         // photometric interpretation missing. If ACR-NEMA compatibility is activated, we treat this as MONOCHOME2, otherwise we report an error
         if (djcp->getAcrNemaCompatibility())
             result = encodeMonochromeImage(OFreinterpret_cast(DcmItem*, dataset), toRepParam, pixSeq, djcp, compressionRatio);
             else result = EJ_UnsupportedPhotometricInterpretation;
+        break;
+      case EPI_Unknown:
+      default:
+        // unknown color model - bail out
+        result = EJ_UnsupportedPhotometricInterpretation;
         break;
     }
 
@@ -482,7 +490,7 @@ OFCondition DJCodecEncoder::encodeTrueLossless(
   {
     DcmItem *datsetItem = OFreinterpret_cast(DcmItem*, dataset);
     double compressionRatio = 0.0;
-    const Uint16* pixelData;
+    const Uint16* pixelData = NULL;
     size_t length = 0;
     Uint16 bitsAllocated = 0;
     Uint16 bitsStored = 0;
@@ -499,7 +507,7 @@ OFCondition DJCodecEncoder::encodeTrueLossless(
     OFBool planConfSwitched = OFFalse; // true if planar configuration was toggled
     DcmOffsetList offsetList;
     OFString photometricInterpretation;
-    DcmElement *dummyElem;
+    DcmElement *dummyElem = NULL;
 
     // get relevant attributes for encoding from dataset
     result = datsetItem->findAndGetUint16(DCM_BitsStored, bitsStored);
@@ -514,7 +522,8 @@ OFCondition DJCodecEncoder::encodeTrueLossless(
     if (result.good())
     {
       result = datsetItem->findAndGetSint32(DCM_NumberOfFrames, numberOfFrames);
-      if (result.bad() || numberOfFrames < 1) numberOfFrames = 1;
+      if (result.bad() || numberOfFrames < 1)
+        numberOfFrames = 1;
       result = EC_Normal;
     }
     if (result.bad())
@@ -535,7 +544,7 @@ OFCondition DJCodecEncoder::encodeTrueLossless(
     }
 
     // make sure that all the descriptive attributes have sensible values
-    if ((columns < 1)||(rows < 1)||(samplesPerPixel < 1))
+    if ((columns < 1) || (rows < 1) || (samplesPerPixel < 1))
     {
       DCMJPEG_ERROR("True lossless encoder: Invalid attribute values in pixel module");
       return EC_CannotChangeRepresentation;
@@ -565,10 +574,10 @@ OFCondition DJCodecEncoder::encodeTrueLossless(
       interpr = EPI_Unknown;
 
     // IJG libs need "color by pixel", transform if required
-    if (result.good() && (samplesPerPixel > 1) )
+    if (result.good() && (samplesPerPixel > 1))
     {
       result = datsetItem->findAndGetUint16(DCM_PlanarConfiguration, planarConfiguration);
-      if ( result.good() && (planarConfiguration == 1) )
+      if (result.good() && (planarConfiguration == 1))
       {
         if (bytesAllocated == 1)
           result = togglePlanarConfiguration8(OFreinterpret_cast(Uint8*, OFconst_cast(Uint16*, pixelData)), length, samplesPerPixel, OFstatic_cast(Uint16, 1) /* switch to "by pixel"*/);
@@ -594,7 +603,7 @@ OFCondition DJCodecEncoder::encodeTrueLossless(
     if ((gLocalByteOrder == EBO_BigEndian) && (bitsAllocated == 8))
     {
       result = swapIfNecessary(EBO_LittleEndian, gLocalByteOrder, OFconst_cast(Uint16*, pixelData), OFstatic_cast(Uint32, length), sizeof(Uint16));
-      if ( result.bad() )
+      if (result.bad())
       {
         DCMJPEG_ERROR("True lossless encoder: Unable to swap bytes to respect local byte ordering");
         return EC_CannotChangeRepresentation;
@@ -608,13 +617,16 @@ OFCondition DJCodecEncoder::encodeTrueLossless(
     if (result.good())
     {
       pixelSequence = new DcmPixelSequence(DCM_PixelSequenceTag);
-      if (pixelSequence == NULL) result = EC_MemoryExhausted;
+      if (pixelSequence == NULL)
+        result = EC_MemoryExhausted;
       else
       {
         // create empty offset table
         offsetTable = new DcmPixelItem(DCM_PixelItemTag);
-        if (offsetTable == NULL) result = EC_MemoryExhausted;
-        else pixelSequence->insert(offsetTable);
+        if (offsetTable == NULL)
+          result = EC_MemoryExhausted;
+        else
+          pixelSequence->insert(offsetTable);
       }
     }
 
@@ -629,7 +641,7 @@ OFCondition DJCodecEncoder::encodeTrueLossless(
     if (jpeg)
     {
       // main loop for compression: compress each frame
-      for (unsigned int i=0; i<frameCount && result.good(); i++)
+      for (unsigned int i = 0; i < frameCount && result.good(); i++)
       {
         if (bitsAllocated == 8)
         {
@@ -640,8 +652,8 @@ OFCondition DJCodecEncoder::encodeTrueLossless(
           jpeg->encode(columns, rows, interpr, samplesPerPixel, OFreinterpret_cast(Uint16*, OFconst_cast(Uint8*, framePointer)), jpegData, jpegLen);
         }
         // update variables
-        compressedSize+=jpegLen;
-        framePointer+=frameSize;
+        compressedSize += jpegLen;
+        framePointer += frameSize;
         if (jpegLen == 0)
         {
           DCMJPEG_ERROR("True lossless encoder: Error encoding frame");
@@ -669,7 +681,7 @@ OFCondition DJCodecEncoder::encodeTrueLossless(
       delete pixelSequence;
     delete jpeg; // encoder no longer in use
 
-    if ((result.good()) && (djcp->getCreateOffsetTable()))
+    if (result.good() && djcp->getCreateOffsetTable())
     {
       // create offset table
       result = offsetTable->createOffsetTable(offsetList);
@@ -679,30 +691,34 @@ OFCondition DJCodecEncoder::encodeTrueLossless(
     // but other modules such as SOP Common.  We only perform these
     // changes if we're on the main level of the datsetItem,
     // which should always identify itself as datsetItem, not as item.
-
-    // update derivation description reflecting the JPEG compression applied
-    result = updateDerivationDescription(datsetItem, toRepParam, djcp, OFstatic_cast(Uint8, bitsAllocated), compressionRatio);
-
-    if ( (datsetItem->ident() == EVR_dataset) && result.good() )
+    if (datsetItem->ident() == EVR_dataset)
     {
-      // convert to Secondary Capture if requested by user.
-      // This method creates a new SOP class UID, so it should be executed
-      // after the call to newInstance() which creates a Source Image Sequence.
-      if ( djcp->getConvertToSC() || (djcp->getUIDCreation() == EUC_always) )
+      if (result.good())
       {
-        if (djcp->getConvertToSC())
+        // update derivation description reflecting the JPEG compression applied
+        result = updateDerivationDescription(datsetItem, toRepParam, djcp, OFstatic_cast(Uint8, bitsAllocated), compressionRatio);
+      }
+      if (result.good())
+      {
+        // convert to Secondary Capture if requested by user.
+        // This method creates a new SOP class UID, so it should be executed
+        // after the call to newInstance() which creates a Source Image Sequence.
+        if (djcp->getConvertToSC() || (djcp->getUIDCreation() == EUC_always))
         {
-          result = DcmCodec::convertToSecondaryCapture(datsetItem);
+          if (djcp->getConvertToSC())
+          {
+            result = DcmCodec::convertToSecondaryCapture(datsetItem);
+          }
+          // update image type (set to DERIVED)
+          if (result.good())
+            result = DcmCodec::updateImageType(datsetItem);
+          if (result.good())
+            result = DcmCodec::newInstance(OFreinterpret_cast(DcmItem*, datsetItem), "DCM", "121320", "Uncompressed predecessor");
         }
-        // update image type (set to DERIVED)
-        if (result.good())
-          result = DcmCodec::updateImageType(datsetItem);
-        if (result.good())
-          result = DcmCodec::newInstance(OFreinterpret_cast(DcmItem*, datsetItem), "DCM", "121320", "Uncompressed predecessor");
       }
     }
     // switch _original_ pixel data back to "color by plane", if required
-    if (planConfSwitched)
+    if (result.good() && planConfSwitched)
     {
       if (bytesAllocated == 1)
         result = togglePlanarConfiguration8(OFreinterpret_cast(Uint8*, OFconst_cast(Uint16*, pixelData)), length, samplesPerPixel, OFstatic_cast(Uint16, 0) /*switch to "by plane"*/);
@@ -823,10 +839,9 @@ OFCondition DJCodecEncoder::updateDerivationDescription(
     // assume we can cast the codec parameter to what we need
     DJCodecParameter *djcp = OFconst_cast(DJCodecParameter*, cp);
 
-    if (djcp->getTrueLosslessMode())
-      result = DcmCodec::insertCodeSequence(dataset, DCM_DerivationCodeSequence, "DCM", "121327", "Full fidelity image");
-    else // pseudo-lossless mode may also result in lossy compression
+    if (!isLosslessProcess() || !djcp->getTrueLosslessMode())
       result = DcmCodec::insertCodeSequence(dataset, DCM_DerivationCodeSequence, "DCM", "113040", "Lossy Compression");
+
   }
   return result;
 }

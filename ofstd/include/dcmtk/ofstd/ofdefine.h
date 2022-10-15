@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2017, OFFIS e.V.
+ *  Copyright (C) 1994-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -26,38 +26,12 @@
 #include "dcmtk/ofstd/ofcast.h"
 #include "dcmtk/ofstd/ofexport.h"
 
-#define INCLUDE_CSTRING
-#include "dcmtk/ofstd/ofstdinc.h"
-
+#include <cstring>
 
 #ifdef ofstd_EXPORTS
 #define DCMTK_OFSTD_EXPORT DCMTK_DECL_EXPORT
 #else
 #define DCMTK_OFSTD_EXPORT DCMTK_DECL_IMPORT
-#endif
-
-
-#ifdef HAVE_BZERO
-#ifndef HAVE_PROTOTYPE_BZERO
-BEGIN_EXTERN_C
-extern void bzero(char* s, int len);
-END_EXTERN_C
-#endif
-#endif
-
-
-/* memzero */
-#ifdef HAVE_MEMSET
-#  undef memzero
-#  define memzero(d, n) memset((d), 0, (n))
-#  define HAVE_MEMZERO /* This makes using this easier */
-#else
-#  ifdef HAVE_BZERO
-#    undef memzero
-// some platforms, e.g. OSF1, require the first parameter to be char *.
-#    define memzero(d, n) bzero(OFstatic_cast(char *, d), (n))
-#    define HAVE_MEMZERO /* This makes using this easier */
-#  endif
 #endif
 
 /* memcpy */

@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2019, OFFIS e.V.
+ *  Copyright (C) 1994-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -123,8 +123,14 @@ class DCMTK_DCMDATA_EXPORT DcmElement
      *  @param enctype sequence encoding type for length calculation
      *  @return value length of DICOM element
      */
-    virtual Uint32 getLength(const E_TransferSyntax /*xfer*/ = EXS_LittleEndianImplicit,
-                             const E_EncodingType /*enctype*/ = EET_UndefinedLength)
+
+#ifdef DOXYGEN
+    virtual Uint32 getLength(const E_TransferSyntax xfer = EXS_LittleEndianImplicit,
+                             const E_EncodingType enctype = EET_UndefinedLength)
+#else
+    virtual Uint32 getLength(const E_TransferSyntax /* xfer */ = EXS_LittleEndianImplicit,
+                             const E_EncodingType /* enctype */ = EET_UndefinedLength)
+#endif
     {
         return getLengthField();
     }
@@ -668,7 +674,7 @@ class DCMTK_DCMDATA_EXPORT DcmElement
                                         E_ByteOrder byteOrder = gLocalByteOrder);
 
     /** create an empty Uint8 array of given number of bytes and set it.
-     *  All array elements are initialized with a value of 0 (using 'memzero').
+     *  All array elements are initialized with a value of 0 (using 'memset').
      *  This method is only applicable to certain VRs, e.g. OB.
      *  @param numBytes number of bytes (8 bit) to be created
      *  @param bytes stores the pointer to the resulting buffer
@@ -677,7 +683,7 @@ class DCMTK_DCMDATA_EXPORT DcmElement
     virtual OFCondition createUint8Array(const Uint32 numBytes, Uint8 *&bytes);
 
     /** create an empty Uint16 array of given number of words and set it.
-     *  All array elements are initialized with a value of 0 (using 'memzero').
+     *  All array elements are initialized with a value of 0 (using 'memset').
      *  This method is only applicable to OW data.
      *  @param numWords number of words (16 bit) to be created
      *  @param words stores the pointer to the resulting buffer
@@ -721,7 +727,7 @@ class DCMTK_DCMDATA_EXPORT DcmElement
      *  which must be large enough to contain a complete frame.
      *  @param dataset pointer to DICOM dataset in which this pixel data object is
      *    located. Used to access rows, columns, samples per pixel etc.
-     *  @param frameNo numer of frame, starting with 0 for the first frame.
+     *  @param frameNo number of frame, starting with 0 for the first frame.
      *  @param startFragment index of the compressed fragment that contains
      *    all or the first part of the compressed bitstream for the given frameNo.
      *    Upon successful return this parameter is updated to contain the index
@@ -882,7 +888,7 @@ class DCMTK_DCMDATA_EXPORT DcmElement
   protected:
 
     /** This function returns this element's value. The returned value corresponds to the
-    *   byte ordering (little or big endian) that was passed.
+     *   byte ordering (little or big endian) that was passed.
      *  @param newByteOrder The byte ordering that shall be accounted
      *                      for (little or big endian).
      */

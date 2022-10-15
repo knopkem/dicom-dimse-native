@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2019, OFFIS e.V.
+ *  Copyright (C) 1994-2022, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were partly developed by
@@ -402,7 +402,7 @@ typedef enum {
 */
 
 #define DUL_DULCOMPAT     2768240730UL
-#define DUL_DIMSECOMPAT   983040UL
+#define DUL_DIMSECOMPAT   1114095UL
 #define DUL_MAXPDUCOMPAT  4278190335UL
 
 /* Define the function prototypes for this facility.
@@ -453,6 +453,7 @@ DUL_RequestAssociation(
 */
 DCMTK_DCMNET_EXPORT OFCondition DUL_AbortAssociation(DUL_ASSOCIATIONKEY ** association);
 DCMTK_DCMNET_EXPORT OFCondition DUL_DropAssociation(DUL_ASSOCIATIONKEY ** association);
+DCMTK_DCMNET_EXPORT OFCondition DUL_CloseTransportConnection(DUL_ASSOCIATIONKEY ** association);
 DCMTK_DCMNET_EXPORT OFCondition DUL_DropNetwork(DUL_NETWORKKEY ** network);
 DCMTK_DCMNET_EXPORT OFCondition DUL_ReleaseAssociation(DUL_ASSOCIATIONKEY ** association);
 DCMTK_DCMNET_EXPORT OFCondition DUL_AcknowledgeRelease(DUL_ASSOCIATIONKEY ** association);

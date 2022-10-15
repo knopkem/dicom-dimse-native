@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1996-2018, OFFIS e.V.
+ *  Copyright (C) 1996-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -31,10 +31,6 @@
 #include "dcmtk/dcmimgle/didocu.h"
 #include "dcmtk/dcmimgle/diutils.h"
 #include "dcmtk/ofstd/ofstd.h"
-
-#define INCLUDE_CSTRING
-#include "dcmtk/ofstd/ofstdinc.h"
-
 
 /*----------------*
  *  constructors  *
@@ -103,8 +99,11 @@ DiImage::DiImage(const DiDocument *docu,
         if (Document->getValue(DCM_FrameTime, ds))
         {
             if (ds <= 0)
-                DCMIMGLE_WARN("invalid value for 'FrameTime' (" << ds << ") ... ignoring");
-            else
+            {
+                /* there are rare cases, where a frame time of 0 makes sense */
+                if ((ds < 0) || (NumberOfFrames > 1))
+                    DCMIMGLE_WARN("invalid value for 'FrameTime' (" << ds << ") ... ignoring");
+            } else
                 FrameTime = ds;
         }
         FirstFrame = (docu->getFrameStart() < NumberOfFrames) ? docu->getFrameStart() : NumberOfFrames - 1;
@@ -410,9 +409,9 @@ DiImage::DiImage(const DiImage *image,
     Columns(image->Columns),
     PixelWidth(image->PixelWidth),
     PixelHeight(image->PixelHeight),
-    BitsAllocated(alloc),
-    BitsStored(stored),
-    HighBit(stored - 1),
+    BitsAllocated(OFstatic_cast(const Uint16, alloc)),
+    BitsStored(OFstatic_cast(const Uint16, stored)),
+    HighBit(OFstatic_cast(const Uint16, (stored - 1))),
     BitsPerSample(image->BitsPerSample),
     SamplesPerPixel(image->SamplesPerPixel),
     Polarity(image->Polarity),
@@ -765,8 +764,8 @@ int DiImage::writeFrameToDataset(DcmItem &dataset,
             dataset.putAndInsertUint16(DCM_BitsAllocated, 16);
         else
             dataset.putAndInsertUint16(DCM_BitsAllocated, 32);
-        dataset.putAndInsertUint16(DCM_BitsStored, bitsStored);
-        dataset.putAndInsertUint16(DCM_HighBit, bitsStored - 1);
+        dataset.putAndInsertUint16(DCM_BitsStored, OFstatic_cast(const Uint16, bitsStored));
+        dataset.putAndInsertUint16(DCM_HighBit, OFstatic_cast(Uint16, bitsStored - 1));
         dataset.putAndInsertUint16(DCM_PixelRepresentation, 0);
         /* handle VOI transformations */
         if (dataset.tagExists(DCM_WindowCenter) ||
@@ -823,7 +822,7 @@ int DiImage::writeBMP(FILE *stream,
             infoHeader.biWidth = Columns;
             infoHeader.biHeight = Rows;
             infoHeader.biPlanes = 1;
-            infoHeader.biBitCount = bits;
+            infoHeader.biBitCount = OFstatic_cast(const Uint16, bits);
             infoHeader.biCompression = 0;
             infoHeader.biSizeImage = 0;
             infoHeader.biXPelsPerMeter = 0;

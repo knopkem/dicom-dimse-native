@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2001-2010, OFFIS e.V.
+ *  Copyright (C) 2001-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -25,6 +25,7 @@
 #include "dcmtk/dcmdata/libi2d/i2doutpl.h"
 #include "dcmtk/dcmdata/dcdeftag.h"        /* for DCM_ defines */
 #include "dcmtk/dcmdata/dcuid.h"           /* for UID_ defines */
+#include "dcmtk/dcmdata/dcdatset.h"
 
 
 I2DOutputPlugSC::I2DOutputPlugSC()
@@ -32,10 +33,17 @@ I2DOutputPlugSC::I2DOutputPlugSC()
   DCMDATA_LIBI2D_DEBUG("I2DOutputPlugSC: Output plugin for Secondary Capture initialized");
 }
 
+
+I2DOutputPlugSC::~I2DOutputPlugSC()
+{
+}
+
+
 OFString I2DOutputPlugSC::ident()
 {
   return "Secondary Capture Image SOP Class";
 }
+
 
 void I2DOutputPlugSC::supportedSOPClassUIDs(OFList<OFString>& suppSOPs)
 {
@@ -67,6 +75,15 @@ OFString I2DOutputPlugSC::isValid(DcmDataset& dataset) const
 }
 
 
-I2DOutputPlugSC::~I2DOutputPlugSC()
+OFBool I2DOutputPlugSC::supportsMultiframe() const
 {
+  return OFFalse;
+}
+
+
+OFCondition I2DOutputPlugSC::insertMultiFrameAttributes(
+  DcmDataset* /* targetDataset */,
+  size_t /* numberOfFrames */) const
+{
+  return EC_Normal;
 }

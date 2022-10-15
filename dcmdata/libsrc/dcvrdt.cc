@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2018, OFFIS e.V.
+ *  Copyright (C) 1994-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -27,10 +27,6 @@
 #include "dcmtk/dcmdata/dcmatch.h"
 #include "dcmtk/ofstd/ofstring.h"
 #include "dcmtk/ofstd/ofstd.h"
-
-#define INCLUDE_CSTDIO
-#include "dcmtk/ofstd/ofstdinc.h"
-
 
 #define MAX_DT_LENGTH 26
 
@@ -243,7 +239,7 @@ OFCondition DcmDateTime::getOFDateTimeFromString(const char *dicomDateTime,
         return EC_IllegalParameter;
     unsigned int month = 1;
     unsigned int day = 1;
-    double timeZone;
+    double timeZone = 0.0;
     // check for/extract time zone
     if (dicomDateTimeSize >= 9 && DcmTime::getTimeZoneFromString(dicomDateTime + dicomDateTimeSize - 5, 5, timeZone).good())
         dicomDateTimeSize -= 5;

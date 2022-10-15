@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2017, OFFIS e.V.
+ *  Copyright (C) 1994-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were partly developed by
@@ -80,16 +80,8 @@
 #define DCOMPAT_H
 
 #include "dcmtk/config/osconfig.h"    /* make sure OS specific configuration is included first */
-#include "dcmtk/ofstd/ofbmanip.h"    /* for bzero workaround */
 #include "dcmtk/dcmnet/dndefine.h"
-
-#define INCLUDE_CSTDLIB
-#define INCLUDE_CTIME
-#define INCLUDE_CSTRING
-#define INCLUDE_CERRNO
-#define INCLUDE_LIBC
-#define INCLUDE_UNISTD
-#include "dcmtk/ofstd/ofstdinc.h"
+#include <cerrno>
 
 #ifdef HAVE_WINDOWS_H
 #ifndef WIN32_LEAN_AND_MEAN
@@ -179,12 +171,6 @@ END_EXTERN_C
 DCMTK_DCMNET_EXPORT int dcmtk_flock(int fd, int operation);
 
 #endif /* !HAVE_FLOCK */
-#endif
-
-#ifndef HAVE_BZERO
-#ifndef bzero
-#define bzero(p,len) memset((void*)(p), 0, (len));
-#endif
 #endif
 
 #ifndef HAVE_PROTOTYPE_GETHOSTNAME
