@@ -51,6 +51,7 @@ void ParseAsyncWorker::Execute(const ExecutionProgress &progress)
     }
     DcmDataset *dset = dfile.getDataset();
     std::ostringstream stream;
-    dset->writeJson(stream, DcmJsonFormatPretty());
+    DcmJsonFormatPretty format;
+    dset->writeJson(stream, format);
     _jsonOutput = stream.str();
 }
