@@ -20,14 +20,6 @@
  */
 
 #include "dcmtk/config/osconfig.h"
-
-#define INCLUDE_CSTDLIB
-#define INCLUDE_CSTDIO
-#define INCLUDE_CSTRING
-#define INCLUDE_CSTDARG
-#define INCLUDE_CERRNO
-#define INCLUDE_CTIME
-#define INCLUDE_CSIGNAL
 #include "dcmtk/ofstd/ofstdinc.h"
 BEGIN_EXTERN_C
 #ifdef HAVE_SYS_FILE_H

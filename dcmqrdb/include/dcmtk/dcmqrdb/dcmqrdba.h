@@ -24,9 +24,6 @@
 
 #include "dcmtk/config/osconfig.h"    /* make sure OS specific configuration is included first */
 
-#define INCLUDE_CSTDLIB
-#define INCLUDE_CSTDIO
-#define INCLUDE_UNISTD
 #include "dcmtk/ofstd/ofstdinc.h"
 #include "dcmtk/ofstd/ofcond.h"
 #include "dcmtk/dcmqrdb/qrdefine.h"

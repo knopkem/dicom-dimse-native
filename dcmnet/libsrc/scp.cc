@@ -24,7 +24,7 @@
 #include "dcmtk/dcmdata/dcostrmf.h" /* for class DcmOutputFileStream */
 #include "dcmtk/dcmnet/assoc.h"
 #include "dcmtk/dcmnet/scp.h"
-#include "dcmtk/dcmtls/tlslayer.h"
+// #include "dcmtk/dcmtls/tlslayer.h"
 
 // ----------------------------------------------------------------------------
 

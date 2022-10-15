@@ -28,7 +28,7 @@
 
 #include "dcmtk/dcmnet/scppool.h"
 #include "dcmtk/dcmnet/diutil.h"
-#include "dcmtk/dcmtls/tlslayer.h"
+// #include "dcmtk/dcmtls/tlslayer.h"
 
 // ----------------------------------------------------------------------------
 

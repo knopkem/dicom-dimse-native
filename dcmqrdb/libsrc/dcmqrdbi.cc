@@ -34,8 +34,6 @@ BEGIN_EXTERN_C
 #endif
 END_EXTERN_C
 
-#define INCLUDE_CCTYPE
-#define INCLUDE_CSTDARG
 #include "dcmtk/ofstd/ofstdinc.h"
 #include "dcmtk/ofstd/ofstd.h"
 

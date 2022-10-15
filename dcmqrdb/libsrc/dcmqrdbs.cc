@@ -23,7 +23,6 @@
 #include "dcmtk/dcmqrdb/dcmqrdbs.h"
 #include "dcmtk/dcmdata/dcdatset.h"    /* for class DcmDataset */
 
-#define INCLUDE_CSTDDEF
 #include "dcmtk/ofstd/ofstdinc.h"
 
 
