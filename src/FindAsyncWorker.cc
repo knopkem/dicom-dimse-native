@@ -267,7 +267,9 @@ void FindAsyncWorker::Execute(const ExecutionProgress &progress)
             std::string vr = std::string(t.getVR().getVRName());
             json jsonValue = json::array();
             if (vr == "PN") {
-                jsonValue.push_back({json{{"Alphabetic", value}}});
+                json j;
+                j["Alphabetic"] = value;
+                jsonValue.push_back(j);
             }
             else if (vr == "IS" || vr == "SL" || vr == "SS" || vr == "UL" || vr == "US") {
                 if (value.length() == 0) {
