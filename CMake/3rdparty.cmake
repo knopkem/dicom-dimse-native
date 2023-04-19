@@ -299,8 +299,8 @@ else(WIN32 AND NOT MINGW)
 
   # Find libiconv
   if(DCMTK_WITH_ICONV)
-    find_package(Iconv QUIET)
-    find_package(Charset QUIET)
+    find_package(Iconv)
+    find_package(Charset)
     if(ICONV_FOUND)
         if(NOT Iconv_IS_BUILT_IN)
             set(LIBICONV_FOUND ${ICONV_FOUND})
