@@ -138,7 +138,7 @@ void MoveAsyncWorker::Execute(const ExecutionProgress &progress)
 {
     ns::sInput in = ns::parseInputJson(_input);
 
-    EnableVerboseLogging(in.verbose);
+    EnableVerboseLogging(in.verbose, progress);
 
     if (in.tags.empty())
     {

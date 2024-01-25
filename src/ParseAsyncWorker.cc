@@ -39,7 +39,7 @@ void ParseAsyncWorker::Execute(const ExecutionProgress &progress)
 {
     ns::sInput in = ns::parseInputJson(_input);
 
-    EnableVerboseLogging(in.verbose);
+    EnableVerboseLogging(in.verbose, progress);
 
     if (in.sourcePath.empty()) {
         SetErrorJson("No source path set");
