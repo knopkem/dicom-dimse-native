@@ -245,6 +245,12 @@ void FindAsyncWorker::Execute(const ExecutionProgress &progress)
         NULL,
         NULL);
 
+    if (cond.bad())
+    {
+        SetErrorJson(cond.text());
+        return;
+    }
+
     // destroy network structure
     cond = findscu.dropNetwork();
     if (cond.bad())

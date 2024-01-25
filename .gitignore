@@ -3,6 +3,7 @@ build
 /data
 .vscode
 *.dcm
+node.lib
 
 # Logs
 logs
