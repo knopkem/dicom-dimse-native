@@ -4,18 +4,21 @@
 
 #include "dcmtk/config/osconfig.h" /* make sure OS specific configuration is included first */
 #include "dcmtk/oflog/oflog.h"
+#include "dcmtk/oflog/oflog.h"
+#include "dcmtk/oflog/spi/logevent.h"
+#include "dcmtk/oflog/appender.h"
 
 class BufferAppender : public dcmtk::log4cplus::Appender {
 public:
     BufferAppender() {}
 
-    ~QDebugAppender() {
+    ~BufferAppender() {
           destructorImpl ();
     }
 
     virtual void close() {}
 
-    void setExecutionProgress(const ExecutionProgress &progress) {
+    void setExecutionProgress(const BaseAsyncWorker::ExecutionProgress &progress) {
         this->_progress = &progress;
     }
 
@@ -24,14 +27,15 @@ protected:
         dcmtk::log4cplus::tostringstream oss;
         layout->formatAndAppend(oss, ev);
 
-        if (this->_progress) {
+        if (this->_progress != NULL) {
           std::string msg2 = ns::createJsonResponse(ns::PENDING, DCMTK_LOG4CPLUS_TSTRING_TO_STRING(oss.str()).c_str());
+          std::cout << "log appender: " << msg2.c_str() << std::endl;
           this->_progress->Send(msg2.c_str(), msg2.length());
         }
     }
 
 private:
-      ExecutionProgress* _progress;
+    const BaseAsyncWorker::ExecutionProgress* _progress;
 };
 
 
@@ -42,8 +46,10 @@ BaseAsyncWorker::BaseAsyncWorker(std::string data, Function &callback) : AsyncPr
         using namespace dcmtk::log4cplus;
         Logger rootLogger = Logger::getRoot();
         rootLogger.removeAllAppenders();
-        dcmtk::log4cplus::SharedAppenderPtr bufferAppender(new dcmtk::log4cplus::FileAppender(logfilename));
-        rootLogger.addAppender( bufferAppender );
+
+        this->app = new BufferAppender();
+        rootLogger.addAppender(dcmtk::log4cplus::SharedAppenderPtr(app));
+
 
         // disable verbose logging
         OFLog::configure(OFLogger::WARN_LOG_LEVEL);
@@ -85,5 +91,5 @@ void BaseAsyncWorker::EnableVerboseLogging(bool enabled, const ExecutionProgress
     } else {
         OFLog::configure(OFLogger::WARN_LOG_LEVEL);
     }
-    this->_bufferAppender.setExecutionProgress(progress);
+    this->app->setExecutionProgress(progress);
 }

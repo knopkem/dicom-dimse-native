@@ -6,16 +6,8 @@
 #include "json.h"
 #include "Utils.h"
 
-#include "dcmtk/oflog/oflog.h"
-#include "dcmtk/oflog/spi/logevent.h"
-#include "dcmtk/oflog/appender.h"
-#include <vector>
-
 using namespace Napi;
-
-
-
-
+class BufferAppender;
 
 class BaseAsyncWorker : public AsyncProgressQueueWorker<char>
 {
@@ -32,13 +24,11 @@ class BaseAsyncWorker : public AsyncProgressQueueWorker<char>
 
         void SendInfo(const std::string& msg, const ExecutionProgress& progress, ns::eStatus status = ns::PENDING);
 
-        void SendDcmtkMessageStack(const ExecutionProgress& progress);
-
-        void EnableVerboseLogging(bool enabled);
+        void EnableVerboseLogging(bool enabled, const ExecutionProgress& progress);
 
 
         std::string _input;
         nlohmann::json _jsonOutput;
         std::string _error;
-        dcmtk::log4cplus::SharedAppenderPtr sharedAppender;
+        BufferAppender* app;
 };
