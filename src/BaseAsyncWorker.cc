@@ -29,7 +29,6 @@ protected:
 
         if (this->_progress != NULL) {
           std::string msg2 = ns::createJsonResponse(ns::PENDING, DCMTK_LOG4CPLUS_TSTRING_TO_STRING(oss.str()).c_str());
-          std::cout << "log appender: " << msg2.c_str() << std::endl;
           this->_progress->Send(msg2.c_str(), msg2.length());
         }
     }
@@ -79,8 +78,8 @@ void BaseAsyncWorker::SetErrorJson(const std::string& message)
 
 void BaseAsyncWorker::SendInfo(const std::string& msg, const ExecutionProgress& progress, ns::eStatus status)
 {
-    std::string msg2 = ns::createJsonResponse(status, msg);
-    progress.Send(msg2.c_str(), msg2.length());
+      std::string msg2 = ns::createJsonResponse(status, msg);
+      progress.Send(msg2.c_str(), msg2.length());
 }
 
 
