@@ -28,7 +28,7 @@ endif()
 
 if(DEFINED ENV{LIB_ICONV})
     message("LIB_ICONV set to: $ENV{LIB_ICONV}")
-    #set(WITH_LIBICONVINC "ON")
+    set(WITH_LIBICONVINC "ON")
     set(WITH_LIBICONVINC $ENV{LIB_ICONV})
     if(UNIX)
         set(LIBCHARSET_INCLUDE_DIR $ENV{LIB_ICONV}/include) 
