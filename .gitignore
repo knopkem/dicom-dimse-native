@@ -1,6 +1,8 @@
 build
 /prebuilds
 /data
+/examples/output
+/examples/data
 .vscode
 *.dcm
 node.lib
