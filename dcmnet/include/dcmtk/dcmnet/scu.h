@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2008-2019, OFFIS e.V.
+ *  Copyright (C) 2008-2023, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -28,15 +28,8 @@
 #include "dcmtk/dcmnet/dcasccff.h" /* for reading a association config file */
 #include "dcmtk/dcmnet/dcasccfg.h" /* for holding association config file infos */
 #include "dcmtk/dcmnet/dcompat.h"
-#include "dcmtk/dcmnet/dimse.h" /* DIMSE network layer */
+#include "dcmtk/dcmnet/dimse.h"    /* DIMSE network layer */
 #include "dcmtk/ofstd/oflist.h"
-
-class DCMTK_DCMNET_EXPORT DcmNotifier
-{
-public:
-    virtual void sendMessage(const OFString& msg, const OFString& container) = 0;
-};
-
 
 // include this file in doxygen documentation
 
@@ -196,7 +189,6 @@ private:
  *  support for negotiating associations and sending and receiving arbitrary DIMSE messages
  *  on that connection. DcmSCU has built-in C-ECHO support so derived classes do not have to
  *  implement that capability on their own.
- *  @warning This class is EXPERIMENTAL. Be careful to use it in production environment.
  */
 class DCMTK_DCMNET_EXPORT DcmSCU
 {
@@ -209,11 +201,6 @@ public:
     /** Virtual destructor
      */
     virtual ~DcmSCU();
-
-    /** Set a notifier object so progress can be reported
-     *  @param DcmNotifier needs concreate implementation of abstract class
-     */
-    void setNotifier(DcmNotifier* ptr);
 
     /** Add presentation context to be used for association negotiation
      *  @param abstractSyntax [in] Abstract syntax name in UID format
@@ -321,7 +308,7 @@ public:
      *  come (i.e. response status is PENDING). In the end, after receiving all responses, the
      *  full list of responses is returned to the caller. If he is not interested, he just sets
      *  responses=NULL when calling the function.
-     *  This function can be overwritten by actual SCU implementations but just should work fine
+     *  This function can be overwritten by actual SCU implementations but should work just fine
      *  for most people.
      *  @param presID                 [in]  The presentation context ID that should be used.
      *                                      Must be an odd number.
@@ -514,9 +501,14 @@ public:
      *  class and usually only, if the last command send on that presentation context was a
      *  C-FIND message.
      *  @param presID [in] The presentation context ID where the C-CANCEL should be sent on.
+     *  @param msgIDBeingRespondedTo [in] Optional message ID to respond with a C-CANCEL request.
+     *                                    -1 means standard logic will take place. It should be
+     *                                    provided when nextMessageId() is overridden.
+     *                                    The value should fit UINT16_MAX.
      *  @return The current implementation always returns EC_Normal.
      */
-    virtual OFCondition sendCANCELRequest(const T_ASC_PresentationContextID presID);
+    virtual OFCondition sendCANCELRequest(const T_ASC_PresentationContextID presID,
+                                          const Sint32 msgIDBeingRespondedTo = -1);
 
     /** This function sends a N-ACTION request on the currently opened association and receives
      *  the corresponding response then
@@ -565,6 +557,47 @@ public:
      */
     virtual OFCondition handleEVENTREPORTRequest(DcmDataset*& reqDataset, Uint16& eventTypeID, const int timeout = 0);
 
+    /** This function sends N-CREATE request and receives the corresponding response.
+     *  If successful, ownership of the created instance is handed over to the caller.
+     *  @param presID                   [in]  The ID of the presentation context to be used for
+     *                                        sending the request message. Should not be 0.
+     *  @param affectedSopInstanceUID   [in]  The affected SOP Instance UID
+     *  @param reqDataset               [in]  The request dataset to be sent
+     *  @param createdInstance          [out] Pointer to the instance that was created. The caller
+     *                                        is responsible for deleting the returned object.
+     *  @param rspStatusCode            [out] The response status code received. 0 means success,
+     *                                        others can be found in the DICOM standard.
+     *  @return EC_Normal if request could be issued and response was received successfully,
+     *          an error code otherwise. If a code different from EC_Normal is returned, other
+     *          output like rspStatusCode may be invalid.
+     */
+    virtual OFCondition sendNCREATERequest(const T_ASC_PresentationContextID presID,
+                                           const OFString& affectedSopInstanceUID,
+                                           DcmDataset* reqDataset,
+                                           DcmDataset*& createdInstance,
+                                           Uint16& rspStatusCode);
+
+    /** This function sends N-SET request and receives the corresponding response.
+     *  @param presID                   [in]  The ID of the presentation context to be used for sending
+     *                                        the request message. Should not be 0.
+     *  @param requestedSopInstanceUID  [in]  The requested SOP Instance UID
+     *  @param modificationList         [in]  Request dataset with attribute identifiers and values that
+     *                                        should be replaced
+     *  @param attributeList            [out] Pointer to response attribute list that was
+     *                                        used to replace specified attributes. The caller is responsible
+     *                                        for deleting the returned object.
+     *  @param rspStatusCode            [out] The response status code received. 0 means success,
+     *                                        others can be found in the DICOM standard.
+     *  @return EC_Normal if request could be issued and response was received successfully,
+     *          an error code otherwise. If a code different from EC_Normal is returned, other
+     *          output like rspStatusCode may be invalid.
+     */
+    virtual OFCondition sendNSETRequest(const T_ASC_PresentationContextID presID,
+                                        const OFString& requestedSopInstanceUID,
+                                        DcmDataset* modificationList,
+                                        DcmDataset*& attributeList,
+                                        Uint16& rspStatusCode);
+
     /** Function handling a single C-GET, C-FIND or C-MOVE Response, used by
      *  handleCGETResponse(), handleFINDResponse() and handleMOVEResponse().
      *  It prints a message to the logger (warning, error or debug level related
@@ -581,8 +614,8 @@ public:
     handleSessionResponseDefault(const Uint16 dimseStatus, const OFString& message, OFBool& waitForNextResponse);
 
     /** Closes the association created by this SCU. Also resets the current association.
-     *  @deprecated The use of this method is deprecated. Please use releaseAssociation()
-     *    or abortAssociation() instead.
+     *  @note The direct call of this method by user code should be avoided.
+     *    Please use releaseAssociation() or abortAssociation() instead.
      *  @param closeType [in] Define whether to release or abort the association
      */
     virtual void closeAssociation(const DcmCloseAssociationType closeType);
@@ -647,13 +680,12 @@ public:
      */
     void setACSETimeout(const Uint32 acseTimeout);
 
-    /** Set global timeout for connecting to the SCP. Note that this is a global
-     *  DCMTK setting i.e. it affects all code that uses dcmnet to start a DICOM
-     *  association to another host. Setting the timeout to -1 sets an infinite timeout,
-     *  i.e. any association request will wait forever (blocking) until the SCP accepts
-     *  the connection request. A value of 0 lets the SCU return immediately if the SCP
-     *  is not reachable at the first attempt.
-     *  @param connectionTimeout [in] Connection Timeout in seconds when connecting
+    /** Set timeout for connecting to the SCP. Setting the timeout to -1 sets an infinite
+     *  timeout, i.e. any association request will wait forever (blocking) until the SCP
+     *  accepts the connection request. A value of 0 lets the SCU return immediately if
+     *  the SCP is not reachable at the first attempt. By default, the value of the global
+     *  dcmConnectionTimeout is used.
+     *  @param connectionTimeout [in] connection timeout in seconds when connecting
      *                                to SCPs. -1 will wait forever (blocking mode).
      */
     void setConnectionTimeout(const Sint32 connectionTimeout);
@@ -747,9 +779,9 @@ public:
      */
     Uint32 getACSETimeout() const;
 
-    /** Returns the timeout configured defining how long SCU will wait for the
-     *  SCP when requesting an association. -1 means infinite waiting (blocking),
-     *  0 means no waiting at all. Note that this is currently a global DCMTK setting.
+    /** Returns the timeout configured defining how long SCU will wait for the SCP when
+     *  requesting an association. -1 means infinite waiting (blocking), 0 means no waiting
+     *  at all.
      *  @return The connection timeout (in seconds)
      */
     Sint32 getConnectionTimeout() const;
@@ -965,6 +997,11 @@ protected:
      */
     virtual OFCondition ignoreSTORERequest(T_ASC_PresentationContextID presID, const T_DIMSE_C_StoreRQ& request);
 
+    /** Returns next available message ID free to be used by SCU
+     *  @return Next free message ID
+     */
+    virtual Uint16 nextMessageID();
+
     /* Callback functions (static) */
 
     /** Callback function used for sending DIMSE messages.
@@ -1059,6 +1096,9 @@ private:
     /// ACSE timeout (default: 30 seconds)
     Uint32 m_acseTimeout;
 
+    /// TCP connection timeout (default: value of global dcmConnectionTimeout)
+    Sint32 m_tcpConnectTimeout;
+
     /// Storage directory for objects received with C-STORE due to a running
     /// C-GET session. By default, the received objects are stored in the current
     /// working directory.
@@ -1080,14 +1120,6 @@ private:
 
     /// Progress notification mode (default: enabled)
     OFBool m_progressNotificationMode;
-
-    // object able to send messages
-    DcmNotifier* m_notifier;
-
-    /** Returns next available message ID free to be used by SCU
-     *  @return Next free message ID
-     */
-    Uint16 nextMessageID();
 };
 
 #endif // SCU_H

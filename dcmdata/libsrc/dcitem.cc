@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2021, OFFIS e.V.
+ *  Copyright (C) 1994-2023, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -324,7 +324,7 @@ E_TransferSyntax DcmItem::checkTransferSyntax(DcmInputStream &inStream)
             /* valid VR, we need to find out which of the two tags was valid */
             if (taglittle.error().bad())
             {
-                /* if the litte endian tag was invalid, the transfer syntax is big endian implicit */
+                /* if the little endian tag was invalid, the transfer syntax is big endian implicit */
                 transferSyntax = EXS_BigEndianImplicit;
             }
             else if (tagbig.error().bad())
@@ -1209,7 +1209,7 @@ OFCondition DcmItem::readTagAndLength(DcmInputStream &inStream,
         {
             DCMDATA_WARN("DcmItem: Explicit item length (" << valueLengthItem << " bytes) too large for the elements contained in the item");
             /* if the next tag is the sequence delimiter item, we can adapt to the situation */
-            if (newTag.getXTag() == DCM_SequenceDelimitationItem)
+            if (newTag == DCM_SequenceDelimitationItem)
             {
                 DCMDATA_WARN("DcmItem: Sequence delimitation occurred before all bytes announced by explicit item length could be read");
                 l_error = EC_PrematureSequDelimitationItem;
@@ -1430,11 +1430,11 @@ OFCondition DcmItem::readUntilTag(DcmInputStream & inStream,
                         checkAndUpdateVR(*this, newTag);
 
                     /* check if we want to stop parsing at this point, in the main dataset only */
-                    if( (stopParsingAtElement != DCM_UndefinedTagKey) && (newTag.getXTag()>=stopParsingAtElement) && ident() == EVR_dataset)
+                    if ((stopParsingAtElement != DCM_UndefinedTagKey) && (newTag >= stopParsingAtElement) && (ident() == EVR_dataset))
                     {
                       lastElementComplete = OFTrue;
                       readStopElem = OFTrue;
-                      DCMDATA_WARN("DcmItem: Element " << newTag.getTagName() << " " << newTag
+                      DCMDATA_INFO("DcmItem: Element " << newTag.getTagName() << " " << newTag
                         << " encountered, skipping rest of dataset");
                     }
                     else
@@ -1481,7 +1481,7 @@ OFCondition DcmItem::readUntilTag(DcmInputStream & inStream,
                          (dcmStopParsingAfterElement.get() == elementList->get()->getTag()) &&
                           ident() == EVR_dataset)
                     {
-                        DCMDATA_WARN("DcmItem: Element " << newTag.getTagName() << " " << newTag
+                        DCMDATA_INFO("DcmItem: Element " << newTag.getTagName() << " " << newTag
                             << " encountered, skipping rest of data set");
                         readStopElem = OFTrue;
                     }
@@ -1548,6 +1548,9 @@ OFCondition DcmItem::write(DcmOutputStream &outStream,
     {
       if (getTransferState() == ERW_init)
       {
+        // Force a compression filter (if any) to process the input buffer, by calling outStream.write().
+        // This ensures that we cannot get stuck if there are just a few bytes available in the buffer
+        outStream.write(NULL, 0);
         if (outStream.avail() >= 8)
         {
           if (enctype == EET_ExplicitLength)
@@ -1565,8 +1568,9 @@ OFCondition DcmItem::write(DcmOutputStream &outStream,
           outStream.write(&valueLength, 4); // 4 bytes length
           elementList->seek(ELP_first);
           setTransferState(ERW_inWork);
-        } else
+        } else {
           errorFlag = EC_StreamNotifyClient;
+        }
       }
       if (getTransferState() == ERW_inWork)
       {
@@ -1587,6 +1591,9 @@ OFCondition DcmItem::write(DcmOutputStream &outStream,
           setTransferState(ERW_ready);
           if (getLengthField() == DCM_UndefinedLength)
           {
+            // Force a compression filter (if any) to process the input buffer, by calling outStream.write().
+            // This ensures that we cannot get stuck if there are just a few bytes available in the buffer
+            outStream.write(NULL, 0);
             if (outStream.avail() >= 8)
             {
                 // write Item delimitation
@@ -1628,6 +1635,9 @@ OFCondition DcmItem::writeSignatureFormat(DcmOutputStream &outStream,
     {
       if (getTransferState() == ERW_init)
       {
+        // Force a compression filter (if any) to process the input buffer, by calling outStream.write().
+        // This ensures that we cannot get stuck if there are just a few bytes available in the buffer
+        outStream.write(NULL, 0);
         if (outStream.avail() >= 4)
         {
           if (enctype == EET_ExplicitLength)
@@ -1803,7 +1813,7 @@ OFCondition DcmItem::insert(DcmElement *elem,
             }
             /* else if the new element's tag is greater than the current element's tag */
             /* (i.e. we have found the position where the new element shall be inserted) */
-            else if (elem->getTag() > dE->getTag())
+            else if (elem->getTag() > dE->getTag().getTagKey() /* only compare the attribute tag */)
             {
                 /* insert the new element after the current element */
                 elementList->insert(elem, ELP_next);
@@ -1831,7 +1841,7 @@ OFCondition DcmItem::insert(DcmElement *elem,
                 break;
             }
             /* else if the current element and the new element show the same tag */
-            else if (elem->getTag() == dE->getTag())
+            else if (elem->getTag() == dE->getTag().getTagKey() /* only compare the attribute tag */)
             {
                 /* if new and current element are not identical */
                 if (elem != dE)
@@ -3765,6 +3775,10 @@ OFCondition DcmItem::putAndInsertUint32Array(const DcmTag& tag,
         case EVR_UL:
             elem = new DcmUnsignedLong(tag);
             break;
+        case EVR_UNKNOWN:
+            /* Unknown VR, e.g. tag not found in data dictionary */
+            status = EC_UnknownVR;
+            break;
         default:
             status = EC_IllegalCall;
             break;
@@ -3810,6 +3824,43 @@ OFCondition DcmItem::putAndInsertSint32(const DcmTag& tag,
     {
         /* put value */
         status = elem->putSint32(value, pos);
+        /* insert into dataset/item */
+        if (status.good())
+            status = insert(elem, replaceOld);
+        /* could not be inserted, therefore, delete it immediately */
+        if (status.bad())
+            delete elem;
+    } else if (status.good())
+        status = EC_MemoryExhausted;
+    return status;
+}
+
+
+OFCondition DcmItem::putAndInsertSint32Array(const DcmTag& tag,
+                                             const Sint32 *value,
+                                             const unsigned long count,
+                                             const OFBool replaceOld)
+{
+    OFCondition status = EC_Normal;
+    /* create new element */
+    DcmElement *elem = NULL;
+    switch(tag.getEVR())
+    {
+        case EVR_SL:
+            elem = new DcmSignedLong(tag);
+            break;
+        case EVR_UNKNOWN:
+            /* Unknown VR, e.g. tag not found in data dictionary */
+            status = EC_UnknownVR;
+            break;
+        default:
+            status = EC_IllegalCall;
+            break;
+    }
+    if (elem != NULL)
+    {
+        /* put value */
+        status = elem->putSint32Array(value, count);
         /* insert into dataset/item */
         if (status.good())
             status = insert(elem, replaceOld);
@@ -4582,7 +4633,7 @@ OFCondition DcmItem::newDicomElement(DcmElement *&newElement,
         case EVR_UL :
             {
                 // generate tag with VR from dictionary!
-                DcmTag ulupTag(tag.getXTag());
+                DcmTag ulupTag(tag.getTagKey());
                 if (ulupTag.getEVR() == EVR_up)
                     newElement = new DcmUnsignedLongOffset(ulupTag, length);
                 else
@@ -4619,11 +4670,11 @@ OFCondition DcmItem::newDicomElement(DcmElement *&newElement,
             newElement = new DcmSequenceOfItems(tag, length, readAsUN);
             break;
         case EVR_na :
-            if (tag.getXTag() == DCM_Item)
+            if (tag == DCM_Item)
                 l_error = EC_InvalidTag;
-            else if (tag.getXTag() == DCM_SequenceDelimitationItem)
+            else if (tag == DCM_SequenceDelimitationItem)
                 l_error = EC_SequEnd;
-            else if (tag.getXTag() == DCM_ItemDelimitationItem)
+            else if (tag == DCM_ItemDelimitationItem)
                 l_error = EC_ItemEnd;
             else
                 l_error = EC_InvalidTag;
@@ -4705,7 +4756,7 @@ OFCondition DcmItem::newDicomElement(DcmElement *&newElement,
             else if (tag.isPrivate())
             {
                 // look up VR in private data dictionary
-                DcmTag newTag(tag.getXTag(), tag.getPrivateCreator());
+                DcmTag newTag(tag.getTagKey(), tag.getPrivateCreator());
                 // special handling for private pixel data (compressed or uncompressed)
                 if (newTag.getEVR() == EVR_px)
                 {

@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2013-2021, OFFIS e.V.
+ *  Copyright (C) 2013-2022, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -424,6 +424,8 @@ OFCondition DcmStorageSCP::generateDirAndFilename(OFString &filename,
                     OFSTRINGSTREAM_GETSTR(stream, tmpString)
                     generatedFileName = tmpString;
                     OFSTRINGSTREAM_FREESTR(tmpString);
+                    // make sure that the filename does not contain any problematic characters
+                    OFStandard::sanitizeFilename(generatedFileName);
                     // combine the generated file name with the directory name
                     OFStandard::combineDirAndFilename(filename, directoryName, generatedFileName);
                 }
@@ -440,6 +442,8 @@ OFCondition DcmStorageSCP::generateDirAndFilename(OFString &filename,
                 OFSTRINGSTREAM_GETSTR(stream, tmpString)
                 generatedFileName = tmpString;
                 OFSTRINGSTREAM_FREESTR(tmpString);
+                // not needed: make sure that the filename does not contain any problematic characters
+                //   OFStandard::sanitizeFilename(generatedFileName);
                 // combine the generated file name with the directory name
                 OFStandard::combineDirAndFilename(filename, directoryName, generatedFileName);
                 break;
@@ -451,6 +455,7 @@ OFCondition DcmStorageSCP::generateDirAndFilename(OFString &filename,
                 prefix += '_';
                 // TODO: we might want to use a more appropriate seed value
                 unsigned int seed = OFstatic_cast(unsigned int, time(NULL));
+                // the following method makes sure that the filename does not contain any problematic characters
                 if (!FilenameCreator.makeFilename(seed, directoryName.c_str(), prefix.c_str(), FilenameExtension.c_str(), filename))
                     status = EC_CouldNotGenerateFilename;
                 break;
@@ -468,6 +473,8 @@ OFCondition DcmStorageSCP::generateDirAndFilename(OFString &filename,
                     OFSTRINGSTREAM_GETSTR(stream, tmpString)
                     generatedFileName = tmpString;
                     OFSTRINGSTREAM_FREESTR(tmpString);
+                    // not needed: make sure that the filename does not contain any problematic characters
+                    //   OFStandard::sanitizeFilename(generatedFileName);
                     // combine the generated file name
                     OFStandard::combineDirAndFilename(filename, directoryName, generatedFileName);
                 } else

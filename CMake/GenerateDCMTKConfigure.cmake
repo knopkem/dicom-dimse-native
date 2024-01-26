@@ -74,21 +74,11 @@ endif()
 
 if(NOT DCMTK_ENABLE_CHARSET_CONVERSION)
   set(DCMTK_ENABLE_CHARSET_CONVERSION_DOCSTRING "Select character set conversion implementation.")
-  if(DCMTK_WITH_ICONV)
-    if(DCMTK_WITH_ICU)
-      message(STATUS "Info: Both ICU and the libiconv are available, using libiconv. Modify DCMTK_ENABLE_CHARSET_CONVERSION for switching to ICU")
-    endif()
-    set(DCMTK_ENABLE_CHARSET_CONVERSION "libiconv" CACHE STRING "${DCMTK_ENABLE_CHARSET_CONVERSION_DOCSTRING}")
-  elseif(DCMTK_WITH_ICU)
-    set(DCMTK_ENABLE_CHARSET_CONVERSION "ICU" CACHE STRING "${DCMTK_ENABLE_CHARSET_CONVERSION_DOCSTRING}")
-  elseif(DCMTK_WITH_STDLIBC_ICONV)
-    set(DCMTK_ENABLE_CHARSET_CONVERSION "stdlibc (iconv)" CACHE STRING "${DCMTK_ENABLE_CHARSET_CONVERSION_DOCSTRING}")
-  else()
-    set(DCMTK_ENABLE_CHARSET_CONVERSION "<disabled>" CACHE STRING "${DCMTK_ENABLE_CHARSET_CONVERSION_DOCSTRING}")
-  endif()
+  set(DCMTK_ENABLE_CHARSET_CONVERSION "oficonv" CACHE STRING "${DCMTK_ENABLE_CHARSET_CONVERSION_DOCSTRING}")
 endif()
 
 set(DCMTK_ENABLE_CHARSET_CONVERSION_ALTERNATIVES)
+list(APPEND DCMTK_ENABLE_CHARSET_CONVERSION_ALTERNATIVES "oficonv")
 if(DCMTK_WITH_ICONV)
   list(APPEND DCMTK_ENABLE_CHARSET_CONVERSION_ALTERNATIVES "libiconv")
 endif()
@@ -100,7 +90,11 @@ if(DCMTK_WITH_STDLIBC_ICONV)
 endif()
 set_property(CACHE DCMTK_ENABLE_CHARSET_CONVERSION PROPERTY STRINGS ${DCMTK_ENABLE_CHARSET_CONVERSION_ALTERNATIVES} "<disabled>")
 
-if(DCMTK_ENABLE_CHARSET_CONVERSION STREQUAL "libiconv" OR DCMTK_ENABLE_CHARSET_CONVERSION STREQUAL "DCMTK_CHARSET_CONVERSION_ICONV")
+if(DCMTK_ENABLE_CHARSET_CONVERSION STREQUAL "oficonv" OR DCMTK_ENABLE_CHARSET_CONVERSION STREQUAL "DCMTK_CHARSET_CONVERSION_OFICONV")
+  message(STATUS "Info: Building DCMTK with character set conversion support using built-in oficonv module")
+  set(DCMTK_ENABLE_CHARSET_CONVERSION "DCMTK_CHARSET_CONVERSION_OFICONV")
+  set(CHARSET_CONVERSION_LIBS)
+elseif(DCMTK_ENABLE_CHARSET_CONVERSION STREQUAL "libiconv" OR DCMTK_ENABLE_CHARSET_CONVERSION STREQUAL "DCMTK_CHARSET_CONVERSION_ICONV")
   message(STATUS "Info: Building DCMTK with character set conversion support using libiconv")
   set(DCMTK_ENABLE_CHARSET_CONVERSION "DCMTK_CHARSET_CONVERSION_ICONV")
   set(CHARSET_CONVERSION_LIBS ${LIBICONV_LIBS})
@@ -137,48 +131,95 @@ endif()
 set(CANONICAL_HOST_TYPE "${SYSTEM_PROCESSOR}-${CMAKE_SYSTEM_NAME}")
 DCMTK_UNSET(SYSTEM_PROCESSOR)
 
+# Define the complete package version name that will be used as a subdirectory
+# name for the installation of configuration files, data files and documents.
+if (DCMTK_PACKAGE_VERSION_SUFFIX STREQUAL "+")
+  # development version
+  set(DCMTK_COMPLETE_PACKAGE_VERSION "${DCMTK_PACKAGE_VERSION}-${DCMTK_PACKAGE_DATE}")
+else()
+  # release version
+  set(DCMTK_COMPLETE_PACKAGE_VERSION "${DCMTK_PACKAGE_VERSION}${DCMTK_PACKAGE_VERSION_SUFFIX}")
+endif()
+
 # Configure dictionary path and install prefix
 if(WIN32 AND NOT CYGWIN)
+  # create cache variable, default value is "OFF"
+  set(DCMTK_USE_WIN32_PROGRAMDATA OFF CACHE BOOL "Install configuration and data files in %PROGRAMDATA%")
+
   # Set DCMTK_PREFIX needed within some code. Be sure that all / are replaced by \\.
   set(DCMTK_PREFIX "${CMAKE_INSTALL_PREFIX}")
   string(REGEX REPLACE "/" "\\\\\\\\" DCMTK_PREFIX "${DCMTK_PREFIX}")
   # Set path and multiple path separator being used in dictionary code etc.
   set(PATH_SEPARATOR "\\\\")
   set(ENVIRONMENT_PATH_SEPARATOR ";")
+
+  # Set default directory for configuration and support data.
+  if(DCMTK_USE_WIN32_PROGRAMDATA)
+    set(PROGRAMDATA "$ENV{PROGRAMDATA}")
+    string(REPLACE "\\" "/" PROGRAMDATA "${PROGRAMDATA}")
+    set(CMAKE_INSTALL_FULL_SYSCONFDIR "${PROGRAMDATA}/dcmtk-${DCMTK_COMPLETE_PACKAGE_VERSION}/etc")
+    set(CMAKE_INSTALL_FULL_DATADIR    "${PROGRAMDATA}/dcmtk-${DCMTK_COMPLETE_PACKAGE_VERSION}/share")
+    set(CMAKE_INSTALL_FULL_DOCDIR     "${PROGRAMDATA}/dcmtk-${DCMTK_COMPLETE_PACKAGE_VERSION}/doc")
+
+    # These variables are defined as macros in osconfig.h and must end with a path separator
+    set(DCMTK_DEFAULT_CONFIGURATION_DIR "%PROGRAMDATA%\\\\dcmtk-${DCMTK_COMPLETE_PACKAGE_VERSION}\\\\etc${PATH_SEPARATOR}")
+    set(DCMTK_DEFAULT_SUPPORT_DATA_DIR  "%PROGRAMDATA%\\\\dcmtk-${DCMTK_COMPLETE_PACKAGE_VERSION}\\\\share${PATH_SEPARATOR}")
+  else()
+    set(CMAKE_INSTALL_FULL_DATADIR "${CMAKE_INSTALL_FULL_DATADIR}/dcmtk-${DCMTK_COMPLETE_PACKAGE_VERSION}")
+    set(CMAKE_INSTALL_FULL_DOCDIR "${CMAKE_INSTALL_FULL_DOCDIR}-${DCMTK_COMPLETE_PACKAGE_VERSION}")
+    set(DCMTK_DEFAULT_CONFIGURATION_DIR "")
+    set(DCMTK_DEFAULT_SUPPORT_DATA_DIR "")
+  endif()
+
   # Set dictionary path to the data dir inside install main dir (prefix)
   if(DCMTK_DEFAULT_DICT STREQUAL "external")
-    set(DCM_DICT_DEFAULT_PATH "${DCMTK_PREFIX}\\\\${CMAKE_INSTALL_DATADIR}\\\\dcmtk\\\\dicom.dic")
+    if(DCMTK_USE_WIN32_PROGRAMDATA)
+      set(DCM_DICT_DEFAULT_PATH "${CMAKE_INSTALL_FULL_DATADIR}\\\\dicom.dic")
+    else()
+      set(DCM_DICT_DEFAULT_PATH "${DCMTK_PREFIX}\\\\${CMAKE_INSTALL_DATADIR}\\\\dcmtk\\\\dicom.dic")
+    endif()
+
     # If private dictionary should be utilized, add it to default dictionary path.
     if(ENABLE_PRIVATE_TAGS)
-      set(DCM_DICT_DEFAULT_PATH "${DCM_DICT_DEFAULT_PATH};${DCMTK_PREFIX}\\\\${CMAKE_INSTALL_DATADIR}\\\\dcmtk\\\\private.dic")
+      if(DCMTK_USE_WIN32_PROGRAMDATA)
+        set(DCM_DICT_DEFAULT_PATH "${DCM_DICT_DEFAULT_PATH};${CMAKE_INSTALL_FULL_DATADIR}\\\\private.dic")
+      else()
+        set(DCM_DICT_DEFAULT_PATH "${DCM_DICT_DEFAULT_PATH};${DCMTK_PREFIX}\\\\${CMAKE_INSTALL_DATADIR}\\\\dcmtk\\\\private.dic")
+      endif()
     endif()
+
      # Again, for Windows strip all / from path and replace it with \\.
     string(REGEX REPLACE "/" "\\\\\\\\" DCM_DICT_DEFAULT_PATH "${DCM_DICT_DEFAULT_PATH}")
   else()
     set(DCM_DICT_DEFAULT_PATH "")
   endif()
-  # Set default directory for configuration and support data.
-  set(DCMTK_DEFAULT_CONFIGURATION_DIR "")
-  set(DCMTK_DEFAULT_SUPPORT_DATA_DIR "")
 else()
   # Set DCMTK_PREFIX needed within some code.
   set(DCMTK_PREFIX "${CMAKE_INSTALL_PREFIX}")
   # Set path and multiple path separator being used in dictionary code etc.
   set(PATH_SEPARATOR "/")
   set(ENVIRONMENT_PATH_SEPARATOR ":")
+
+  # Modify the installation paths for configuration files, data files and documents
+  # by adding a subdirectory with the DCMTK name and version number
+  set(CMAKE_INSTALL_FULL_SYSCONFDIR "${CMAKE_INSTALL_FULL_SYSCONFDIR}/dcmtk-${DCMTK_COMPLETE_PACKAGE_VERSION}")
+  set(CMAKE_INSTALL_FULL_DATADIR "${CMAKE_INSTALL_FULL_DATADIR}/dcmtk-${DCMTK_COMPLETE_PACKAGE_VERSION}")
+  set(CMAKE_INSTALL_FULL_DOCDIR "${CMAKE_INSTALL_FULL_DOCDIR}-${DCMTK_COMPLETE_PACKAGE_VERSION}")
+
+  # These variables are defined as macros in osconfig.h and must end with a path separator
+  set(DCMTK_DEFAULT_CONFIGURATION_DIR "${CMAKE_INSTALL_FULL_SYSCONFDIR}/")
+  set(DCMTK_DEFAULT_SUPPORT_DATA_DIR "${CMAKE_INSTALL_FULL_DATADIR}/")
+
   # Set dictionary path to the data dir inside install main dir (prefix).
   if(DCMTK_DEFAULT_DICT STREQUAL "external")
-    set(DCM_DICT_DEFAULT_PATH "${DCMTK_PREFIX}/${CMAKE_INSTALL_DATADIR}/dcmtk/dicom.dic")
+    set(DCM_DICT_DEFAULT_PATH "${DCMTK_DEFAULT_SUPPORT_DATA_DIR}dicom.dic")
     # If private dictionary should be utilized, add it to default dictionary path.
     if(ENABLE_PRIVATE_TAGS)
-      set(DCM_DICT_DEFAULT_PATH "${DCM_DICT_DEFAULT_PATH}:${DCMTK_PREFIX}/${CMAKE_INSTALL_DATADIR}/dcmtk/private.dic")
+      set(DCM_DICT_DEFAULT_PATH "${DCM_DICT_DEFAULT_PATH}:${DCMTK_DEFAULT_SUPPORT_DATA_DIR}private.dic")
     endif()
   else()
     set(DCM_DICT_DEFAULT_PATH "")
   endif()
-  # Set default directory for configuration and support data.
-  set(DCMTK_DEFAULT_CONFIGURATION_DIR "${DCMTK_PREFIX}/${CMAKE_INSTALL_SYSCONFDIR}/dcmtk/")
-  set(DCMTK_DEFAULT_SUPPORT_DATA_DIR "${DCMTK_PREFIX}/${CMAKE_INSTALL_DATADIR}/dcmtk/")
 endif()
 
 # Check the sizes of various types
@@ -258,6 +299,7 @@ endif()
 
   CHECK_INCLUDE_FILE_CXX("errno.h" HAVE_ERRNO_H)
   CHECK_INCLUDE_FILE_CXX("dirent.h" HAVE_DIRENT_H)
+  CHECK_INCLUDE_FILE_CXX("err.h" HAVE_ERR_H)
   CHECK_INCLUDE_FILE_CXX("fcntl.h" HAVE_FCNTL_H)
   CHECK_INCLUDE_FILE_CXX("fstream" HAVE_FSTREAM)
   CHECK_INCLUDE_FILE_CXX("fstream.h" HAVE_FSTREAM_H)
@@ -276,9 +318,11 @@ endif()
   CHECK_INCLUDE_FILE_CXX("io.h" HAVE_IO_H)
   CHECK_INCLUDE_FILE_CXX("iso646.h" HAVE_ISO646_H)
   CHECK_INCLUDE_FILE_CXX("png.h" HAVE_PNG_H)
+  CHECK_INCLUDE_FILE_CXX("langinfo.h" HAVE_LANGINFO_H)
   CHECK_INCLUDE_FILE_CXX("limits.h" HAVE_LIMITS_H)
   CHECK_INCLUDE_FILE_CXX("climits" HAVE_CLIMITS)
   CHECK_INCLUDE_FILE_CXX("locale.h" HAVE_LOCALE_H)
+  CHECK_INCLUDE_FILE_CXX("mqueue.h" HAVE_MQUEUE_H)
   CHECK_INCLUDE_FILE_CXX("ndir.h" HAVE_NDIR_H)
   CHECK_INCLUDE_FILE_CXX("netdb.h" HAVE_NETDB_H)
   CHECK_INCLUDE_FILE_CXX("new.h" HAVE_NEW_H)
@@ -306,8 +350,11 @@ endif()
   CHECK_INCLUDE_FILE_CXX("sys/errno.h" HAVE_SYS_ERRNO_H)
   CHECK_INCLUDE_FILE_CXX("sys/dir.h" HAVE_SYS_DIR_H)
   CHECK_INCLUDE_FILE_CXX("sys/file.h" HAVE_SYS_FILE_H)
+  CHECK_INCLUDE_FILE_CXX("sys/mman.h" HAVE_SYS_MMAN_H)
+  CHECK_INCLUDE_FILE_CXX("sys/msg.h" HAVE_SYS_MSG_H)
   CHECK_INCLUDE_FILE_CXX("sys/ndir.h" HAVE_SYS_NDIR_H)
   CHECK_INCLUDE_FILE_CXX("sys/param.h" HAVE_SYS_PARAM_H)
+  CHECK_INCLUDE_FILE_CXX("sys/queue.h" HAVE_SYS_QUEUE_H)
   CHECK_INCLUDE_FILE_CXX("sys/resource.h" HAVE_SYS_RESOURCE_H)
   CHECK_INCLUDE_FILE_CXX("sys/select.h" HAVE_SYS_SELECT_H)
   CHECK_INCLUDE_FILE_CXX("sys/syscall.h" HAVE_SYS_SYSCALL_H)
@@ -315,6 +362,7 @@ endif()
   CHECK_INCLUDE_FILE_CXX("sys/time.h" HAVE_SYS_TIME_H)
   CHECK_INCLUDE_FILE_CXX("sys/timeb.h" HAVE_SYS_TIMEB_H)
   CHECK_INCLUDE_FILE_CXX("sys/types.h" HAVE_SYS_TYPES_H)
+  CHECK_INCLUDE_FILE_CXX("sys/un.h" HAVE_SYS_UN_H)
   CHECK_INCLUDE_FILE_CXX("sys/utime.h" HAVE_SYS_UTIME_H)
   CHECK_INCLUDE_FILE_CXX("sys/utsname.h" HAVE_SYS_UTSNAME_H)
   CHECK_INCLUDE_FILE_CXX("sys/wait.h" HAVE_SYS_WAIT_H)
@@ -556,15 +604,17 @@ endif()
     endmacro()
   endif()
 
-  CHECK_FUNCTION_EXISTS(connect HAVE_CONNECT)
+  CHECK_FUNCTION_EXISTS(_doprnt HAVE_DOPRNT)
+  CHECK_FUNCTION_EXISTS(_findfirst HAVE__FINDFIRST)
   CHECK_FUNCTION_EXISTS(accept HAVE_ACCEPT)
   CHECK_FUNCTION_EXISTS(access HAVE_ACCESS)
   CHECK_FUNCTION_EXISTS(atoll HAVE_ATOLL)
   CHECK_FUNCTION_EXISTS(bcmp HAVE_BCMP)
   CHECK_FUNCTION_EXISTS(bcopy HAVE_BCOPY)
   CHECK_FUNCTION_EXISTS(bind HAVE_BIND)
+  CHECK_FUNCTION_EXISTS(connect HAVE_CONNECT)
   CHECK_FUNCTION_EXISTS(cuserid HAVE_CUSERID)
-  CHECK_FUNCTION_EXISTS(_doprnt HAVE_DOPRNT)
+  CHECK_FUNCTION_EXISTS(fgetln HAVE_FGETLN)
   CHECK_FUNCTION_EXISTS(finite HAVE_FINITE)
   CHECK_FUNCTION_EXISTS(flock HAVE_FLOCK)
   CHECK_FUNCTION_EXISTS(fork HAVE_FORK)
@@ -574,11 +624,11 @@ endif()
   CHECK_FUNCTION_EXISTS(getenv HAVE_GETENV)
   CHECK_FUNCTION_EXISTS(geteuid HAVE_GETEUID)
   CHECK_FUNCTION_EXISTS(getgrnam HAVE_GETGRNAM)
+  CHECK_FUNCTION_EXISTS(gethostbyaddr_r HAVE_GETHOSTBYADDR_R)
   CHECK_FUNCTION_EXISTS(gethostbyname HAVE_GETHOSTBYNAME)
   CHECK_FUNCTION_EXISTS(gethostbyname_r HAVE_GETHOSTBYNAME_R)
-  CHECK_FUNCTION_EXISTS(gethostbyaddr_r HAVE_GETHOSTBYADDR_R)
-  CHECK_FUNCTION_EXISTS(gethostname HAVE_GETHOSTNAME)
   CHECK_FUNCTION_EXISTS(gethostid HAVE_GETHOSTID)
+  CHECK_FUNCTION_EXISTS(gethostname HAVE_GETHOSTNAME)
   CHECK_FUNCTION_EXISTS(getlogin HAVE_GETLOGIN)
   CHECK_FUNCTION_EXISTS(getlogin_r HAVE_GETLOGIN_R)
   CHECK_FUNCTION_EXISTS(getpid HAVE_GETPID)
@@ -599,10 +649,10 @@ endif()
   CHECK_FUNCTION_EXISTS(lstat HAVE_LSTAT)
   CHECK_FUNCTION_EXISTS(malloc_debug HAVE_MALLOC_DEBUG)
   CHECK_FUNCTION_EXISTS(mbstowcs HAVE_MBSTOWCS)
-  CHECK_FUNCTION_EXISTS(wcstombs HAVE_WCSTOMBS)
   CHECK_FUNCTION_EXISTS(memmove HAVE_MEMMOVE)
   CHECK_FUNCTION_EXISTS(mkstemp HAVE_MKSTEMP)
   CHECK_FUNCTION_EXISTS(mktemp HAVE_MKTEMP)
+  CHECK_FUNCTION_EXISTS(nanosleep HAVE_NANOSLEEP)
   CHECK_FUNCTION_EXISTS(rindex HAVE_RINDEX)
   CHECK_FUNCTION_EXISTS(select HAVE_SELECT)
   CHECK_FUNCTION_EXISTS(setsockopt HAVE_SETSOCKOPT)
@@ -624,8 +674,9 @@ endif()
   CHECK_FUNCTION_EXISTS(usleep HAVE_USLEEP)
   CHECK_FUNCTION_EXISTS(wait3 HAVE_WAIT3)
   CHECK_FUNCTION_EXISTS(waitpid HAVE_WAITPID)
-  CHECK_FUNCTION_EXISTS(_findfirst HAVE__FINDFIRST)
-  CHECK_FUNCTION_EXISTS(nanosleep HAVE_NANOSLEEP)
+  CHECK_FUNCTION_EXISTS(wcstombs HAVE_WCSTOMBS)
+
+  CHECK_SYMBOL_EXISTS(strcasestr "string.h" HAVE_PROTOTYPE_STRCASESTR)
 
   CHECK_FUNCTIONWITHHEADER_EXISTS(feenableexcept "${HEADERS}" HAVE_PROTOTYPE_FEENABLEEXCEPT)
   CHECK_FUNCTIONWITHHEADER_EXISTS("isinf(0.)" "${HEADERS}" HAVE_PROTOTYPE_ISINF)
@@ -762,7 +813,7 @@ int main()
   endif()
 
   # checks if <math.h> must be included as a C++ include file (i.e. without extern "C").
-  # Some sytems (Win32, HP/UX 10) use C++ language features in <math.h>.
+  # Some systems (Win32, HP/UX 10) use C++ language features in <math.h>.
   DCMTK_TRY_COMPILE(INCLUDE_MATH_H_AS_EXTERN_C "<math.h> can be included as extern \"C\""
   "extern \"C\" {
 #include <math.h>
@@ -785,8 +836,7 @@ if(NOT DEFINED C_CHAR_UNSIGNED)
 "// Fail compile for unsigned char.
 int main()
 {
-  unsigned char uc = 255;
-  char *unused_array[(*reinterpret_cast<char*>(&uc) < 0)?1:-1];
+  char *unused_array[((char)-1<0)?1:-1];
   return 0;
 }")
    if(C_CHAR_SIGNED_COMPILED)
@@ -933,7 +983,7 @@ function(DCMTK_LFS_TRY_COMPILE VAR FILE FLAGS DEFINITIONS)
   set("${VAR}" "${RESULT}" PARENT_SCOPE)
   if(RESULT)
     set(LOGFILE "CMakeOutput.log")
-    set(LOG "succeded")
+    set(LOG "succeeded")
   else()
     set(LOGFILE "CMakeError.log")
     set(LOG "failed")
@@ -956,7 +1006,7 @@ function(DCMTK_CHECK_ENABLE_LFS)
   elseif(DCMTK_ENABLE_LFS MATCHES "^(no|false|0)$")
     set(DCMTK_ENABLE_LFS "off")
   endif()
-  # determin whether lfs64 is available in case it wasn't detected yet it may be used
+  # determine whether lfs64 is available in case it wasn't detected yet it may be used
   if(NOT DEFINED DCMTK_LFS64_AVAILABLE AND DCMTK_ENABLE_LFS MATCHES "^(lfs64|auto)$")
     set(DCMTK_LFS64_DEFINITIONS)
     set(MESSAGE_RESULT "no")
@@ -979,7 +1029,7 @@ function(DCMTK_CHECK_ENABLE_LFS)
     set(DCMTK_LFS64_AVAILABLE "${RESULT}" CACHE INTERNAL "whether LFS64 is available or not" FORCE)
     message(STATUS "${MESSAGE} -- ${MESSAGE_RESULT}")
   endif()
-  # determin whether lfs is available in case it wasn't detected yet it may be used
+  # determine whether lfs is available in case it wasn't detected yet it may be used
   if(NOT DEFINED DCMTK_LFS_AVAILABLE AND DCMTK_ENABLE_LFS MATCHES "^(lfs|auto)$")
     set(DCMTK_LFS_FLAGS)
     set(DCMTK_LFS_DEFINITIONS)
@@ -1105,7 +1155,7 @@ function(DCMTK_CHECK_ENABLE_LFS)
     message(STATUS "Info: Building DCMTK with large file support (LFS)")
   else()
     set(DCMTK_ENABLE_LFS)
-    message(STATUS "Info: Building DCMTK without large file support, files >4GB may be inaccesible!")
+    message(STATUS "Info: Building DCMTK without large file support, files >4GB may be inaccessible!")
   endif()
 endfunction()
 
@@ -1450,7 +1500,7 @@ function(DCMTK_CHECK_CXX_STANDARD STANDARD)
   else()
     set(MESSAGE "Checking whether the compiler supports C++${STANDARD}")
     message(STATUS "${MESSAGE}")
-    try_compile(COMPILE_RESULT "${CMAKE_BINARY_DIR}" "${DCMTK_SOURCE_DIR}/config/tests/cxx${STANDARD}.cc")
+    try_compile(COMPILE_RESULT "${CMAKE_BINARY_DIR}" "${DCMTK_SOURCE_DIR}/config/tests/cxx${STANDARD}.cc" COMPILE_DEFINITIONS ${FORCE_MSVC_CPLUSPLUS_MACRO})
     set(HAVE_CXX${STANDARD}_TEST_RESULT "${COMPILE_RESULT}" CACHE INTERNAL "Caches the configuration test result for C++${STANDARD} support.")
     if(COMPILE_RESULT)
       set(RESULT 1)
@@ -1464,9 +1514,12 @@ endfunction()
 
 function(DCMTK_TEST_ENABLE_CXX11)
   get_property(MODERN_CXX_STANDARDS GLOBAL PROPERTY DCMTK_MODERN_CXX_STANDARDS)
+  # loop through all standard versions (11, 14, ...) and reset
+  # ENABLE_CXX_... for this standard to 0 for the moment
   foreach(STANDARD ${MODERN_CXX_STANDARDS})
     set(ENABLE_CXX${STANDARD} 0)
   endforeach()
+  # DCMTK_CMAKE_HAS_CXX_STANDARD is true for CMake versions >= 3.1.3
   get_property(DCMTK_CMAKE_HAS_CXX_STANDARD GLOBAL PROPERTY DCMTK_CMAKE_HAS_CXX_STANDARD)
   if(DCMTK_CMAKE_HAS_CXX_STANDARD)
     get_property(MODERN_CXX_STANDARD GLOBAL PROPERTY DCMTK_MODERN_CXX_STANDARD)
@@ -1515,7 +1568,7 @@ function(DCMTK_TEST_ENABLE_STL_FEATURE NAME)
   endif()
   set(RESULT 0)
   set(TEXT_RESULT "disabled")
-  if(DCMTK_ENABLE_STL_${FEATURE} STREQUAL "ON")
+  if(DCMTK_ENABLE_STL_${FEATURE})
     if(DEFINED HAVE_STL_${FEATURE}_TEST_RESULT)
       if(HAVE_STL_${FEATURE}_TEST_RESULT)
         set(RESULT 1)
@@ -1543,6 +1596,20 @@ function(DCMTK_TEST_ENABLE_STL_FEATURE NAME)
   message(STATUS "Info: STL ${NAME} support ${TEXT_RESULT}")
 endfunction()
 
+
+
+# Visual Studio >= 2017 supports C++11 and later, but does not set
+# the __cplusplus macro with the supported C++ standard version.
+# /Zc:__cplusplus will enforce setting this macro in Visual Studio.
+# VS Versions < 2017 do not support this switch.
+# See also https://learn.microsoft.com/de-de/cpp/build/reference/zc-cplusplus
+set(FORCE_MSVC_CPLUSPLUS_MACRO "")
+if(MSVC)
+  if(NOT (MSVC_VERSION LESS 1910)) # VS 2017 and above
+    set (FORCE_MSVC_CPLUSPLUS_MACRO "/Zc:__cplusplus")
+  endif()
+endif()
+# Check which modern C++ standards should be enabled
 DCMTK_TEST_ENABLE_CXX11()
 DCMTK_TEST_ENABLE_STL_FEATURE("vector")
 DCMTK_TEST_ENABLE_STL_FEATURE("algorithm" "algo")
@@ -1555,8 +1622,20 @@ DCMTK_TEST_ENABLE_STL_FEATURE("string")
 DCMTK_TEST_ENABLE_STL_FEATURE("type_traits" "ttraits")
 DCMTK_TEST_ENABLE_STL_FEATURE("tuple")
 DCMTK_TEST_ENABLE_STL_FEATURE("system_error" "syserr")
+# if at least one modern C++ standard should be supported,
+# add FORCE_MSVC_CPLUSPLUS_MACRO for MSVC to enforce setting
+# of __cplusplus macro
+if(MSVC)
+  get_property(MODERN_CXX_STANDARDS GLOBAL PROPERTY DCMTK_MODERN_CXX_STANDARDS)
+  foreach(STANDARD ${MODERN_CXX_STANDARDS})
+    if(HAVE_CXX${STANDARD})
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FORCE_MSVC_CPLUSPLUS_MACRO}")
+      break()
+    endif()
+  endforeach()
+endif()
+
 
 if(CMAKE_CROSSCOMPILING)
   set(DCMTK_CROSS_COMPILING ${CMAKE_CROSSCOMPILING})
 endif()
-

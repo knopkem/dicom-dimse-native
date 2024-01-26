@@ -5,6 +5,6 @@ project(dcmdata)
 include_directories("${dcmdata_SOURCE_DIR}/include" "${ofstd_SOURCE_DIR}/include" "${oflog_SOURCE_DIR}/include" ${ZLIB_INCDIR})
 
 # recurse into subdirectories
-foreach(SUBDIR libsrc libi2d include data)
+foreach(SUBDIR libsrc libi2d include)
   add_subdirectory(${SUBDIR})
 endforeach()

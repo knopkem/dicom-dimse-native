@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2021, OFFIS e.V.
+ *  Copyright (C) 1994-2023, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -27,6 +27,7 @@
 
 #include "dcmtk/dcmdata/dcobject.h"
 #include "dcmtk/ofstd/ofstring.h"
+#include "dcmtk/ofstd/oftypes.h"
 
 // forward declarations
 class DcmInputStreamFactory;
@@ -717,10 +718,15 @@ class DCMTK_DCMDATA_EXPORT DcmElement
      *  @param dataset dataset in which this pixel data element is contained
      *  @param frameSize frame size in bytes (without padding) returned in this
      *    parameter upon success, otherwise set to 0
+     *  @param pixelDataIsUncompressed flag indicating whether the frame
+     *    to be accessed already exists in uncompressed form. This is important
+     *    for the YBR_FULL_422 color model, which is never created by DCMTK's
+     *    decoders but can exist in uncompressed format
      *  @return EC_Normal if successful, an error code otherwise
      */
     virtual OFCondition getUncompressedFrameSize(DcmItem *dataset,
-                                                 Uint32 &frameSize) const;
+                                                 Uint32 &frameSize,
+                                                 OFBool pixelDataIsUncompressed) const;
 
     /** access single frame without decompressing or loading a complete
      *  multi-frame object. The frame is copied into the buffer passed by the caller
@@ -806,8 +812,8 @@ class DCMTK_DCMDATA_EXPORT DcmElement
      *  @param candidateFirst the first part of the candidate that will be matched against this
      *    this element + keySecond.
      *  @param candidateSecond the second part of the candidate that will be combined with
-     *    candidateFirst for matching against this elemement + keySecond.
-     *  @return OFTrue if the combination of this elemement and keySecond match with the
+     *    candidateFirst for matching against this element + keySecond.
+     *  @return OFTrue if the combination of this element and keySecond match with the
      *    combination of candidateFirst and candidateSecond. OFFalse otherwise.
      */
     virtual OFBool combinationMatches(const DcmElement& keySecond,
@@ -877,9 +883,9 @@ class DCMTK_DCMDATA_EXPORT DcmElement
      *  @param vmNum value multiplicity of the value to be checked.
      *    For empty values (vmNum=0), the status of the check is always EC_Normal (i.e. no error).
      *  @param vmStr value multiplicity (according to the data dictionary) to be checked for.
-     *    (valid values: "1", "1-2", "1-3", "1-8", "1-99", "1-n", "2", "2-n", "2-2n",
-     *                   "3", "3-n", "3-3n", "4", "5", "5-n", "6", "7", "7-7n", "8", "9",
-     *                   "16", "24", "32", "256")
+     *    (valid values: "1", "1-2", "1-3", "1-8", "1-99", "1-n", "2", "2-4", "2-n", "2-2n",
+     *                   "3", "3-n", "3-3n", "4", "4-5", "4-4n", "5", "5-n", "6", "6-n",
+     *                   "7", "7-7n", "8", "9", "11", "16", "24", "32", "256")
      *  @return status of the check, EC_ValueMultiplicityViolated in case of error
      */
     static OFCondition checkVM(const unsigned long vmNum,

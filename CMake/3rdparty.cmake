@@ -1,12 +1,16 @@
 set(USE_FIND_PACKAGE_DOCS "Control whether libraries are searched via CMake's find_package() mechanism or a Windows specific fallback")
+# Advanced user (eg. vcpkg) may want to override this:
+if(NOT DEFINED DCMTK_USE_FIND_PACKAGE_WIN_DEFAULT)
+  set(DCMTK_USE_FIND_PACKAGE_WIN_DEFAULT FALSE)
+endif()
 if(WIN32)
-  # For Windows, we don't used FIND_PACKAGE because DCMTK usually is used with its
+  # For Windows, we don't use FIND_PACKAGE because DCMTK usually is used with its
   # own set of 3rd-party support libraries that can be downloaded from DCMTK's
   # website (pre-built).
   if(MINGW)
     set(DCMTK_USE_FIND_PACKAGE TRUE CACHE BOOL "${USE_FIND_PACKAGE_DOCS}")
   else()
-    set(DCMTK_USE_FIND_PACKAGE FALSE CACHE BOOL "${USE_FIND_PACKAGE_DOCS}")
+    set(DCMTK_USE_FIND_PACKAGE ${DCMTK_USE_FIND_PACKAGE_WIN_DEFAULT} CACHE BOOL "${USE_FIND_PACKAGE_DOCS}")
   endif()
 else()
   # Only find_package is supported
@@ -69,7 +73,7 @@ if(DCMTK_USE_FIND_PACKAGE)
       include(CheckCXXSourceCompiles)
       set(TEMP_INCLUDES "${CMAKE_REQUIRED_INCLUDES}")
       list(APPEND CMAKE_REQUIRED_INCLUDES "${OPENSSL_INCLUDE_DIR}")
-      CHECK_CXX_SOURCE_COMPILES("extern \"C\" {\n#include <openssl/ssl.h>\n}\nint main(){\n#if OPENSSL_VERSION_NUMBER < 0x10001000L\n#error OpenSSL too old\n#endif\n}\n" OPENSSL_VERSION_CHECK)
+      CHECK_CXX_SOURCE_COMPILES("extern \"C\" {\n#include <openssl/ssl.h>\n}\nint main(){\n#if OPENSSL_VERSION_NUMBER < 0x10002000L\n#error OpenSSL too old\n#endif\n}\n" OPENSSL_VERSION_CHECK)
       set(CMAKE_REQUIRED_INCLUDES "${TEMP_INCLUDES}")
       if(OPENSSL_VERSION_CHECK)
         message(STATUS "Info: DCMTK OPENSSL support will be enabled")
@@ -81,7 +85,7 @@ if(DCMTK_USE_FIND_PACKAGE)
           set(OPENSSL_LIBS ${OPENSSL_LIBS} dl)
         endif()
       else()
-        message(STATUS "Info: DCMTK OPENSSL support will be disabled: DCMTK requires OpenSSL version 1.0.1 or newer")
+        message(STATUS "Info: DCMTK OPENSSL support will be disabled: DCMTK requires OpenSSL version 1.0.2 or newer")
         set(DCMTK_WITH_OPENSSL OFF CACHE BOOL "" FORCE)
         set(WITH_OPENSSL "")
       endif()
@@ -207,7 +211,7 @@ else()
 
   # libxml support: find out whether user has library
   file(GLOB LIBXML_DIR "${DCMTK_SUPPORT_LIBRARIES_DIR}/libxml2*")
-  find_path(WITH_LIBXMLINC "${DCMTK_SUPPORT_LIBRARIES_DIR}/include/libxml/parser.h" "${LIBXML_DIR}" NO_DEFAULT_PATH)
+  find_path(WITH_LIBXMLINC "include/libxml/parser.h" "${LIBXML_DIR}" NO_DEFAULT_PATH)
 
   # libpng support: find out whether user has library
   file(GLOB LIBPNG_DIR "${DCMTK_SUPPORT_LIBRARIES_DIR}/libpng*")
@@ -243,7 +247,10 @@ else()
     if(WITH_LIBXMLINC)
       set(LIBXML_INCDIR "${WITH_LIBXMLINC}/include")
       set(LIBXML_LIBDIR "${WITH_LIBXMLINC}/lib")
-      set(LIBXML_LIBS debug "${LIBXML_LIBDIR}/libxml2_d.lib" optimized "${LIBXML_LIBDIR}/libxml2_o.lib" debug "${LIBXML_LIBDIR}/iconv_d.lib" optimized "${LIBXML_LIBDIR}/iconv_o.lib")
+      set(LIBXML_LIBS debug "${LIBXML_LIBDIR}/libxml2_d.lib" optimized "${LIBXML_LIBDIR}/libxml2_o.lib")
+      if (EXISTS "${LIBXML_LIBDIR}/iconv_o.lib")
+          set(LIBXML_LIBS ${LIBXML_LIBS} debug "${LIBXML_LIBDIR}/iconv_d.lib" optimized "${LIBXML_LIBDIR}/iconv_o.lib")
+      endif()
       message(STATUS "Info: DCMTK XML support will be enabled")
       set(WITH_LIBXML 1)
       # this hides some warnings that are emitted when linking against libxmlXXX.lib instead of linking the DLL directly

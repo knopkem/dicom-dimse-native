@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2009-2021, OFFIS e.V.
+ *  Copyright (C) 2009-2023, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -24,7 +24,7 @@
 #include "dcmtk/dcmdata/dcostrmf.h" /* for class DcmOutputFileStream */
 #include "dcmtk/dcmnet/assoc.h"
 #include "dcmtk/dcmnet/scp.h"
-// #include "dcmtk/dcmtls/tlslayer.h"
+#include "dcmtk/dcmtls/tlslayer.h"
 
 // ----------------------------------------------------------------------------
 
@@ -98,7 +98,7 @@ OFCondition DcmSCP::openListenPort()
 #ifndef DISABLE_PORT_PERMISSION_CHECK
 #ifdef HAVE_GETEUID
     // If port is privileged we must be as well.
-    if (m_cfg->getPort() < 1024 && geteuid() != 0)
+    if ( ( (m_cfg->getPort() < 1024) && m_cfg->getPort() !=0) && geteuid() != 0)
     {
         DCMNET_ERROR("No privileges to open this network port (" << m_cfg->getPort() << ")");
         return NET_EC_InsufficientPortPrivileges;
@@ -113,11 +113,18 @@ OFCondition DcmSCP::openListenPort()
         return result;
 
     // Initialize network, i.e. create an instance of T_ASC_Network*.
-    cond = ASC_initializeNetwork(NET_ACCEPTOR, OFstatic_cast(int, m_cfg->getPort()), m_cfg->getACSETimeout(), &m_network);
+    const int port = OFstatic_cast(int, m_cfg->getPort());
+    cond = ASC_initializeNetwork(NET_ACCEPTOR, port, m_cfg->getACSETimeout(), &m_network);
     if (cond.bad())
     {
         m_network = NULL;
         return cond;
+    }
+
+    // Update config with assigned port if client requested it
+    if (port == 0)
+    {
+      m_cfg->setPort(OFstatic_cast(Uint16, m_network->acceptorPort));
     }
 
     if (m_cfg->transportLayerEnabled())
@@ -1453,7 +1460,7 @@ OFCondition DcmSCP::sendEVENTREPORTRequest(const T_ASC_PresentationContextID pre
     rspStatusCode                            = eventReportRsp.DimseStatus;
 
     // Check whether there is a dataset to be received
-    if (eventReportRsp.DataSetType == DIMSE_DATASET_PRESENT)
+    if (eventReportRsp.DataSetType != DIMSE_DATASET_NULL)
     {
         // this should never happen
         DcmDataset* tempDataset = NULL;
@@ -2068,8 +2075,17 @@ void DcmSCP::notifyAssociationRequest(const T_ASC_Parameters& params, DcmSCPActi
 
 // ----------------------------------------------------------------------------
 
-OFBool DcmSCP::checkCalledAETitleAccepted(const OFString& /*calledAETitle*/)
+OFBool DcmSCP::checkCalledAETitleAccepted(const OFString& calledAETitle)
 {
+    if (m_cfg->getRespondWithCalledAETitle() || (calledAETitle == m_cfg->getAETitle()))
+    {
+        return OFTrue;
+    }
+    else if (calledAETitle != m_cfg->getAETitle())
+    {
+        DCMNET_ERROR("Called AE Title does not match configured AE Title: " << m_cfg->getAETitle());
+        return OFFalse;
+    }
     return OFTrue;
 }
 

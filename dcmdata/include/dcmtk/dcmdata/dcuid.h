@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2022, OFFIS e.V.
+ *  Copyright (C) 1994-2023, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -63,6 +63,21 @@ DCMTK_DCMDATA_EXPORT const char* dcmFindNameOfUID(const char* uid, const char* d
  *  @return UID string or NULL if name is unknown
  */
 DCMTK_DCMDATA_EXPORT const char* dcmFindUIDFromName(const char* name);
+
+/** return the keyword of a UID.
+ *  Performs a table lookup and returns a pointer to a read-only string.
+ *  @param uid UID string for which the keyword is to be looked up
+ *  @param defaultValue default to return if UID not known
+ *  @return keyword string or defaultValue if UID is unknown
+ */
+DCMTK_DCMDATA_EXPORT const char* dcmFindKeywordOfUID(const char* uid, const char* defaultValue = NULL);
+
+/** return the UID of a keyword.
+ *  Performs a table lookup and returns a pointer to a read-only string.
+ *  @param keyword keyword string for which the corresponding UID is to be looked up
+ *  @return UID string or NULL if keyword is unknown
+ */
+DCMTK_DCMDATA_EXPORT const char* dcmFindUIDFromKeyword(const char* keyword);
 
 /** an array of const strings containing all known Storage SOP Classes
  *  that fit into the conventional PATIENT-STUDY-SERIES-INSTANCE information
@@ -250,21 +265,35 @@ DCMTK_DCMDATA_EXPORT unsigned long dcmGuessModalityBytes(const char *sopClassUID
 #endif
 
 /*
-** Useful UID prefixes. These can be whatever you want.
+** Useful UID prefixes.
 **
 ** These site UIDs are arbitrary, non-standard, with no meaning
 ** and can be changed at any time.  Do _not_ rely on these values.
-** Do _not_ assume any semantics when using these suffixes.
+** Do _not_ assume any semantics when using these prefixes.
 **
+** The DCMTK currently uses the following site-specific UID prefixes:
+** - SITE_UID_ROOT + ".1"
+**
+** In addition, the DCMTK uses the following UID prefixes based on the
+** organization root that is registered for OFFIS, which is identical
+*  to SITE_UID_ROOT if not redefined:
+** - OFFIS_UID_ROOT + ".0"
+** - OFFIS_UID_ROOT + ".4"
+**
+** Note: For application-specific purposes that require specific
+**       semantics, the UID prefix SITE_UID_ROOT + ".9" may be used
+**       in user code.  DCMTK does not and will not use this UID prefix
+**       internally.  Of course, this UID prefix should preferably be
+**       used with a site-specific SITE_UID_ROOT (see above).
 */
 
-/// UID root for study instance UIDs
+/// UID root for Study Instance UIDs
 #define SITE_STUDY_UID_ROOT                     SITE_UID_ROOT ".1.2"
 
-/// UID root for series instance UIDs
+/// UID root for Series Instance UIDs
 #define SITE_SERIES_UID_ROOT                    SITE_UID_ROOT ".1.3"
 
-/// UID root for SOP instance UIDs
+/// UID root for SOP Instance UIDs
 #define SITE_INSTANCE_UID_ROOT                  SITE_UID_ROOT ".1.4"
 
 /** A private SOP Class UID which is used in a file meta-header when no
@@ -347,18 +376,32 @@ DCMTK_DCMDATA_EXPORT unsigned long dcmGuessModalityBytes(const char *sopClassUID
 #define UID_JPIPReferencedDeflateTransferSyntax "1.2.840.10008.1.2.4.95"
 /// MPEG2 Main Profile @ Main Level (changed with DICOM 2016e to: MPEG2 Main Profile / Main Level)
 #define UID_MPEG2MainProfileAtMainLevelTransferSyntax "1.2.840.10008.1.2.4.100"
+/// Fragmentable MPEG2 Main Profile / Main Level
+#define UID_FragmentableMPEG2MainProfileMainLevelTransferSyntax "1.2.840.10008.1.2.4.100.1"
 /// MPEG2 Main Profile @ High Level (changed with DICOM 2016e to: MPEG2 Main Profile / High Level)
 #define UID_MPEG2MainProfileAtHighLevelTransferSyntax "1.2.840.10008.1.2.4.101"
+/// Fragmentable MPEG-4 AVC/H.264 High Profile / Level 4.1
+#define UID_FragmentableMPEG2MainProfileHighLevelTransferSyntax "1.2.840.10008.1.2.4.101.1"
 /// MPEG-4 AVC/H.264 High Profile / Level 4.1
 #define UID_MPEG4HighProfileLevel4_1TransferSyntax "1.2.840.10008.1.2.4.102"
+/// Fragmentable MPEG-4 AVC/H.264 High Profile / Level 4.1
+#define UID_FragmentableMPEG4HighProfileLevel4_1TransferSyntax "1.2.840.10008.1.2.4.102.1"
 /// MPEG-4 AVC/H.264 BD-compatible High Profile / Level 4.1
 #define UID_MPEG4BDcompatibleHighProfileLevel4_1TransferSyntax "1.2.840.10008.1.2.4.103"
+/// Fragmentable MPEG-4 AVC/H.264 BD-compatible High Profile / Level 4.1
+#define UID_FragmentableMPEG4BDcompatibleHighProfileLevel4_1TransferSyntax "1.2.840.10008.1.2.4.103.1"
 /// MPEG-4 AVC/H.264 High Profile / Level 4.2 For 2D Video
 #define UID_MPEG4HighProfileLevel4_2_For2DVideoTransferSyntax "1.2.840.10008.1.2.4.104"
+/// Fragmentable MPEG-4 AVC/H.264 High Profile / Level 4.2 For 2D Video
+#define UID_FragmentableMPEG4HighProfileLevel4_2_For2DVideoTransferSyntax "1.2.840.10008.1.2.4.104.1"
 /// MPEG-4 AVC/H.264 High Profile / Level 4.2 For 3D Video
 #define UID_MPEG4HighProfileLevel4_2_For3DVideoTransferSyntax "1.2.840.10008.1.2.4.105"
+/// Fragmentable MPEG-4 AVC/H.264 High Profile / Level 4.2 For 3D Video
+#define UID_FragmentableMPEG4HighProfileLevel4_2_For3DVideoTransferSyntax "1.2.840.10008.1.2.4.105.1"
 /// MPEG-4 AVC/H.264 Stereo High Profile / Level 4.2
 #define UID_MPEG4StereoHighProfileLevel4_2TransferSyntax "1.2.840.10008.1.2.4.106"
+/// Fragmentable MPEG-4 AVC/H.264 Stereo High Profile / Level 4.2
+#define UID_FragmentableMPEG4StereoHighProfileLevel4_2TransferSyntax "1.2.840.10008.1.2.4.106.1"
 /// HEVC/H.265 Main Profile / Level 5.1
 #define UID_HEVCMainProfileLevel5_1TransferSyntax "1.2.840.10008.1.2.4.107"
 /// HEVC/H.265 Main 10 Profile / Level 5.1
@@ -377,13 +420,13 @@ DCMTK_DCMDATA_EXPORT unsigned long dcmGuessModalityBytes(const char *sopClassUID
  *  on a DICOM storage medium. It was never used for network communication
  *  or encoding of DICOM objects.
  */
-#define UID_RFC2557MIMEEncapsulationTransferSyntax "1.2.840.10008.1.2.6.1"
+#define UID_RETIRED_RFC2557MIMEEncapsulationTransferSyntax "1.2.840.10008.1.2.6.1"
 
 /** XML Encoding (RETIRED) was only a pseudo transfer syntax used to refer to
  *  encapsulated HL7 CDA documents from a DICOMDIR when stored on a DICOM storage
  *  medium. It was never used for network communication or encoding of DICOM objects.
  */
-#define UID_XMLEncodingTransferSyntax "1.2.840.10008.1.2.6.2"
+#define UID_RETIRED_XMLEncodingTransferSyntax "1.2.840.10008.1.2.6.2"
 
 /** Private transfer syntax defined by GE. This transfer syntax is identical to
  *  Implicit VR Little Endian, except that Pixel Data are encoded in big endian.
@@ -419,6 +462,7 @@ DCMTK_DCMDATA_EXPORT unsigned long dcmGuessModalityBytes(const char *sopClassUID
 #define UID_RETIRED_UltrasoundImageStorage                         "1.2.840.10008.5.1.4.1.1.6"
 #define UID_UltrasoundImageStorage                                 "1.2.840.10008.5.1.4.1.1.6.1"
 #define UID_EnhancedUSVolumeStorage                                "1.2.840.10008.5.1.4.1.1.6.2"
+#define UID_PhotoacousticImageStorage                              "1.2.840.10008.5.1.4.1.1.6.3"
 #define UID_SecondaryCaptureImageStorage                           "1.2.840.10008.5.1.4.1.1.7"
 #define UID_MultiframeSingleBitSecondaryCaptureImageStorage        "1.2.840.10008.5.1.4.1.1.7.1"
 #define UID_MultiframeGrayscaleByteSecondaryCaptureImageStorage    "1.2.840.10008.5.1.4.1.1.7.2"
@@ -429,6 +473,7 @@ DCMTK_DCMDATA_EXPORT unsigned long dcmGuessModalityBytes(const char *sopClassUID
 #define UID_TwelveLeadECGWaveformStorage                           "1.2.840.10008.5.1.4.1.1.9.1.1"
 #define UID_GeneralECGWaveformStorage                              "1.2.840.10008.5.1.4.1.1.9.1.2"
 #define UID_AmbulatoryECGWaveformStorage                           "1.2.840.10008.5.1.4.1.1.9.1.3"
+#define UID_General32BitECGWaveformStorage                         "1.2.840.10008.5.1.4.1.1.9.1.4"
 #define UID_HemodynamicWaveformStorage                             "1.2.840.10008.5.1.4.1.1.9.2.1"
 #define UID_CardiacElectrophysiologyWaveformStorage                "1.2.840.10008.5.1.4.1.1.9.3.1"
 #define UID_BasicVoiceAudioWaveformStorage                         "1.2.840.10008.5.1.4.1.1.9.4.1"
@@ -454,6 +499,7 @@ DCMTK_DCMDATA_EXPORT unsigned long dcmGuessModalityBytes(const char *sopClassUID
 #define UID_VolumeRenderingVolumetricPresentationStateStorage      "1.2.840.10008.5.1.4.1.1.11.9"
 #define UID_SegmentedVolumeRenderingVolumetricPresentationStateStorage "1.2.840.10008.5.1.4.1.1.11.10"
 #define UID_MultipleVolumeRenderingVolumetricPresentationStateStorage "1.2.840.10008.5.1.4.1.1.11.11"
+#define UID_VariableModalityLUTSoftcopyPresentationStateStorage    "1.2.840.10008.5.1.4.1.1.11.12"
 #define UID_XRayAngiographicImageStorage                           "1.2.840.10008.5.1.4.1.1.12.1"
 #define UID_EnhancedXAImageStorage                                 "1.2.840.10008.5.1.4.1.1.12.1.1"
 #define UID_XRayRadiofluoroscopicImageStorage                      "1.2.840.10008.5.1.4.1.1.12.2"
@@ -521,7 +567,7 @@ DCMTK_DCMDATA_EXPORT unsigned long dcmGuessModalityBytes(const char *sopClassUID
 #define UID_XRayRadiationDoseSRStorage                             "1.2.840.10008.5.1.4.1.1.88.67"
 #define UID_RadiopharmaceuticalRadiationDoseSRStorage              "1.2.840.10008.5.1.4.1.1.88.68"
 #define UID_ColonCADSRStorage                                      "1.2.840.10008.5.1.4.1.1.88.69"
-#define UID_ImplantationPlanSRDocumentStorage                      "1.2.840.10008.5.1.4.1.1.88.70"
+#define UID_ImplantationPlanSRStorage                              "1.2.840.10008.5.1.4.1.1.88.70"
 #define UID_AcquisitionContextSRStorage                            "1.2.840.10008.5.1.4.1.1.88.71"
 #define UID_SimplifiedAdultEchoSRStorage                           "1.2.840.10008.5.1.4.1.1.88.72"
 #define UID_PatientRadiationDoseSRStorage                          "1.2.840.10008.5.1.4.1.1.88.73"
@@ -567,12 +613,11 @@ DCMTK_DCMDATA_EXPORT unsigned long dcmGuessModalityBytes(const char *sopClassUID
 #define UID_RoboticRadiationRecordStorage                          "1.2.840.10008.5.1.4.1.1.481.20"
 #define UID_RTRadiationSetDeliveryInstructionStorage               "1.2.840.10008.5.1.4.1.1.481.21"
 #define UID_RTTreatmentPreparationStorage                          "1.2.840.10008.5.1.4.1.1.481.22"
+#define UID_EnhancedRTImageStorage                                 "1.2.840.10008.5.1.4.1.1.481.23"
+#define UID_EnhancedContinuousRTImageStorage                       "1.2.840.10008.5.1.4.1.1.481.24"
+#define UID_RTPatientPositionAcquisitionInstructionStorage         "1.2.840.10008.5.1.4.1.1.481.25"
 #define UID_RTBeamsDeliveryInstructionStorage                      "1.2.840.10008.5.1.4.34.7"
 #define UID_RTBrachyApplicationSetupDeliveryInstructionStorage     "1.2.840.10008.5.1.4.34.10"
-#define UID_HangingProtocolStorage                                 "1.2.840.10008.5.1.4.38.1"
-#define UID_GenericImplantTemplateStorage                          "1.2.840.10008.5.1.4.43.1"
-#define UID_ImplantAssemblyTemplateStorage                         "1.2.840.10008.5.1.4.44.1"
-#define UID_ImplantTemplateGroupStorage                            "1.2.840.10008.5.1.4.45.1"
 
 // DICOMDIR (was UID_BasicDirectoryStorageSOPClass in DCMTK versions prior to 3.5.3)
 #define UID_MediaStorageDirectoryStorage                           "1.2.840.10008.1.3.10"
@@ -638,9 +683,11 @@ DCMTK_DCMDATA_EXPORT unsigned long dcmGuessModalityBytes(const char *sopClassUID
 #define UID_RETIRED_StorageCommitmentPullModelSOPClass             "1.2.840.10008.1.20.2"
 #define UID_RETIRED_StorageCommitmentPullModelSOPInstance          "1.2.840.10008.1.20.2.1"
 
-// Hanging Protocols
+// Hanging Protocol Storage and Query/Retrieve
+#define UID_HangingProtocolStorage                                 "1.2.840.10008.5.1.4.38.1"
 #define UID_FINDHangingProtocolInformationModel                    "1.2.840.10008.5.1.4.38.2"
 #define UID_MOVEHangingProtocolInformationModel                    "1.2.840.10008.5.1.4.38.3"
+#define UID_GETHangingProtocolInformationModel                     "1.2.840.10008.5.1.4.38.4"
 
 // Relevant Patient Information Query
 #define UID_RelevantPatientInformationQuery_Prefix                 "1.2.840.10008.5.1.4.37."
@@ -654,13 +701,18 @@ DCMTK_DCMDATA_EXPORT unsigned long dcmGuessModalityBytes(const char *sopClassUID
 #define UID_MOVEColorPaletteInformationModel                       "1.2.840.10008.5.1.4.39.3"
 #define UID_GETColorPaletteInformationModel                        "1.2.840.10008.5.1.4.39.4"
 
-// Implant Template Query/Retrieve
+// Implant Template Storage and Query/Retrieve
+#define UID_GenericImplantTemplateStorage                          "1.2.840.10008.5.1.4.43.1"
 #define UID_FINDGenericImplantTemplateInformationModel             "1.2.840.10008.5.1.4.43.2"
 #define UID_MOVEGenericImplantTemplateInformationModel             "1.2.840.10008.5.1.4.43.3"
 #define UID_GETGenericImplantTemplateInformationModel              "1.2.840.10008.5.1.4.43.4"
+
+#define UID_ImplantAssemblyTemplateStorage                         "1.2.840.10008.5.1.4.44.1"
 #define UID_FINDImplantAssemblyTemplateInformationModel            "1.2.840.10008.5.1.4.44.2"
 #define UID_MOVEImplantAssemblyTemplateInformationModel            "1.2.840.10008.5.1.4.44.3"
 #define UID_GETImplantAssemblyTemplateInformationModel             "1.2.840.10008.5.1.4.44.4"
+
+#define UID_ImplantTemplateGroupStorage                            "1.2.840.10008.5.1.4.45.1"
 #define UID_FINDImplantTemplateGroupInformationModel               "1.2.840.10008.5.1.4.45.2"
 #define UID_MOVEImplantTemplateGroupInformationModel               "1.2.840.10008.5.1.4.45.3"
 #define UID_GETImplantTemplateGroupInformationModel                "1.2.840.10008.5.1.4.45.4"
@@ -674,6 +726,15 @@ DCMTK_DCMDATA_EXPORT unsigned long dcmGuessModalityBytes(const char *sopClassUID
 #define UID_FINDProtocolApprovalInformationModel                   "1.2.840.10008.5.1.4.1.1.200.4"
 #define UID_MOVEProtocolApprovalInformationModel                   "1.2.840.10008.5.1.4.1.1.200.5"
 #define UID_GETProtocolApprovalInformationModel                    "1.2.840.10008.5.1.4.1.1.200.6"
+
+// Inventory Storage, Query/Retrieve, and related Services
+#define UID_InventoryStorage                                       "1.2.840.10008.5.1.4.1.1.201.1"
+#define UID_FINDInventory                                          "1.2.840.10008.5.1.4.1.1.201.2"
+#define UID_MOVEInventory                                          "1.2.840.10008.5.1.4.1.1.201.3"
+#define UID_GETInventory                                           "1.2.840.10008.5.1.4.1.1.201.4"
+#define UID_InventoryCreation                                      "1.2.840.10008.5.1.4.1.1.201.5"
+#define UID_RepositoryQuery                                        "1.2.840.10008.5.1.4.1.1.201.6"
+#define UID_StorageManagementSOPInstance                           "1.2.840.10008.5.1.4.1.1.201.1.1"
 
 // Print Management
 #define UID_BasicFilmSessionSOPClass                               "1.2.840.10008.5.1.1.1"
@@ -825,7 +886,7 @@ DCMTK_DCMDATA_EXPORT unsigned long dcmGuessModalityBytes(const char *sopClassUID
 #define UID_ICBM452T1FrameOfReference                              "1.2.840.10008.1.4.2.1"
 #define UID_ICBMSingleSubjectMRIFrameOfReference                   "1.2.840.10008.1.4.2.2"
 #define UID_IEC61217FixedCoordinateSystemFrameOfReference          "1.2.840.10008.1.4.3.1"
-#define UID_StandardRoboticCoordinateSystemFrameOfReference        "1.2.840.10008.1.4.3.2"
+#define UID_StandardRoboticArmCoordinateSystemFrameOfReference     "1.2.840.10008.1.4.3.2"
 #define UID_IEC61217TableTopCoordinateSystemFrameOfReference       "1.2.840.10008.1.4.3.3"
 #define UID_SRI24FrameOfReference                                  "1.2.840.10008.1.4.4.1"
 #define UID_Colin27FrameOfReference                                "1.2.840.10008.1.4.5.1"

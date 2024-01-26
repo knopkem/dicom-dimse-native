@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(dcmtk, 3.6.7, [bugs@dcmtk.org], [dcmtk-3.6.7], [http://www.dcmtk.org/])
+AC_INIT(dcmtk, 3.6.8, [bugs@dcmtk.org], [dcmtk-3.6.8], [https://www.dcmtk.org/])
 AC_PREREQ(2.60)
 AC_CONFIG_SRCDIR(Makefile.in)
 AC_CONFIG_HEADERS(include/dcmtk/config/osconfig.h)
@@ -10,9 +10,9 @@ dnl -------------------------------------------------------
 dnl Additional Package Information
 dnl -------------------------------------------------------
 
-PACKAGE_VERSION_NUMBER=367
+PACKAGE_VERSION_NUMBER=368
 PACKAGE_VERSION_SUFFIX=""
-PACKAGE_DATE="2022-04-22"
+PACKAGE_DATE="20231219"
 AC_DEFINE_UNQUOTED(PACKAGE_VERSION_NUMBER,${PACKAGE_VERSION_NUMBER},[Define to the version number of this package.])
 AC_DEFINE_UNQUOTED(PACKAGE_VERSION_SUFFIX,"${PACKAGE_VERSION_SUFFIX}",[Define to the version suffix of this package.])
 AC_DEFINE_UNQUOTED(PACKAGE_DATE,"${PACKAGE_DATE}",[Define to the release date of this package.])
@@ -93,7 +93,7 @@ AH_TOP([#ifndef OSCONFIG_H
 #define END_EXTERN_C
 #endif
 
-/* MinGW needs some special handling because it is a mixture of WIN32 and Posix.
+/* MinGW needs some special handling because it is a mixture of WIN32 and POSIX.
  * The following settings are not tested by configure but need to be set for MinGW.
  */
 #ifdef __MINGW32__
@@ -103,7 +103,7 @@ AH_TOP([#ifndef OSCONFIG_H
 #endif])
 
 AH_BOTTOM([#if defined(HAVE_CXX11) && defined(__cplusplus) && __cplusplus < 201103L
-#error\
+#error \
 DCMTK was configured to use C++11 features, but your compiler does not or was not configured to provide them.
 #endif
 
@@ -271,9 +271,8 @@ AC_CHECK_FUNCS(popen pclose)
 AC_CHECK_FUNCS(readdir_r)
 AC_FUNC_FSEEKO
 
-
 dnl -------------------------------------------------------
-dnl Check for libcs library functions needed by oflog
+dnl Check for header files and functions needed by oflog
 dnl -------------------------------------------------------
 
 AC_DEFUN([TYPE_SOCKLEN_T],
@@ -301,6 +300,19 @@ AC_COMPILE_IFELSE(
   [AC_DEFINE(HAVE_ENAMETOOLONG)])
 
 dnl -------------------------------------------------------
+dnl Check for header files and functions needed by oficonv
+dnl -------------------------------------------------------
+
+AC_CHECK_HEADERS(err.h)
+AC_CHECK_HEADERS(langinfo.h)
+AC_CHECK_HEADERS(sys/mman.h)
+AC_CHECK_HEADERS(sys/queue.h)
+
+AC_CHECK_FUNCS(fgetln)
+
+AC_CHECK_PROTOTYPE(strcasestr, string.h)
+
+dnl -------------------------------------------------------
 dnl Check for libm library functions
 dnl -------------------------------------------------------
 
@@ -312,6 +324,7 @@ LIBS="$SAVELIBS"
 dnl -------------------------------------------------------
 dnl Perform remaining tests with C++ compiler
 dnl -------------------------------------------------------
+
 AC_LANG(C++)
 
 AC_CXX_CONST_CAST
@@ -504,6 +517,7 @@ AC_CHECK_HEADERS(locale.h)
 AC_CHECK_HEADERS(malloc.h)
 AC_CHECK_HEADERS(math.h)
 AC_CHECK_HEADERS(cmath)
+AC_CHECK_HEADERS(mqueue.h)
 AC_CHECK_HEADERS(new)
 AC_CHECK_HEADERS(new.h)
 AC_CHECK_HEADERS(netdb.h)
@@ -532,6 +546,7 @@ AC_CHECK_HEADERS(strstream.h)
 AC_CHECK_HEADERS(synch.h)
 AC_CHECK_HEADERS(sys/errno.h)
 AC_CHECK_HEADERS(sys/file.h)
+AC_CHECK_HEADERS(sys/msg.h)
 AC_CHECK_HEADERS(sys/param.h)
 AC_CHECK_HEADERS(sys/resource.h)
 AC_CHECK_HEADERS(sys/select.h)
@@ -542,6 +557,7 @@ AC_CHECK_HEADERS(sys/systeminfo.h)
 AC_CHECK_HEADERS(sys/time.h)
 AC_CHECK_HEADERS(sys/timeb.h)
 AC_CHECK_HEADERS(sys/types.h)
+AC_CHECK_HEADERS(sys/un.h)
 AC_CHECK_HEADERS(sys/utime.h)
 AC_CHECK_HEADERS(sys/utsname.h)
 AC_CHECK_HEADERS(thread.h)
@@ -608,7 +624,7 @@ fi
 
 if test $THREADSUPPORT = posix ; then
   dnl
-  dnl check Posix MT libraries -lrt and -lpthread
+  dnl check POSIX MT libraries -lrt and -lpthread.
   dnl OSF/1 re-#defines most of the pthread function names.
   dnl This is why we use pthread_key_create for the test.
   dnl
@@ -668,7 +684,7 @@ if test $THREADSUPPORT = posix ; then
 	*-*-darwin*)
 	  dnl On Mac OS X we need to have _DARWIN_C_SOURCE defined to enable UNIX standard API for system headers
 	  CXXFLAGS="-D_XOPEN_SOURCE_EXTENDED -D_BSD_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE -D_DARWIN_C_SOURCE $CXXFLAGS"
-	  CFLAGS="-D_XOPEN_SOURCE_EXTENDED -D_BSD_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE -D_DARWIN_C_SOURCE $CXXFLAGS"
+	  CFLAGS="-D_XOPEN_SOURCE_EXTENDED -D_BSD_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE -D_DARWIN_C_SOURCE $CFLAGS"
 	  ;;
 	*)
 	  CXXFLAGS="-D_XOPEN_SOURCE_EXTENDED -D_XOPEN_SOURCE=500 -D_BSD_SOURCE -D_DEFAULT_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE -D_POSIX_C_SOURCE=199506L $CXXFLAGS"
@@ -717,7 +733,7 @@ if test $THREADSUPPORT = posix ; then
 	*-*-darwin*)
 	  dnl On Mac OS X we need to have _DARWIN_C_SOURCE source defined to enable UNIX standard API for system headers
 	  CXXFLAGS="-D_XOPEN_SOURCE_EXTENDED -D_BSD_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE -D_DARWIN_C_SOURCE $CXXFLAGS"
-	  CFLAGS="-D_XOPEN_SOURCE_EXTENDED -D_BSD_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE -D_DARWIN_C_SOURCE $CXXFLAGS"
+	  CFLAGS="-D_XOPEN_SOURCE_EXTENDED -D_BSD_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE -D_DARWIN_C_SOURCE $CFLAGS"
 	  ;;
 	*)
 	  CXXFLAGS="-D_XOPEN_SOURCE_EXTENDED -D_XOPEN_SOURCE=500 -D_BSD_SOURCE -D_DEFAULT_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE -D_POSIX_C_SOURCE=199506L $CXXFLAGS"
@@ -727,6 +743,16 @@ if test $THREADSUPPORT = posix ; then
     ], AC_MSG_RESULT(no))
   ]
   )
+else
+  dnl
+  dnl Even if support for POSIX threads is not enabled, check for library -lrt,
+  dnl since it is also required for IPC (inter-process communication).
+  dnl
+  AC_CHECK_LIB(rt, mq_open, [
+  ac_tr_lib=HAVE_LIBRT
+  AC_DEFINE_UNQUOTED($ac_tr_lib)
+  LIBS="-lrt $LIBS"
+  ], , $LIBS )
 fi
 
 AC_MSG_CHECKING(multi-thread support)
@@ -1024,6 +1050,9 @@ dnl test presence of functions, constants and macros needed for the dcmtls modul
 AC_CHECK_EXT_LIB_PROTOTYPE(DH_bits, OpenSSL, openssl/dh.h)
 AC_CHECK_EXT_LIB_COMPILES(EVP_PKEY_RSA_PSS, OpenSSL, openssl/evp.h, [EVP_PKEY_RSA_PSS])
 AC_CHECK_EXT_LIB_PROTOTYPE(EVP_PKEY_base_id, OpenSSL, openssl/evp.h)
+AC_CHECK_EXT_LIB_COMPILES(NID_dsa_with_SHA512, OpenSSL, openssl/obj_mac.h, [NID_dsa_with_SHA512])
+AC_CHECK_EXT_LIB_COMPILES(NID_ecdsa_with_SHA3_256, OpenSSL, openssl/obj_mac.h, [NID_ecdsa_with_SHA3_256])
+AC_CHECK_EXT_LIB_COMPILES(NID_sha512_256WithRSAEncryption, OpenSSL, openssl/obj_mac.h, [NID_sha512_256WithRSAEncryption])
 AC_CHECK_EXT_LIB_PROTOTYPE(RAND_egd, OpenSSL, openssl/rand.h)
 AC_CHECK_EXT_LIB_PROTOTYPE(SSL_CTX_get_cert_store, OpenSSL, openssl/ssl.h)
 AC_CHECK_EXT_LIB_PROTOTYPE(SSL_CTX_get_ciphers, OpenSSL, openssl/ssl.h)
@@ -1037,8 +1066,14 @@ AC_CHECK_EXT_LIB_PROTOTYPE(SSL_CTX_set_security_level, OpenSSL, openssl/ssl.h)
 AC_CHECK_EXT_LIB_COMPILES(SSL_ERROR_WANT_ASYNC, OpenSSL, openssl/ssl.h, [SSL_ERROR_WANT_ASYNC])
 AC_CHECK_EXT_LIB_COMPILES(SSL_ERROR_WANT_ASYNC_JOB, OpenSSL, openssl/ssl.h, [SSL_ERROR_WANT_ASYNC_JOB])
 AC_CHECK_EXT_LIB_COMPILES(SSL_ERROR_WANT_CLIENT_HELLO_CB, OpenSSL, openssl/ssl.h, [SSL_ERROR_WANT_CLIENT_HELLO_CB])
+AC_CHECK_EXT_LIB_COMPILES(TLS1_3_RFC_AES_128_CCM_8_SHA256, OpenSSL, openssl/ssl.h, [TLS1_3_RFC_AES_128_CCM_8_SHA256])
+AC_CHECK_EXT_LIB_COMPILES(TLS1_3_RFC_AES_256_GCM_SHA384, OpenSSL, openssl/ssl.h, [TLS1_3_RFC_AES_256_GCM_SHA384])
+AC_CHECK_EXT_LIB_COMPILES(TLS1_3_RFC_CHACHA20_POLY1305_SHA256, OpenSSL, openssl/ssl.h, [TLS1_3_RFC_CHACHA20_POLY1305_SHA256])
+AC_CHECK_EXT_LIB_COMPILES(TLS1_TXT_ECDHE_ECDSA_WITH_AES_256_CCM_8, OpenSSL, openssl/ssl.h, [TLS1_TXT_ECDHE_ECDSA_WITH_AES_256_CCM_8])
+AC_CHECK_EXT_LIB_COMPILES(TLS1_TXT_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384, OpenSSL, openssl/ssl.h, [TLS1_TXT_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384])
 AC_CHECK_EXT_LIB_COMPILES(TLS1_TXT_ECDHE_RSA_WITH_CHACHA20_POLY1305, OpenSSL, openssl/ssl.h, [TLS1_TXT_ECDHE_RSA_WITH_CHACHA20_POLY1305])
 AC_CHECK_EXT_LIB_PROTOTYPE(TLS_method, OpenSSL, openssl/ssl.h)
+AC_CHECK_EXT_LIB_COMPILES(X509_STORE_CTX_get0_cert, OpenSSL, openssl/x509_vfy.h, [X509_STORE_CTX_get0_cert])
 AC_CHECK_EXT_LIB_PROTOTYPE(X509_STORE_get0_param, OpenSSL, openssl/x509.h)
 AC_CHECK_EXT_LIB_PROTOTYPE(X509_get_signature_nid, OpenSSL, openssl/x509.h)
 
@@ -1403,9 +1438,9 @@ dnl -------------------------------------------------------
 dnl Check for iconv inside C standard library
 dnl -------------------------------------------------------
 
-AH_TEMPLATE(WITH_STDLIBC_ICONV, [Define if the C standard library has iconv builtin.])dnl
+AH_TEMPLATE(WITH_STDLIBC_ICONV, [Define if the C standard library has iconv builtin.])
 WITH_STDLIBC_ICONV=no
-AC_MSG_CHECKING([whether the C standard library provides iconv functionality])
+AC_MSG_CHECKING(whether the C standard library provides iconv functionality)
 SAVELIBS="$LIBS"
 LIBS=""
 AC_TRY_LINK([#include <iconv.h>], [iconv_t cd=iconv_open("","");iconv(cd,0,0,0,0);iconv_close(cd);],
@@ -1460,6 +1495,7 @@ AH_VERBATIM([DCMTK_CHARSET_CONVERSION_CONSTANTS], [/* character set conversion c
 #define DCMTK_CHARSET_CONVERSION_ICU 1
 #define DCMTK_CHARSET_CONVERSION_ICONV 2
 #define DCMTK_CHARSET_CONVERSION_STDLIBC_ICONV 3
+#define DCMTK_CHARSET_CONVERSION_OFICONV 4
 
 /* LFS mode constants. */
 #define DCMTK_LFS 1
@@ -1467,6 +1503,12 @@ AH_VERBATIM([DCMTK_CHARSET_CONVERSION_CONSTANTS], [/* character set conversion c
 
 CHARCONVINCLUDES=""
 CHARCONVLIBS=""
+
+AC_DEFUN([AC_CHOOSE_CHARSET_OFICONV],
+[
+    AC_MSG_RESULT([yes, type=oficonv])
+    DCMTK_ENABLE_CHARSET_CONVERSION="DCMTK_CHARSET_CONVERSION_OFICONV"
+])
 
 AC_DEFUN([AC_CHOOSE_CHARSET_LIBICONV],
 [
@@ -1491,15 +1533,19 @@ AC_DEFUN([AC_CHOOSE_CHARSET_STDLIBC_ICONV],
 
 AC_DEFUN([AC_CHOOSE_CHARSET_IMPL],
 [
-if test "$WITH_LIBICONV" = "yes"; then
-    AC_CHOOSE_CHARSET_LIBICONV()
-elif test "$WITH_LIBICU" = "yes"; then
-    AC_CHOOSE_CHARSET_LIBICU()
-elif test "$WITH_STDLIBC_ICONV" = "yes"; then
-    AC_CHOOSE_CHARSET_STDLIBC_ICONV()
-else
-    AC_MSG_RESULT(no)
-fi
+dnl disabled automatic detection, now always choose "oficonv" as a default
+dnl
+dnl if test "$WITH_LIBICONV" = "yes"; then
+dnl     AC_CHOOSE_CHARSET_LIBICONV()
+dnl elif test "$WITH_LIBICU" = "yes"; then
+dnl     AC_CHOOSE_CHARSET_LIBICU()
+dnl elif test "$WITH_STDLIBC_ICONV" = "yes"; then
+dnl     AC_CHOOSE_CHARSET_STDLIBC_ICONV()
+dnl else
+dnl     AC_MSG_RESULT(no)
+dnl fi
+
+  AC_CHOOSE_CHARSET_OFICONV()
 ])
 
 AC_MSG_CHECKING(fixed iconv conversion flags)
@@ -1534,11 +1580,14 @@ fi
 AC_MSG_CHECKING(whether to enable character set conversion support)
 AC_ARG_ENABLE(charconv,
 [  --enable-charconv=TYPE  enable character set conversion support
-                          (libiconv/libicu/stdlibc/auto=default)
+                          (libiconv/libicu/stdlibc/oficonv=default)
   --disable-charconv      disable character set conversion support],
 [ case "$enableval" in
-  yes|auto)
+  yes)
     AC_CHOOSE_CHARSET_IMPL()
+    ;;
+  oficonv)
+    AC_CHOOSE_CHARSET_OFICONV()
     ;;
   libiconv)
     AC_CHOOSE_CHARSET_LIBICONV()
@@ -1568,9 +1617,27 @@ if [[ ! -z "$DCMTK_ENABLE_CHARSET_CONVERSION" ]]; then
     [Define to select character set conversion implementation.])
 fi
 
+AC_MSG_CHECKING(whether to embed oficonv data files into oficonv library)
+AC_ARG_ENABLE(builtin-oficonv,
+[  --enable-builtin-oficonv
+                          enable builtin oficonv data files
+  --disable-builtin-oficonv
+                          disable builtin oficonv data files (default)],
+[ case "$enableval" in
+  yes)
+    AC_DEFINE(DCMTK_ENABLE_BUILTIN_OFICONV_DATA, 1, [Define to embed oficonv data files into oficonv library.])
+    AC_MSG_RESULT(yes)
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
 
 dnl -------------------------------------------------------
-dnl include config test code from config/tests
+dnl Include config test code from config/tests
 dnl -------------------------------------------------------
 
 ac_enable_cxx11="no"
@@ -1886,6 +1953,19 @@ AC_CHECK_ATTRIBUTE_ALIGNED([HAVE_ATTRIBUTE_ALIGNED])
 AC_CHECK_ATTRIBUTE_ALIGNED_SUPPORTS_TEMPLATES([ATTRIBUTE_ALIGNED_SUPPORTS_TEMPLATES])
 AC_CHECK_DEFAULT_CONSTRUCTOR_DETECTION_VIA_SFINAE([HAVE_DEFAULT_CONSTRUCTOR_DETECTION_VIA_SFINAE])
 
+
+dnl -------------------------------------------------------
+dnl Test for some specific function declarations
+dnl -------------------------------------------------------
+
+AC_CHECK_TRY_COMPILE([[[deprecated]]], HAVE_CXX14_DEPRECATED_ATTRIBUTE, [[[deprecated]] void some_function();])
+AC_CHECK_TRY_COMPILE([[[deprecated("message")]]], HAVE_CXX14_DEPRECATED_ATTRIBUTE_MSG, [[[deprecated("message")]] void some_function();])
+AC_CHECK_TRY_COMPILE(__attribute__((deprecated)), HAVE_ATTRIBUTE_DEPRECATED, [__attribute__((deprecated)) void some_function();])
+AC_CHECK_TRY_COMPILE(__attribute__((deprecated("message"))), HAVE_ATTRIBUTE_DEPRECATED_MSG, [__attribute__((deprecated("message"))) void some_function();])
+AC_CHECK_TRY_COMPILE(__declspec(deprecated), HAVE_DECLSPEC_DEPRECATED, [__declspec(deprecated) void some_function();])
+AC_CHECK_TRY_COMPILE(__declspec(deprecated("message")), HAVE_DECLSPEC_DEPRECATED_MSG, [__declspec(deprecated("message")) void some_function();])
+
+
 dnl -------------------------------------------------------
 dnl Test if passwd has the pw_gecos field
 dnl -------------------------------------------------------
@@ -1897,6 +1977,7 @@ AC_TRY_COMPILE([#include <pwd.h>],
   [ AC_MSG_RESULT(yes)
     AC_DEFINE(HAVE_PASSWD_GECOS) ],
   [AC_MSG_RESULT(no)])
+
 
 dnl -------------------------------------------------------
 dnl Test if SYS_gettid is available
@@ -1926,12 +2007,15 @@ AC_CHECK_ITERATOR_CATEGORY([contiguous],[HAVE_CONTIGUOUS_ITERATOR_CATEGORY])
 dnl -------------------------------------------------------
 dnl Set optimizer and debug compiler flags
 dnl -------------------------------------------------------
+
 CFLAGS="$DEBUGCFLAGS $CFLAGS"
 CXXFLAGS="$DEBUGCXXFLAGS $CXXFLAGS"
+
 
 dnl -------------------------------------------------------
 dnl Special definitions for output
 dnl -------------------------------------------------------
+
 AC_SUBST(CXXFLAGS)
 AC_SUBST(OPENSSLLIBS)
 AC_SUBST(TIFFLIBS)

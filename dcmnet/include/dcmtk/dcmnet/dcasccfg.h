@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2003-2017, OFFIS e.V.
+ *  Copyright (C) 2003-2023, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -39,7 +39,7 @@
  *  selection items and an optional list of extended negotiation items.
  *  A presentation context itself consist of an abstract syntax and
  *  a list of transfer syntaxes, the latter each being separate components.
- *  Role selection and extended negotation items are atomic (i.e. they do not
+ *  Role selection and extended negotiation items are atomic (i.e. they do not
  *  reference other components). All components are identified by a
  *  unique symbolic name.
  *  All components are re-usable since they are only referenced from a
@@ -83,6 +83,8 @@ public:
 
   /** this method evaluates an incoming association request according to the settings
    *  of a profile maintained by this object. It is used by an association acceptor.
+   *  @note The first transfer syntax in the list that is acceptable will be
+   *    preferred.  More details can be found in the text file "asconfig.txt".
    *  @param profile symbolic profile name, must not be NULL
    *  @param assoc T_ASC_Association structure to be evaluated
    *  @return EC_Normal if successful, an error code otherwise
@@ -111,12 +113,15 @@ public:
    *  @param abstractSyntaxUID abstract syntax UID in symbolic or numeric format
    *  @param transferSyntaxKey symbolic key that has been used in a call
    *     to addTransferSyntax() prior to this call.
+   *  @param scuMode true if the configuration is intended for an SCU (i.e. the
+   *     limit of 128 presentation contexts must be preserved), false otherwise
    *  @return EC_Normal if successful, an error code otherwise
    */
   OFCondition addPresentationContext(
     const char *key,
     const char *abstractSyntaxUID,
-    const char *transferSyntaxKey);
+    const char *transferSyntaxKey,
+    OFBool scuMode);
 
   /** adds the given abstract syntax UID and role to
    *  the list of SCP/SCU role selection items maintained under the given key.
@@ -183,7 +188,7 @@ public:
 
   /** returns profile identified by given name
    *  @param profileName the name of the profile to look for
-   *  @return the profile if existant, otherwise NULL
+   *  @return the profile if existent, otherwise NULL
    */
   const DcmProfileEntry* getProfileEntry(const OFString& profileName);
 
@@ -195,12 +200,20 @@ public:
    */
   OFBool isValidSCPProfile(const char *key) const;
 
+  /** checks if the profile is suitable for use by an SCU.
+   *  A profile is suitable for use by an SCU if the list of
+   *  presentation contexts appears has not more than 128 entries.
+   *  @param key profile name, must not be NULL
+   *  @return true if profile is suitable for use by an SCU, false otherwise
+   */
+  OFBool isValidSCUProfile(const char *key) const;
+
   /** find a list of transfer syntaxes that matches the given list and return
    *  its name. A match is only found if the number of transfer syntaxes is
    *  the same, each transfer syntax exists in the other list and the order
    *  is preserved.
    *  @param tslist the list of transfer syntaxes to look for
-   *  @return the symbolic name of the list found. If nomatch is found,
+   *  @return the symbolic name of the list found. If no match is found,
    *     an empty string is returned.
    */
   OFString findTSKey(const OFList<OFString>& tslist);

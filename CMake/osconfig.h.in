@@ -105,6 +105,9 @@
 /* Define to 1 if you have the `cuserid' function. */
 #cmakedefine HAVE_CUSERID @HAVE_CUSERID@
 
+/* Define to 1 if you have the `fgetln' function. */
+#cmakedefine HAVE_FGETLN @HAVE_FGETLN@
+
 /* Define if volatile is a known keyword */
 #define HAVE_CXX_VOLATILE 1
 
@@ -128,6 +131,9 @@
 
 /* Define to 1 if you have the <dirent.h> header file, and it defines `DIR'.*/
 #cmakedefine HAVE_DIRENT_H @HAVE_DIRENT_H@
+
+/* Define to 1 if you have the <err.h> header file. */
+#cmakedefine HAVE_ERR_H @HAVE_ERR_H@
 
 /* Define to 1 if you have the `_doprnt' function. */
 #cmakedefine HAVE_DOPRNT @HAVE_DOPRNT@
@@ -298,6 +304,9 @@
 /* Define to 1 if you have the `itoa' function. */
 #cmakedefine HAVE_ITOA @HAVE_ITOA@
 
+/* Define to 1 if you have the <langinfo.h> header file. */
+#cmakedefine HAVE_LANGINFO_H @HAVE_LANGINFO_H@
+
 /* Define to 1 if you have the <libc.h> header file. */
 #cmakedefine HAVE_LIBC_H @HAVE_LIBC_H@
 
@@ -372,6 +381,9 @@
 
 /* Define to 1 if you have the `mktemp' function. */
 #cmakedefine HAVE_MKTEMP @HAVE_MKTEMP@
+
+/* Define to 1 if you have the <mqueue.h> header file. */
+#cmakedefine HAVE_MQUEUE_H @HAVE_MQUEUE_H@
 
 /* Define to 1 if you have the <ndir.h> header file, and it defines `DIR'. */
 #cmakedefine HAVE_NDIR_H @HAVE_NDIR_H@
@@ -513,6 +525,10 @@
 
 /* Define if your system has a prototype for strcasecmp in string.h */
 #cmakedefine HAVE_PROTOTYPE_STRCASECMP @HAVE_PROTOTYPE_STRCASECMP@
+
+/* Define if your system has a prototype for strcasestr in string.h
+   that is visible in C */
+#cmakedefine HAVE_PROTOTYPE_STRCASESTR @HAVE_PROTOTYPE_STRCASESTR@
 
 /* Define if your system has a prototype for strncasecmp in string.h */
 #cmakedefine HAVE_PROTOTYPE_STRNCASECMP @HAVE_PROTOTYPE_STRNCASECMP@
@@ -710,8 +726,17 @@
 /* Define to 1 if you have the <sys/ndir.h> header file, and it defines `DIR'.*/
 #cmakedefine HAVE_SYS_NDIR_H @HAVE_SYS_NDIR_H@
 
+/* Define to 1 if you have the <sys/mman.h> header file. */
+#cmakedefine HAVE_SYS_MMAN_H @HAVE_SYS_MMAN_H@
+
+/* Define to 1 if you have the <sys/msg.h> header file. */
+#cmakedefine HAVE_SYS_MSG_H @HAVE_SYS_MSG_H@
+
 /* Define to 1 if you have the <sys/param.h> header file. */
 #cmakedefine HAVE_SYS_PARAM_H @HAVE_SYS_PARAM_H@
+
+/* Define to 1 if you have the <sys/queue.h> header file. */
+#cmakedefine HAVE_SYS_QUEUE_H @HAVE_SYS_QUEUE_H@
 
 /* Define to 1 if you have the <sys/resource.h> header file. */
 #cmakedefine HAVE_SYS_RESOURCE_H @HAVE_SYS_RESOURCE_H@
@@ -736,6 +761,9 @@
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #cmakedefine HAVE_SYS_TYPES_H @HAVE_SYS_TYPES_H@
+
+/* Define to 1 if you have the <sys/un.h> header file. */
+#cmakedefine HAVE_SYS_UN_H @HAVE_SYS_UN_H@
 
 /* Define to 1 if you have the <sys/utime.h> header file. */
 #cmakedefine HAVE_SYS_UTIME_H @HAVE_SYS_UTIME_H@
@@ -922,6 +950,7 @@
 #define DCMTK_CHARSET_CONVERSION_ICU 1
 #define DCMTK_CHARSET_CONVERSION_ICONV 2
 #define DCMTK_CHARSET_CONVERSION_STDLIBC_ICONV 3
+#define DCMTK_CHARSET_CONVERSION_OFICONV 4
 
 /* Define to select character set conversion implementation. */
 #cmakedefine DCMTK_ENABLE_CHARSET_CONVERSION @DCMTK_ENABLE_CHARSET_CONVERSION@
@@ -1072,7 +1101,9 @@ typedef unsigned long ulong;
 
 #if _MSC_VER >= 1400                   /* Additional settings for Visual Studio 2005 and newer */
     #pragma warning( disable : 4996 )  /* disable warnings about "deprecated" C runtime functions */
+#if _MSC_VER < 1900                    /* Warning only available before Visual Studio 2015 */
     #pragma warning( disable : 4351 )  /* disable warnings about "new behavior" when initializing the elements of an array */
+#endif /* _MSC_VER < 1900 */
 #endif /* _MSC_VER >= 1400 */
 #endif /* _MSC_VER */
 
@@ -1134,7 +1165,7 @@ typedef unsigned long ulong;
 #cmakedefine HAVE_CXX11 @HAVE_CXX11@
 
 #if defined(HAVE_CXX11) && defined(__cplusplus) && __cplusplus < 201103L
-#error\
+#error \
 DCMTK was configured to use C++11 features, but your compiler does not or was not configured to provide them.
 #endif
 
@@ -1142,7 +1173,7 @@ DCMTK was configured to use C++11 features, but your compiler does not or was no
 #cmakedefine HAVE_CXX14 @HAVE_CXX14@
 
 #if defined(HAVE_CXX14) && defined(__cplusplus) && __cplusplus < 201402L
-#error\
+#error \
 DCMTK was configured to use C++14 features, but your compiler does not or was not configured to provide them.
 #endif
 
@@ -1150,7 +1181,7 @@ DCMTK was configured to use C++14 features, but your compiler does not or was no
 #cmakedefine HAVE_CXX17 @HAVE_CXX17@
 
 #if defined(HAVE_CXX17) && defined(__cplusplus) && __cplusplus < 201703L
-#error\
+#error \
 DCMTK was configured to use C++17 features, but your compiler does not or was not configured to provide them.
 #endif
 
@@ -1249,8 +1280,17 @@ DCMTK was configured to use C++17 features, but your compiler does not or was no
 /* Define if we have OpenSSL with the SSL_ERROR_WANT_CLIENT_HELLO_CB error code */
 #cmakedefine HAVE_OPENSSL_PROTOTYPE_SSL_ERROR_WANT_CLIENT_HELLO_CB @HAVE_OPENSSL_PROTOTYPE_SSL_ERROR_WANT_CLIENT_HELLO_CB@
 
-/* Define if we have OpenSSL with the EVP_PKEY_base_id error code */
+/* Define if we have OpenSSL with the EVP_PKEY_base_id function */
 #cmakedefine HAVE_OPENSSL_PROTOTYPE_EVP_PKEY_BASE_ID @HAVE_OPENSSL_PROTOTYPE_EVP_PKEY_BASE_ID@
+
+/* Define if we have OpenSSL with the HAVE_OPENSSL_PROTOTYPE_NID_DSA_WITH_SHA512 macro */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_NID_DSA_WITH_SHA512 @HAVE_OPENSSL_PROTOTYPE_NID_DSA_WITH_SHA512@
+
+/* Define if we have OpenSSL with the HAVE_OPENSSL_PROTOTYPE_NID_ECDSA_WITH_SHA3_256 macro */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_NID_ECDSA_WITH_SHA3_256 @HAVE_OPENSSL_PROTOTYPE_NID_ECDSA_WITH_SHA3_256@
+
+/* Define if we have OpenSSL with the HAVE_OPENSSL_PROTOTYPE_NID_SHA512_256WITHRSAENCRYPTION macro */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_NID_SHA512_256WITHRSAENCRYPTION @HAVE_OPENSSL_PROTOTYPE_NID_SHA512_256WITHRSAENCRYPTION@
 
 /* Define if we have OpenSSL with the EVP_PKEY_RSA_PSS macro */
 #cmakedefine HAVE_OPENSSL_PROTOTYPE_EVP_PKEY_RSA_PSS @HAVE_OPENSSL_PROTOTYPE_EVP_PKEY_RSA_PSS@
@@ -1279,6 +1319,21 @@ DCMTK was configured to use C++17 features, but your compiler does not or was no
 /* Define if we have OpenSSL with the SSL_CTX_set_security_level() function */
 #cmakedefine HAVE_OPENSSL_PROTOTYPE_SSL_CTX_SET_SECURITY_LEVEL @HAVE_OPENSSL_PROTOTYPE_SSL_CTX_SET_SECURITY_LEVEL@
 
+/* Define if we have OpenSSL with the TLS1_3_RFC_AES_128_CCM_8_SHA256 macro */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_TLS1_3_RFC_AES_128_CCM_8_SHA256 @HAVE_OPENSSL_PROTOTYPE_TLS1_3_RFC_AES_128_CCM_8_SHA256@
+
+/* Define if we have OpenSSL with the TLS1_3_RFC_AES_256_GCM_SHA384 macro */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_TLS1_3_RFC_AES_256_GCM_SHA384 @HAVE_OPENSSL_PROTOTYPE_TLS1_3_RFC_AES_256_GCM_SHA384@
+
+/* Define if we have OpenSSL with the TLS1_3_RFC_CHACHA20_POLY1305_SHA256 macro */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_TLS1_3_RFC_CHACHA20_POLY1305_SHA256 @HAVE_OPENSSL_PROTOTYPE_TLS1_3_RFC_CHACHA20_POLY1305_SHA256@
+
+/* Define if we have OpenSSL with the TLS1_TXT_ECDHE_ECDSA_WITH_AES_256_CCM_8 macro */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_TLS1_TXT_ECDHE_ECDSA_WITH_AES_256_CCM_8 @HAVE_OPENSSL_PROTOTYPE_TLS1_TXT_ECDHE_ECDSA_WITH_AES_256_CCM_8@
+
+/* Define if we have OpenSSL with the TLS1_TXT_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384 macro */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_TLS1_TXT_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384 @HAVE_OPENSSL_PROTOTYPE_TLS1_TXT_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384@
+
 /* Define if we have OpenSSL with the TLS1_TXT_ECDHE_RSA_WITH_CHACHA20_POLY1305 macro */
 #cmakedefine HAVE_OPENSSL_PROTOTYPE_TLS1_TXT_ECDHE_RSA_WITH_CHACHA20_POLY1305 @HAVE_OPENSSL_PROTOTYPE_TLS1_TXT_ECDHE_RSA_WITH_CHACHA20_POLY1305@
 
@@ -1287,6 +1342,9 @@ DCMTK was configured to use C++17 features, but your compiler does not or was no
 
 /* Define if we have OpenSSL with the X509_get_signature_nid() function */
 #cmakedefine HAVE_OPENSSL_PROTOTYPE_X509_GET_SIGNATURE_NID @HAVE_OPENSSL_PROTOTYPE_X509_GET_SIGNATURE_NID@
+
+/* Define if we have OpenSSL with the X509_STORE_CTX_get0_cert() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_X509_STORE_CTX_GET0_CERT @HAVE_OPENSSL_PROTOTYPE_X509_STORE_CTX_GET0_CERT@
 
 /* Define if we have OpenSSL with the X509_STORE_get0_param() function */
 #cmakedefine HAVE_OPENSSL_PROTOTYPE_X509_STORE_GET0_PARAM @HAVE_OPENSSL_PROTOTYPE_X509_STORE_GET0_PARAM@

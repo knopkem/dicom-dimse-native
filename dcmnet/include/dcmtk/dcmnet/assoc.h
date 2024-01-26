@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2021, OFFIS e.V.
+ *  Copyright (C) 1994-2022, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were partly developed by
@@ -94,6 +94,7 @@
 /*
 ** Required Include Files
 */
+#include "dcmtk/ofstd/ofdeprec.h"
 #include "dcmtk/dcmnet/dicom.h"
 #include "dcmtk/dcmnet/lst.h"
 #include "dcmtk/dcmnet/dul.h"
@@ -263,6 +264,8 @@ struct DCMTK_DCMNET_EXPORT T_ASC_Association
 /** network instance creation function (constructor)
  *  @param role association acceptor, requestor or both
  *  @param acceptorPort acceptor port for incoming connections.
+ *    If for an acceptor 0 is provided, the OS will assign
+ *    an unused ports on its own.
  *    For association requestors, zero should be passed here.
  *  @param timeout timeout for network operations, in seconds
  *  @param network T_ASC_Network will be allocated and returned in this parameter
@@ -291,9 +294,20 @@ DCMTK_DCMNET_EXPORT OFCondition ASC_dropNetwork(T_ASC_Network ** network);
 DCMTK_DCMNET_EXPORT OFCondition
 ASC_createAssociationParameters(
     T_ASC_Parameters ** params,
+    long maxReceivePDUSize,
+    Sint32 tcpConnectTimeout);
+
+/*
+ * same as before, but uses value of the global dcmConnectionTimeout variable.
+ * Please note that this function is deprecated and will be removed in a future
+ * release.  Use the previous function with the timeout parameter instead.
+ */
+OFdeprecated DCMTK_DCMNET_EXPORT OFCondition
+ASC_createAssociationParameters(
+    T_ASC_Parameters ** params,
     long maxReceivePDUSize);
 
- /*
+/*
   * Free an association parameters structure and embedded information.
   * You do not usually need to do this since the parameters structure will
   * be noted in the association structure and automatically freed when an
@@ -714,13 +728,13 @@ DCMTK_DCMNET_EXPORT OFCondition
 ASC_destroyAssociation(T_ASC_Association ** association);
 
 /// @deprecated Please use OFString& ASC_printRejectParameters(OFString&, T_ASC_RejectParameters*) instead.
-DCMTK_DCMNET_EXPORT void
+OFdeprecated DCMTK_DCMNET_EXPORT void
 ASC_printRejectParameters(
     FILE *f,
     const T_ASC_RejectParameters *rej);
 
 /// @deprecated Please use OFString& ASC_printRejectParameters(OFString&, T_ASC_RejectParameters*) instead.
-DCMTK_DCMNET_EXPORT void
+OFdeprecated DCMTK_DCMNET_EXPORT void
 ASC_printRejectParameters(
     STD_NAMESPACE ostream& out,
     const T_ASC_RejectParameters *rej);
@@ -732,7 +746,7 @@ ASC_printRejectParameters(
  * @deprecated Please use OFString& ASC_dumpParameters(OFString&, T_ASC_Parameters *,
  *             ASC_associateType) instead.
  */
-DCMTK_DCMNET_EXPORT void
+OFdeprecated DCMTK_DCMNET_EXPORT void
 ASC_dumpParameters(T_ASC_Parameters * params, STD_NAMESPACE ostream& outstream);
 
  /*
@@ -740,14 +754,14 @@ ASC_dumpParameters(T_ASC_Parameters * params, STD_NAMESPACE ostream& outstream);
   * (debugging aid)
   */
 /// @deprecated You should dump the complete T_ASC_Parameters with ASC_dumpParameters() instead.
-DCMTK_DCMNET_EXPORT void
+OFdeprecated DCMTK_DCMNET_EXPORT void
 ASC_dumpPresentationContext(T_ASC_PresentationContext * presentationContext, STD_NAMESPACE ostream& outstream);
 
 /**
  * @deprecated Please use OFString& ASC_dumpParameters(OFString&, T_ASC_Parameters*,
  *             ASC_associateType) instead.
  */
-DCMTK_DCMNET_EXPORT void
+OFdeprecated DCMTK_DCMNET_EXPORT void
 ASC_dumpConnectionParameters(T_ASC_Association *association, STD_NAMESPACE ostream& outstream);
 
 /** Converts given ASC role to string (e.g. for printing)

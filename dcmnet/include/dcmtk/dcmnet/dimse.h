@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2020, OFFIS e.V.
+ *  Copyright (C) 1994-2022, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were partly developed by
@@ -349,8 +349,22 @@ typedef enum {                  /* DIC_US */
  * DIMSE Data Set Type Codes.
  */
 
-typedef enum {                  /* DIC_US */
-    DIMSE_DATASET_PRESENT = 0x0001,     /* anything other than 0x0101 */
+typedef enum { /* DIC_US */
+    /* In DCMTK releases before 3.6.8, some tools incorrectly
+     * compare DataSetType for equality with DIMSE_DATASET_PRESENT,
+     * instead of checking whether DataSetType is different from DIMSE_DATASET_NULL.
+     * These tools will fail if a different value than 0x0001 is used for this constant.
+     * See DCMTK issue #1045.
+     *
+     * The DICOM standard, on the other hand, recommends the value 0x0102
+     * if backwards compatibility with ACR-NEMA is desired. If this is important,
+     * define the macro DCMTK_ENABLE_ACR_NEMA_DATASET_PRESENT_COMPATIBILITY.
+     */
+#ifdef DCMTK_ENABLE_ACR_NEMA_DATASET_PRESENT_COMPATIBILITY
+    DIMSE_DATASET_PRESENT = 0x0102, /* anything other than 0x0101 */
+#else
+    DIMSE_DATASET_PRESENT = 0x0001, /* anything other than 0x0101 */
+#endif
     DIMSE_DATASET_NULL = 0x0101
 } T_DIMSE_DataSetType;
 
@@ -1199,7 +1213,7 @@ DIMSE_receiveDataSetInMemory(T_ASC_Association *association,
                      void *callbackContext);
 
 /** create a DICOM file, populate the meta-header from the content of the given
- *  C-STORE request, and return an ouput stream that can be used to store the
+ *  C-STORE request, and return an output stream that can be used to store the
  *  dataset associated with the C-STORE request message. This function is used
  *  in conjunction with DIMSE_receiveDataSetInFile() to directly "stream" incoming
  *  DICOM datasets to file without storing them in memory and without passing
