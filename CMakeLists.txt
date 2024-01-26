@@ -1,9 +1,10 @@
-# Declare project
-project(DCMTK)
-
 cmake_minimum_required(VERSION 3.9)
 message("CMAKE version used: ${CMAKE_VERSION}")
 set(CMAKE_CXX_STANDARD 11)
+
+# Declare project
+project(DCMTK)
+
 
 #-------------------------------------DCMTK-----------------------------------
 

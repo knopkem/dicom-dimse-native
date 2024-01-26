@@ -7,6 +7,7 @@
 #include "Utils.h"
 
 using namespace Napi;
+class BufferAppender;
 
 class BaseAsyncWorker : public AsyncProgressQueueWorker<char>
 {
@@ -23,9 +24,11 @@ class BaseAsyncWorker : public AsyncProgressQueueWorker<char>
 
         void SendInfo(const std::string& msg, const ExecutionProgress& progress, ns::eStatus status = ns::PENDING);
 
-        void EnableVerboseLogging(bool enabled);
+        void EnableVerboseLogging(bool enabled, const ExecutionProgress& progress);
+
 
         std::string _input;
         nlohmann::json _jsonOutput;
         std::string _error;
+        BufferAppender* app;
 };
