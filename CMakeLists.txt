@@ -1,9 +1,10 @@
-# Declare project
-project(DCMTK)
-
 cmake_minimum_required(VERSION 3.9)
 message("CMAKE version used: ${CMAKE_VERSION}")
 set(CMAKE_CXX_STANDARD 11)
+
+# Declare project
+project(DCMTK)
+
 
 #-------------------------------------DCMTK-----------------------------------
 
@@ -28,10 +29,20 @@ endif()
 
 if(DEFINED ENV{LIB_ICONV})
     message("LIB_ICONV set to: $ENV{LIB_ICONV}")
-    set(DCMTK_WITH_ICONV "ON")
+    set(WITH_LIBICONVINC "ON")
     set(WITH_LIBICONVINC $ENV{LIB_ICONV})
+    if(UNIX)
+        set(LIBCHARSET_INCLUDE_DIR $ENV{LIB_ICONV}/include) 
+        set(LIBCHARSET_LIBRARY $ENV{LIB_ICONV}/lib/libcharset.a)
+        set(LIBICONV_INCLUDE_DIR $ENV{LIB_ICONV}/include)
+        set(LIBICONV_LIBDIR $ENV{LIB_ICONV}/lib)
+        set(Iconv_INCLUDE_DIR $ENV{LIB_ICONV}/include)
+        set(Iconv_LIBRARY $ENV{LIB_ICONV}/lib/libiconv.a)
+    endif()
     mark_as_advanced(DCMTK_WITH_ICONV)
     mark_as_advanced(WITH_LIBICONVINC)
+    #set(Iconv_IS_BUILT_IN "OFF")
+    #set(DCMTK_WITH_ICONV "ON")
 else()
     message("NOTICE: To enable support for UTF-8 you need to build ICONV statically outside of this project and set LIB_ICONV environment to point to the install directory")
 endif()
@@ -67,6 +78,11 @@ configure_file("${DCMTK_SOURCE_DIR}/CMake/osconfig.h.in"
 
 INSPECT_FUNDAMENTAL_ARITHMETIC_TYPES()
 
+if(MSVC AND CMAKE_JS_NODELIB_DEF AND CMAKE_JS_NODELIB_TARGET)
+  # Generate node.lib
+  execute_process(COMMAND ${CMAKE_AR} /def:${CMAKE_JS_NODELIB_DEF} /out:${CMAKE_JS_NODELIB_TARGET} ${CMAKE_STATIC_LINKER_FLAGS})
+endif()
+
 # Add flags specific to the compiler
 #-----------------------------------
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
@@ -74,7 +90,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3")
 else()
     message(STATUS "GNU or Clang detected, adding compile flags")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Wconversion -Wfloat-equal -fPIC")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Wconversion -Wfloat-equal -fPIC -std=c++11")
     set (CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 endif()
 
