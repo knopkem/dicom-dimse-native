@@ -12,10 +12,6 @@ using json = nlohmann::json;
 
 #include "dcmtk/config/osconfig.h" /* make sure OS specific configuration is included first */
 
-#define INCLUDE_CSTDLIB
-#define INCLUDE_CSTDIO
-#define INCLUDE_CSTRING
-#define INCLUDE_CSTDARG
 #include "dcmtk/ofstd/ofstdinc.h"
 
 #include "dcmtk/dcmdata/cmdlnarg.h"

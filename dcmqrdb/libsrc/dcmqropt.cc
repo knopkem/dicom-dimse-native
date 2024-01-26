@@ -22,7 +22,6 @@
 #include "dcmtk/config/osconfig.h"    /* make sure OS specific configuration is included first */
 #include "dcmtk/dcmqrdb/dcmqropt.h"
 
-#define INCLUDE_CSTDARG
 #include "dcmtk/ofstd/ofstdinc.h"
 
 makeOFConditionConst(QR_EC_IndexDatabaseError, OFM_dcmqrdb, 1, OF_error, "Index database error");

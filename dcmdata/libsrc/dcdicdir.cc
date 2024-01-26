@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2019, OFFIS e.V.
+ *  Copyright (C) 1994-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -21,12 +21,6 @@
 
 
 #include "dcmtk/config/osconfig.h"    /* make sure OS specific configuration is included first */
-
-#define INCLUDE_CSTDLIB
-#define INCLUDE_CSTDIO
-#define INCLUDE_LIBC
-#define INCLUDE_UNISTD
-#include "dcmtk/ofstd/ofstdinc.h"
 
 #ifdef HAVE_UNIX_H
 #if defined(macintosh) && defined (HAVE_WINSOCK_H)
@@ -1029,10 +1023,12 @@ OFCondition DcmDicomDir::write(const E_TransferSyntax oxfer,
     DcmTag unresSeqTag(DCM_DirectoryRecordSequence);
     DcmSequenceOfItems localUnresRecs(unresSeqTag);
 
-    // insert Media Stored SOP Class UID
+    // insert Media Storage SOP Class UID
     insertMediaSOPUID(metainfo);
 
-    getDirFileFormat().validateMetaInfo(outxfer);
+    // add missing information such as Media Storage SOP Instance UID,
+    // but do not overwrite the value of Media Storage SOP Class UID
+    getDirFileFormat().validateMetaInfo(outxfer, EWM_fileformat);
 
     {
         // it is important that the cache object is destroyed before the file is renamed!

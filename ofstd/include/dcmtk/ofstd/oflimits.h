@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2014-2017, OFFIS e.V.
+ *  Copyright (C) 2014-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -82,10 +82,9 @@ struct OFnumeric_limits<double> : std::numeric_limits<double>
 
 #else // fallback implementations entirely without using the native STL
 
-#define INCLUDE_CLIMITS
-#define INCLUDE_CFLOAT
-#define INCLUDE_CMATH
-#include "dcmtk/ofstd/ofstdinc.h"
+#include <climits>
+#include <cfloat>
+#include <cmath>
 
 /** Enumeration constants of type OFfloat_round_style indicate the rounding style
  *  used by floating-point arithmetics whenever a result of an expression is stored
@@ -153,7 +152,7 @@ struct OFnumeric_limits
      */
     static const OFBool is_specialized;
 
-    /** <kbd>OFTrue for all signed arithmetic types <i>T</i> and
+    /** <kbd>OFTrue</kbd> for all signed arithmetic types <i>T</i> and
      *  <kbd>OFFalse</kbd> for the unsigned types.
      *  <h3>C++11 standard definitions used:</h3>
      *  T                       | %is_signed
@@ -983,7 +982,6 @@ struct OFnumeric_limits
     static inline T denorm_min()                    { return T(); }
 };
 
-#ifdef HAVE_CXX_BOOL
 template<>
 struct OFnumeric_limits<bool>
 {
@@ -1020,7 +1018,6 @@ struct OFnumeric_limits<bool>
     static inline bool signaling_NaN()              { return OFFalse; }
     static inline bool denorm_min()                 { return OFFalse; }
 };
-#endif
 
 template<>
 struct OFnumeric_limits<char>

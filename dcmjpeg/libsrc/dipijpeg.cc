@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2001-2014, OFFIS e.V.
+ *  Copyright (C) 2001-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -24,10 +24,9 @@
 #include "dcmtk/dcmdata/dctypes.h"
 #include "dcmtk/dcmimgle/diimage.h"
 #include "dcmtk/dcmjpeg/dipijpeg.h"
-
-#define INCLUDE_CSETJMP
-#define INCLUDE_CSTDIO
 #include "dcmtk/ofstd/ofstdinc.h"
+#include "dcmtk/ofstd/ofdiag.h"
+#include <csetjmp>
 
 BEGIN_EXTERN_C
 #define boolean ijg_boolean
@@ -42,11 +41,12 @@ BEGIN_EXTERN_C
 #undef const
 #endif
 
-#ifdef USE_STD_CXX_INCLUDES
 // Solaris defines longjmp() in namespace std, other compilers don't...
-namespace std { }
-using namespace std;
-#endif
+using STD_NAMESPACE longjmp;
+using STD_NAMESPACE jmp_buf;
+
+#include DCMTK_DIAGNOSTIC_PUSH
+#include DCMTK_DIAGNOSTIC_IGNORE_VISUAL_STUDIO_DECLSPEC_PADDING_WARNING
 
 // private error handler struct
 struct DIEIJG8ErrorStruct
@@ -58,6 +58,8 @@ struct DIEIJG8ErrorStruct
     // pointer to this
     const DiJPEGPlugin *instance;
 };
+
+#include DCMTK_DIAGNOSTIC_POP
 
 // callback forward declarations
 void DIEIJG8ErrorExit(j_common_ptr);
@@ -137,6 +139,8 @@ void DiJPEGPlugin::outputMessage(void *arg) const
     }
 }
 
+#include DCMTK_DIAGNOSTIC_PUSH
+#include DCMTK_DIAGNOSTIC_IGNORE_VISUAL_STUDIO_OBJECT_DESTRUCTION_WARNING
 
 int DiJPEGPlugin::write(DiImage *image,
                         FILE *stream,
@@ -238,6 +242,8 @@ int DiJPEGPlugin::write(DiImage *image,
     }
     return result;
 }
+
+#include DCMTK_DIAGNOSTIC_POP
 
 
 OFString DiJPEGPlugin::getLibraryVersionString()

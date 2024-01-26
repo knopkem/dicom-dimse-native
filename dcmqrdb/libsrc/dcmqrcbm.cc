@@ -33,6 +33,7 @@
 #include "dcmtk/dcmqrdb/dcmqrdbi.h"
 #include "dcmtk/ofstd/ofstd.h"
 
+
 BEGIN_EXTERN_C
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>       /* needed on Solaris for O_RDONLY */

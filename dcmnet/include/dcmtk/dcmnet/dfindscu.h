@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2018, OFFIS e.V.
+ *  Copyright (C) 1994-2019, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -123,10 +123,14 @@ protected: /* the two member variables are protected and can be accessed from de
 
 private:
 
-  /// private undefined copy constructor.
+  /** private undefined copy constructor.
+   * @param other documented to avoid doxygen warnings
+   */
   DcmFindSCUCallback(const DcmFindSCUCallback& other);
 
-  /// private undefined assignment operator.
+  /** private undefined assignment operator.
+   * @param other documented to avoid doxygen warnings
+   */
   DcmFindSCUCallback& operator=(const DcmFindSCUCallback& other);
 
 };
@@ -147,12 +151,14 @@ public:
    *    If NULL, the current directory is used.
    *  @param outputStream pointer to output stream that is used when extractResponses is set
    *    to FEM_singleXMLFile.
+   *  @param limitOutput maximum number of responses written to file (0 means unlimited)
    */
   DcmFindSCUDefaultCallback(
     DcmFindSCUExtractMode extractResponses,
     int cancelAfterNResponses,
     const char *outputDirectory = NULL,
-    STD_NAMESPACE ofstream *outputStream = NULL);
+    STD_NAMESPACE ofstream *outputStream = NULL,
+    const unsigned int limitOutput = 0);
 
   /// destructor
   virtual ~DcmFindSCUDefaultCallback() {}
@@ -172,10 +178,13 @@ public:
 private:
 
    /// mode specifying whether and how to extract C-FIND responses.
-   DcmFindSCUExtractMode extractResponses_;
+   const DcmFindSCUExtractMode extractResponses_;
 
    /// if non-negative, a C-FIND-CANCEL will be issued after the given number of incoming C-FIND-RSP messages.
-   int cancelAfterNResponses_;
+   const int cancelAfterNResponses_;
+
+   /// maximum number of responses written to file (default: unlimited)
+   const unsigned int limitOutput_;
 
    /// directory used to store the output files (e.g. response datasets).
    OFString outputDirectory_;
@@ -199,6 +208,15 @@ public:
 
   /// destructor. Destroys network structure if not done already.
   virtual ~DcmFindSCU();
+
+  /** set maximum number of responses written to file.
+   *  Limiting the number of responses written to file might be useful e.g. if the
+   *  C-FIND-CANCEL request does not prevent the SCP from sending further C-FIND-RSP
+   *  messages.  Also see various "extract" parameters of performQuery() method.
+   *  @param limit maximum number of responses written to file (0 means unlimited)
+   *  @return EC_Normal if successful, an error code otherwise.
+   */
+  OFCondition setOutputResponseLimit(const unsigned int limit);
 
   /** initialize the network structure. This should be done only once.
    *  @param acse_timeout timeout for ACSE operations, in seconds
@@ -365,16 +383,23 @@ private:
     const char *outputDirectory = NULL,
     STD_NAMESPACE ofstream *outputStream = NULL) const;
 
-  /// Private undefined copy constructor
+  /** Private undefined copy constructor
+   * @param other documented to avoid doxygen warnings
+   */
   DcmFindSCU(const DcmFindSCU& other);
 
-  /// Private undefined assignment operator
+  /** Private undefined assignment operator
+   * @param other documented to avoid doxygen warnings
+   */
   DcmFindSCU& operator=(const DcmFindSCU& other);
 
 private:
 
   /// pointer to network structure
   T_ASC_Network *net_;
+
+  /// maximum number of responses written to file (default: unlimited)
+  unsigned int outputResponseLimit_;
 
 };
 

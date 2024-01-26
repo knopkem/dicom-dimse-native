@@ -53,11 +53,15 @@
 /* Define the default data dictionary path for the dcmdata library package */
 #define DCM_DICT_DEFAULT_PATH "@DCM_DICT_DEFAULT_PATH@"
 
-/* Define if we want a populated builtin dictionary */
-#cmakedefine ENABLE_BUILTIN_DICTIONARY "@ENABLE_BUILTIN_DICTIONARY@"
+/* Define the type of standard dictionary that we want to use:
+   0 - Do not load any default dictionary on startup
+   1 - Load builtin dictionary on startup
+   2 - Load external (i.e. file-based) dictionary on startup
+*/
+#define DCM_DICT_DEFAULT @DCM_DICT_DEFAULT@
 
-/* Define if we want load external dictionaries */
-#cmakedefine ENABLE_EXTERNAL_DICTIONARY "@ENABLE_EXTERNAL_DICTIONARY@"
+/* Define whether dictionaries defined through DCMDICTPATH variable should be loaded */
+#cmakedefine DCM_DICT_USE_DCMDICTPATH @DCM_DICT_USE_DCMDICTPATH@
 
 /* Define the environment variable path separator */
 #define ENVIRONMENT_PATH_SEPARATOR '@ENVIRONMENT_PATH_SEPARATOR@'
@@ -86,9 +90,6 @@
 /* Define to 1 if you have the `bind' function. */
 #cmakedefine HAVE_BIND @HAVE_BIND@
 
-/* Define to 1 if you have the `bzero' function. */
-#cmakedefine HAVE_BZERO @HAVE_BZERO@
-
 /* Define if your C++ compiler can work with class templates */
 #define HAVE_CLASS_TEMPLATE 1
 
@@ -104,14 +105,14 @@
 /* Define to 1 if you have the `cuserid' function. */
 #cmakedefine HAVE_CUSERID @HAVE_CUSERID@
 
-/* Define if bool is a built-in type */
-#cmakedefine HAVE_CXX_BOOL @HAVE_CXX_BOOL@
-
 /* Define if volatile is a known keyword */
 #define HAVE_CXX_VOLATILE 1
 
 /* Define if "const" is supported by the C compiler */
 #define HAVE_C_CONST 1
+
+/* Define if your system has a declaration for fp_except_t in ieeefp.h */
+#cmakedefine HAVE_DECLARATION_FP_EXCEPT_T @HAVE_DECLARATION_FP_EXCEPT_T@
 
 /* Define if your system has a declaration for socklen_t in sys/types.h
    sys/socket.h */
@@ -416,10 +417,6 @@
 
 /* Define if your system has a prototype for bind in sys/types.h sys/socket.h */
 #cmakedefine HAVE_PROTOTYPE_BIND @HAVE_PROTOTYPE_BIND@
-
-/* Define if your system has a prototype for bzero in string.h strings.h
-   libc.h unistd.h stdlib.h */
-#cmakedefine HAVE_PROTOTYPE_BZERO @HAVE_PROTOTYPE_BZERO@
 
 /* Define if your system has a prototype for connect in sys/types.h
    sys/socket.h */
@@ -912,9 +909,6 @@
 /* Define to 1 if your <sys/time.h> declares `struct tm'. */
 /* #undef TM_IN_SYS_TIME */
 
-/* Define if ANSI standard C++ includes are used */
-#cmakedefine USE_STD_CXX_INCLUDES
-
 /* Define if we are compiling with libiconv support. */
 #cmakedefine WITH_LIBICONV
 
@@ -1097,6 +1091,24 @@ typedef unsigned long ulong;
 /* Define if the compiler supports static_assert */
 #cmakedefine HAVE_STATIC_ASSERT @HAVE_STATIC_ASSERT@
 
+/* Define if the compiler supports [[deprecated]] */
+#cmakedefine HAVE_CXX14_DEPRECATED_ATTRIBUTE @HAVE_CXX14_DEPRECATED_ATTRIBUTE@
+
+/* Define if the compiler supports [[deprecated("message")]] */
+#cmakedefine HAVE_CXX14_DEPRECATED_ATTRIBUTE_MSG @HAVE_CXX14_DEPRECATED_ATTRIBUTE_MSG@
+
+/* Define if the compiler supports __attribute__((deprecated)) */
+#cmakedefine HAVE_ATTRIBUTE_DEPRECATED @HAVE_ATTRIBUTE_DEPRECATED@
+
+/* Define if the compiler supports __attribute__((deprecated("message"))) */
+#cmakedefine HAVE_ATTRIBUTE_DEPRECATED_MSG @HAVE_ATTRIBUTE_DEPRECATED_MSG@
+
+/* Define if the compiler supports __declspec(deprecated) */
+#cmakedefine HAVE_DECLSPEC_DEPRECATED @HAVE_DECLSPEC_DEPRECATED@
+
+/* Define if the compiler supports __declspec(deprecated("message")) */
+#cmakedefine HAVE_DECLSPEC_DEPRECATED_MSG @HAVE_DECLSPEC_DEPRECATED_MSG@
+
 /* Define if your system has a prototype for std::vfprintf in stdarg.h */
 #cmakedefine HAVE_PROTOTYPE_STD__VFPRINTF @HAVE_PROTOTYPE_STD__VFPRINTF@
 
@@ -1114,12 +1126,6 @@ typedef unsigned long ulong;
 
 /* Define if your system provides sigjmp_buf as conditional jmp_buf alternative */
 #cmakedefine HAVE_SIGJMP_BUF @HAVE_SIGJMP_BUF@
-
-/* Define if your OpenSSL library provides the SSL_CTX_GET0_PARAM function */
-#cmakedefine HAVE_SSL_CTX_GET0_PARAM @HAVE_SSL_CTX_GET0_PARAM@
-
-/* Define if your OpenSSL library provides the RAND_egd function */
-#cmakedefine HAVE_RAND_EGD @HAVE_RAND_EGD@
 
 /* Always define STDIO_NAMESPACE to ::, because MSVC6 gets mad if you don't. */
 #define STDIO_NAMESPACE ::
@@ -1222,5 +1228,118 @@ DCMTK was configured to use C++17 features, but your compiler does not or was no
 
 /* Define if the input iterator category is supported */
 #cmakedefine HAVE_CONTIGUOUS_ITERATOR_CATEGORY @HAVE_CONTIGUOUS_ITERATOR_CATEGORY@
+
+/* Feature Tests for the OpenSSL Library */
+
+/* Define if your OpenSSL library provides the SSL_CTX_GET0_PARAM function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_SSL_CTX_GET0_PARAM @HAVE_OPENSSL_PROTOTYPE_SSL_CTX_GET0_PARAM@
+
+/* Define if your OpenSSL library provides the RAND_egd function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_RAND_EGD @HAVE_OPENSSL_PROTOTYPE_RAND_EGD@
+
+/* Define if we have OpenSSL with the DH_bits() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_DH_BITS @HAVE_OPENSSL_PROTOTYPE_DH_BITS@
+
+/* Define if we have OpenSSL with the SSL_ERROR_WANT_ASYNC error code */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_SSL_ERROR_WANT_ASYNC @HAVE_OPENSSL_PROTOTYPE_SSL_ERROR_WANT_ASYNC@
+
+/* Define if we have OpenSSL with the SSL_ERROR_WANT_ASYNC_JOB error code */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_SSL_ERROR_WANT_ASYNC_JOB @HAVE_OPENSSL_PROTOTYPE_SSL_ERROR_WANT_ASYNC_JOB@
+
+/* Define if we have OpenSSL with the SSL_ERROR_WANT_CLIENT_HELLO_CB error code */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_SSL_ERROR_WANT_CLIENT_HELLO_CB @HAVE_OPENSSL_PROTOTYPE_SSL_ERROR_WANT_CLIENT_HELLO_CB@
+
+/* Define if we have OpenSSL with the EVP_PKEY_base_id error code */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_EVP_PKEY_BASE_ID @HAVE_OPENSSL_PROTOTYPE_EVP_PKEY_BASE_ID@
+
+/* Define if we have OpenSSL with the EVP_PKEY_RSA_PSS macro */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_EVP_PKEY_RSA_PSS @HAVE_OPENSSL_PROTOTYPE_EVP_PKEY_RSA_PSS@
+
+/* Define if we have OpenSSL with the SSL_CTX_get_cert_store() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_SSL_CTX_GET_CERT_STORE @HAVE_OPENSSL_PROTOTYPE_SSL_CTX_GET_CERT_STORE@
+
+/* Define if we have OpenSSL with the SSL_CTX_get_ciphers() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_SSL_CTX_GET_CIPHERS @HAVE_OPENSSL_PROTOTYPE_SSL_CTX_GET_CIPHERS@
+
+/* Define if we have OpenSSL with the SSL_CTX_set0_tmp_dh_pkey() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_SSL_CTX_SET0_TMP_DH_PKEY @HAVE_OPENSSL_PROTOTYPE_SSL_CTX_SET0_TMP_DH_PKEY@
+
+/* Define if we have OpenSSL with the SSL_CTX_set1_curves() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_SSL_CTX_SET1_CURVES @HAVE_OPENSSL_PROTOTYPE_SSL_CTX_SET1_CURVES@
+
+/* Define if we have OpenSSL with the SSL_CTX_set1_sigalgs() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_SSL_CTX_SET1_SIGALGS @HAVE_OPENSSL_PROTOTYPE_SSL_CTX_SET1_SIGALGS@
+
+/* Define if we have OpenSSL with the SSL_CTX_set_ecdh_auto() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_SSL_CTX_SET_ECDH_AUTO @HAVE_OPENSSL_PROTOTYPE_SSL_CTX_SET_ECDH_AUTO@
+
+/* Define if we have OpenSSL with the SSL_CTX_set_max_proto_version() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_SSL_CTX_SET_MAX_PROTO_VERSION @HAVE_OPENSSL_PROTOTYPE_SSL_CTX_SET_MAX_PROTO_VERSION@
+
+/* Define if we have OpenSSL with the SSL_CTX_set_security_level() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_SSL_CTX_SET_SECURITY_LEVEL @HAVE_OPENSSL_PROTOTYPE_SSL_CTX_SET_SECURITY_LEVEL@
+
+/* Define if we have OpenSSL with the TLS1_TXT_ECDHE_RSA_WITH_CHACHA20_POLY1305 macro */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_TLS1_TXT_ECDHE_RSA_WITH_CHACHA20_POLY1305 @HAVE_OPENSSL_PROTOTYPE_TLS1_TXT_ECDHE_RSA_WITH_CHACHA20_POLY1305@
+
+/* Define if we have OpenSSL with the TLS_method() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_TLS_METHOD @HAVE_OPENSSL_PROTOTYPE_TLS_METHOD@
+
+/* Define if we have OpenSSL with the X509_get_signature_nid() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_X509_GET_SIGNATURE_NID @HAVE_OPENSSL_PROTOTYPE_X509_GET_SIGNATURE_NID@
+
+/* Define if we have OpenSSL with the X509_STORE_get0_param() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_X509_STORE_GET0_PARAM @HAVE_OPENSSL_PROTOTYPE_X509_STORE_GET0_PARAM@
+
+/* Define if we have OpenSSL with the ASN1_STRING_get0_data() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_ASN1_STRING_GET0_DATA @HAVE_OPENSSL_PROTOTYPE_ASN1_STRING_GET0_DATA@
+
+/* Define if we have OpenSSL with the new typedef of EVP_MD_CTX as struct evp_md_ctx_st */
+#cmakedefine HAVE_OPENSSL_DECLARATION_NEW_EVP_MD_CTX @HAVE_OPENSSL_DECLARATION_NEW_EVP_MD_CTX@
+
+/* Define if we have OpenSSL with the EVP_PKEY_get0_EC_KEY() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_EVP_PKEY_GET0_EC_KEY @HAVE_OPENSSL_PROTOTYPE_EVP_PKEY_GET0_EC_KEY@
+
+/* Define if we have OpenSSL with the EVP_PKEY_get_group_name() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_EVP_PKEY_GET_GROUP_NAME @HAVE_OPENSSL_PROTOTYPE_EVP_PKEY_GET_GROUP_NAME@
+
+/* Define if we have OpenSSL with the EVP_PKEY_id() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_EVP_PKEY_ID @HAVE_OPENSSL_PROTOTYPE_EVP_PKEY_ID@
+
+/* Define if we have OpenSSL with the OSSL_PROVIDER_load() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_OSSL_PROVIDER_LOAD @HAVE_OPENSSL_PROTOTYPE_OSSL_PROVIDER_LOAD@
+
+/* Define if we have the <openssl/provider.h> header file*/
+#cmakedefine HAVE_OPENSSL_PROVIDER_H @HAVE_OPENSSL_PROVIDER_H@
+
+/* Define if we have OpenSSL with the TS_STATUS_INFO_get0_failure_info() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_TS_STATUS_INFO_GET0_FAILURE_INFO @HAVE_OPENSSL_PROTOTYPE_TS_STATUS_INFO_GET0_FAILURE_INFO@
+
+/* Define if we have OpenSSL with the TS_STATUS_INFO_get0_status() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_TS_STATUS_INFO_GET0_STATUS @HAVE_OPENSSL_PROTOTYPE_TS_STATUS_INFO_GET0_STATUS@
+
+/* Define if we have OpenSSL with the TS_STATUS_INFO_get0_text() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_TS_STATUS_INFO_GET0_TEXT @HAVE_OPENSSL_PROTOTYPE_TS_STATUS_INFO_GET0_TEXT@
+
+/* Define if we have OpenSSL with the TS_VERIFY_CTS_set_certs() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_TS_VERIFY_CTS_SET_CERTS @HAVE_OPENSSL_PROTOTYPE_TS_VERIFY_CTS_SET_CERTS@
+
+/* Define if we have OpenSSL with the TS_VERIFY_CTX_set_data() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_TS_VERIFY_CTX_SET_DATA @HAVE_OPENSSL_PROTOTYPE_TS_VERIFY_CTX_SET_DATA@
+
+/* Define if we have OpenSSL with the TS_VERIFY_CTX_set_flags() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_TS_VERIFY_CTX_SET_FLAGS @HAVE_OPENSSL_PROTOTYPE_TS_VERIFY_CTX_SET_FLAGS@
+
+/* Define if we have OpenSSL with the TS_VERIFY_CTX_set_store() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_TS_VERIFY_CTX_SET_STORE @HAVE_OPENSSL_PROTOTYPE_TS_VERIFY_CTX_SET_STORE@
+
+/* Define if we have OpenSSL with the X509_ALGOR_get0() function expecting a const pointer as first parameter */
+#cmakedefine HAVE_OPENSSL_X509_ALGOR_GET0_CONST_PARAM @HAVE_OPENSSL_X509_ALGOR_GET0_CONST_PARAM@
+
+/* Define if we have OpenSSL with the X509_get0_notAfter() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_X509_GET0_NOTAFTER @HAVE_OPENSSL_PROTOTYPE_X509_GET0_NOTAFTER@
+
+/* Define if we have OpenSSL with the X509_get0_notBefore() function */
+#cmakedefine HAVE_OPENSSL_PROTOTYPE_X509_GET0_NOTBEFORE @HAVE_OPENSSL_PROTOTYPE_X509_GET0_NOTBEFORE@
 
 #endif /* !OSCONFIG_H*/

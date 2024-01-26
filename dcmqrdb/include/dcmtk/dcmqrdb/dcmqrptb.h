@@ -28,7 +28,6 @@
 #include "dcmtk/dcmnet/assoc.h"
 #include "dcmtk/dcmqrdb/qrdefine.h"
 
-#define INCLUDE_CTIME
 #include "dcmtk/ofstd/ofstdinc.h"
 
 BEGIN_EXTERN_C

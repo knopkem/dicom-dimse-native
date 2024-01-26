@@ -7,11 +7,6 @@ if(DEFINED DCMTK_CONFIGURATION_DONE)
 endif()
 set(DCMTK_CONFIGURATION_DONE true)
 
-# Latest CMake version tested
-if(CMAKE_BACKWARDS_COMPATIBILITY GREATER 3.15.3)
-  set(CMAKE_BACKWARDS_COMPATIBILITY 3.15.3 CACHE STRING "Latest version of CMake when this project was released." FORCE)
-endif()
-
 # CMAKE_BUILD_TYPE is set to value "Release" if none is specified by the
 # selected build file generator. For those generators that support multiple
 # configuration types (e.g. Debug, Release), CMAKE_CONFIGURATION_TYPES holds
@@ -38,14 +33,14 @@ endif()
 #  a development snapshot and an even number indicates an official release.)
 set(DCMTK_MAJOR_VERSION 3)
 set(DCMTK_MINOR_VERSION 6)
-set(DCMTK_BUILD_VERSION 5)
+set(DCMTK_BUILD_VERSION 7)
 # The ABI is not guaranteed to be stable between different snapshots/releases,
 # so this particular version number is increased for each snapshot or release.
-set(DCMTK_ABI_VERSION 15)
+set(DCMTK_ABI_VERSION 17)
 
 # Package "release" settings (some are currently unused and, therefore, disabled)
 set(DCMTK_PACKAGE_NAME "dcmtk")
-set(DCMTK_PACKAGE_DATE "2019-10-28")
+set(DCMTK_PACKAGE_DATE "2022-04-22")
 set(DCMTK_PACKAGE_VERSION "${DCMTK_MAJOR_VERSION}.${DCMTK_MINOR_VERSION}.${DCMTK_BUILD_VERSION}")
 set(DCMTK_PACKAGE_VERSION_NUMBER ${DCMTK_MAJOR_VERSION}${DCMTK_MINOR_VERSION}${DCMTK_BUILD_VERSION})
 set(DCMTK_PACKAGE_VERSION_SUFFIX "")
@@ -54,8 +49,95 @@ set(DCMTK_PACKAGE_VERSION_SUFFIX "")
 #set(DCMTK_PACKAGE_BUGREPORT "bugs@dcmtk.org")
 #set(DCMTK_PACKAGE_URL "http://www.dcmtk.org/")
 
-# Shared library version information
-SET(DCMTK_LIBRARY_PROPERTIES VERSION "${DCMTK_ABI_VERSION}.${DCMTK_PACKAGE_VERSION}" SOVERSION "${DCMTK_ABI_VERSION}")
+option(DCMTK_LINK_STATIC "Statically link all libraries and tools with the runtime and third party libraries." OFF)
+# Modify linker flags and libraries for static builds if enabled by the user
+if(DCMTK_LINK_STATIC)
+    set(CMAKE_EXE_LINKER_FLAGS "-static")
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+    # remove "-Wl,-Bdynamic"
+    list(REMOVE_ITEM CMAKE_EXE_LINK_DYNAMIC_C_FLAGS "-Wl,-Bdynamic")
+    list(REMOVE_ITEM CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS "-Wl,-Bdynamic")
+    # remove -fPIC
+    list(REMOVE_ITEM CMAKE_SHARED_LIBRARY_C_FLAGS "-fPIC")
+    list(REMOVE_ITEM CMAKE_SHARED_LIBRARY_CXX_FLAGS "-fPIC")
+    # remove -rdynamic
+    list(REMOVE_ITEM CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "-rdynamic")
+    list(REMOVE_ITEM CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "-rdynamic")
+    # not sure about this one, maybe static libraries don't need it:
+    set(DCMTK_LIBRARY_PROPERTIES VERSION "${DCMTK_ABI_VERSION}.${DCMTK_PACKAGE_VERSION}")
+else()
+    # Shared library version information
+    set(DCMTK_LIBRARY_PROPERTIES VERSION "${DCMTK_ABI_VERSION}.${DCMTK_PACKAGE_VERSION}" SOVERSION "${DCMTK_ABI_VERSION}")
+endif()
+
+option(DCMTK_PORTABLE_LINUX_BINARIES "Create ELF binaries while statically linking all third party libraries and libstdc++." OFF)
+if(DCMTK_PORTABLE_LINUX_BINARIES)
+    if (DCMTK_LINK_STATIC)
+        message(FATAL_ERROR "Options DCMTK_LINK_STATIC and DCMTK_PORTABLE_LINUX_BINARIES are mutually exclusive.")
+    endif()
+    # only use static versions of third party libraries
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+
+    # When using gcc and clang, use the static version of libgcc/libstdc++.
+    if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR
+        (CMAKE_CXX_COMPILER_ID STREQUAL "Clang") OR
+        (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang") OR
+        (CMAKE_CXX_COMPILER_ID STREQUAL "ARMClang") OR
+        (CMAKE_CXX_COMPILER_ID STREQUAL "XLClang"))
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
+    endif()
+endif()
+
+function(get_static_library STATIC_NAME LIBRARYNAME)
+    find_library("${STATIC_NAME}" "${LIBRARYNAME}")
+    if("${${STATIC_NAME}}" STREQUAL "${STATIC_NAME}-NOTFOUND")
+        # If the library is not found we probably do not need is as dependency. In the worst case it
+        # needs to be installed, but then it should also be found.
+        set("${STATIC_NAME}" "" PARENT_SCOPE)
+    else()
+        set("${STATIC_NAME}" "${${STATIC_NAME}}" PARENT_SCOPE)
+    endif()
+endfunction()
+
+# Define additional library dependencies for statically linking the third-party libraries.
+# This is difficult and error-prone, because we cannot know which extra libraries were used
+# during compilation on a specific operating system.
+# This should possibly be enhanced by using find_package() at some point. The best solution
+# would probably be to compile all third-party libraries ourself.
+if(DCMTK_LINK_STATIC OR DCMTK_PORTABLE_LINUX_BINARIES)
+    get_static_library("STATIC_DL" "libdl.a")
+    set(ICU_EXTRA_LIBS_STATIC "${STATIC_DL}")
+    get_static_library("STATIC_LZMA" "liblzma.a")
+    get_static_library("STATIC_ZLIB" "libz.a")
+    get_static_library("STATIC_ICUUC" "libicuuc.a")
+    get_static_library("STATIC_ICUDATA" "libicudata.a")
+    set(LIBXML2_EXTRA_LIBS_STATIC "${STATIC_LZMA}" "${STATIC_ZLIB}" "${STATIC_ICUUC}" "${STATIC_ICUDATA}" "${STATIC_DL}")
+    get_static_library("STATIC_PTHREAD" "libpthread.a")
+    set(OPENJPEG_EXTRA_LIBS_STATIC "${STATIC_PTHREAD}")
+    set(OPENSSL_EXTRA_LIBS_STATIC "${STATIC_DL}")
+    get_static_library("STATIC_OGG" "libogg.a")
+    get_static_library("STATIC_VORBIS" "libvorbis.a")
+    get_static_library("STATIC_VORBISENC" "libvorbisenc.a")
+    get_static_library("STATIC_OPUS" "libopus.a")
+    get_static_library("STATIC_FLAC" "libFLAC.a")
+    set(SNDFILE_EXTRA_LIBS_STATIC "${STATIC_VORBIS}" "${STATIC_OGG}" "${STATIC_VORBISENC}" "${STATIC_OPUS}" "${STATIC_FLAC}")
+    get_static_library("STATIC_WEBP" "libwebp.a")
+    get_static_library("STATIC_ZSTD" "libzstd.a")
+    get_static_library("STATIC_JBIG" "libjbig.a")
+    get_static_library("STATIC_JPEG" "libjpeg.a")
+    get_static_library("STATIC_DEFLATE" "libdeflate.a")
+    set(TIFF_EXTRA_LIBS_STATIC "${STATIC_WEBP}" "${STATIC_ZSTD}" "${STATIC_LZMA}" "${STATIC_JBIG}" "${STATIC_JBIG}" "${STATIC_DEFLATE}" "${STATIC_ZLIB}")
+    get_static_library("STATIC_NSL" "libnsl.a")
+    set(WRAP_EXTRA_LIBS_STATIC "${STATIC_NSL}")
+else()
+    set(ICU_EXTRA_LIBS_STATIC)
+    set(LIBXML2_EXTRA_LIBS_STATIC)
+    set(OPENJPEG_EXTRA_LIBS_STATIC)
+    set(OPENSSL_EXTRA_LIBS_STATIC)
+    set(SNDFILE_EXTRA_LIBS_STATIC)
+    set(TIFF_EXTRA_LIBS_STATIC)
+    set(WRAP_EXTRA_LIBS_STATIC)
+endif()
 
 # Gather information about the employed CMake version's behavior
 set(DCMTK_CMAKE_HAS_CXX_STANDARD FALSE)
@@ -71,11 +153,12 @@ define_property(GLOBAL PROPERTY DCMTK_CMAKE_HAS_CXX_STANDARD
 set_property(GLOBAL PROPERTY DCMTK_CMAKE_HAS_CXX_STANDARD ${DCMTK_CMAKE_HAS_CXX_STANDARD})
 
 # General build options and settings
-option(BUILD_APPS "Build command line applications and test programs." OFF)
+option(BUILD_APPS "Build command line applications and test programs." ON)
 option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 option(BUILD_SINGLE_SHARED_LIBRARY "Build a single DCMTK library." OFF)
 mark_as_advanced(BUILD_SINGLE_SHARED_LIBRARY)
 set(CMAKE_DEBUG_POSTFIX "" CACHE STRING "Library postfix for debug builds. Usually left blank.")
+set(DCMTK_TLS_LIBRARY_POSTFIX "" CACHE STRING "Postfix for libraries that change their ABI when using OpenSSL.")
 # add our CMake modules to the module path, but prefer the ones from CMake.
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_ROOT}/Modules" "${CMAKE_CURRENT_SOURCE_DIR}/${DCMTK_CMAKE_INCLUDE}/CMake/")
 if(BUILD_SINGLE_SHARED_LIBRARY)
@@ -84,21 +167,21 @@ if(BUILD_SINGLE_SHARED_LIBRARY)
 endif()
 
 # DCMTK build options
-option(DCMTK_WITH_TIFF "Configure DCMTK with support for TIFF." OFF)
-option(DCMTK_WITH_PNG "Configure DCMTK with support for PNG." OFF)
-option(DCMTK_WITH_XML "Configure DCMTK with support for XML." OFF)
-option(DCMTK_WITH_ZLIB "Configure DCMTK with support for ZLIB." OFF)
-option(DCMTK_WITH_OPENSSL "Configure DCMTK with support for OPENSSL." OFF)
-option(DCMTK_WITH_SNDFILE "Configure DCMTK with support for SNDFILE." OFF)
-option(DCMTK_WITH_ICONV "Configure DCMTK with support for ICONV." OFF)
-option(DCMTK_WITH_ICU "Configure DCMTK with support for ICU." OFF)
+option(DCMTK_WITH_TIFF "Configure DCMTK with support for TIFF." ON)
+option(DCMTK_WITH_PNG "Configure DCMTK with support for PNG." ON)
+option(DCMTK_WITH_XML "Configure DCMTK with support for XML." ON)
+option(DCMTK_WITH_ZLIB "Configure DCMTK with support for ZLIB." ON)
+option(DCMTK_WITH_OPENSSL "Configure DCMTK with support for OPENSSL." ON)
+option(DCMTK_WITH_SNDFILE "Configure DCMTK with support for SNDFILE." ON)
+option(DCMTK_WITH_ICONV "Configure DCMTK with support for ICONV." ON)
+option(DCMTK_WITH_ICU "Configure DCMTK with support for ICU." ON)
 if(NOT WIN32)
   option(DCMTK_WITH_WRAP "Configure DCMTK with support for WRAP." ON)
 endif()
 option(DCMTK_WITH_OPENJPEG "Configure DCMTK with support for OPENJPEG." ON)
 option(DCMTK_ENABLE_PRIVATE_TAGS "Configure DCMTK with support for DICOM private tags coming with DCMTK." OFF)
 option(DCMTK_WITH_THREADS "Configure DCMTK with support for multi-threading." ON)
-option(DCMTK_WITH_DOXYGEN "Build API documentation with DOXYGEN." OFF)
+option(DCMTK_WITH_DOXYGEN "Build API documentation with DOXYGEN." ON)
 option(DCMTK_GENERATE_DOXYGEN_TAGFILE "Generate a tag file with DOXYGEN." OFF)
 option(DCMTK_WIDE_CHAR_FILE_IO_FUNCTIONS "Build with wide char file I/O functions." OFF)
 option(DCMTK_WIDE_CHAR_MAIN_FUNCTION "Build command line tools with wide char main function." OFF)
@@ -124,27 +207,31 @@ DCMTK_INFERABLE_OPTION(DCMTK_ENABLE_STL_TUPLE "Enable use of STL tuple.")
 DCMTK_INFERABLE_OPTION(DCMTK_ENABLE_STL_SYSTEM_ERROR "Enable use of STL system_error.")
 DCMTK_INFERABLE_OPTION(DCMTK_ENABLE_CXX11 "Enable use of native C++11 features (eg. move semantics).")
 
-# Built-in (compiled-in) dictionary enabled on Windows per default, otherwise
-# disabled. Loading of external dictionary via run-time is, per default,
-# configured the the opposite way since most users won't be interested in using
-# the external default dictionary if it is already compiled in.
+# On Windows, the built-in dictionary is default, on Unix the external one.
+# It is not possible to use both, built-in plus external default dictionary.
 if(WIN32 OR MINGW)
-  option(DCMTK_ENABLE_BUILTIN_DICTIONARY "Configure DCMTK with compiled-in data dictionary." ON)
-  option(DCMTK_ENABLE_EXTERNAL_DICTIONARY "Configure DCMTK to load external dictionary from default path on startup." ON)
+  set(DCMTK_DEFAULT_DICT "builtin" CACHE STRING "Denotes whether DCMTK will use built-in (compiled-in), external (file), or no default dictionary on startup")
 else() # built-in dictionary turned off on Unix per default
-  option(DCMTK_ENABLE_BUILTIN_DICTIONARY "Configure DCMTK with compiled-in data dictionary." ON)
-  option(DCMTK_ENABLE_EXTERNAL_DICTIONARY "Configure DCMTK to load external dictionary from default path on startup." ON)
+  set(DCMTK_DEFAULT_DICT "external" CACHE STRING "Denotes whether DCMTK will use built-in (compiled-in), external (file), or no default dictionary on startup")
 endif()
-if (NOT DCMTK_ENABLE_EXTERNAL_DICTIONARY AND NOT DCMTK_ENABLE_BUILTIN_DICTIONARY)
-  message(WARNING "Either external or built-in dictionary should be enabled, otherwise dictionary must be loaded manually on startup!")
+set_property(CACHE DCMTK_DEFAULT_DICT PROPERTY STRINGS builtin external none)
+if (DCMTK_DEFAULT_DICT EQUAL "none")
+  message(WARNING "Denotes whether DCMTK will use built-in (compiled-in), external (file), or no default dictionary on startup")
 endif()
 
+# Per default, we allow users to load user-defined dictionaries pointed to via
+# environment variable DCMDICTPATH.
+option(DCMTK_USE_DCMDICTPATH "Enable reading dictionary that is defined through DCMDICTPATH environment variable." ON)
+
+
 # Mark various settings as "advanced"
+mark_as_advanced(DCMTK_USE_DCMDICTPATH)
 mark_as_advanced(CMAKE_DEBUG_POSTFIX)
 mark_as_advanced(FORCE EXECUTABLE_OUTPUT_PATH LIBRARY_OUTPUT_PATH)
 mark_as_advanced(SNDFILE_DIR DCMTK_WITH_SNDFILE) # not yet needed in public DCMTK
 mark_as_advanced(DCMTK_GENERATE_DOXYGEN_TAGFILE)
 mark_as_advanced(DCMTK_WITH_OPENJPEG) # only needed by DCMJP2K module
+mark_as_advanced(DCMTK_TLS_LIBRARY_POSTFIX)
 
 if(NOT WIN32)
   # support for wide char file I/O functions is currently Windows-specific
@@ -216,14 +303,11 @@ elseif(WIN32)
 endif()
 
 #-----------------------------------------------------------------------------
-# Build directories
+# Interface target to collect all DCMTK libraries
 #-----------------------------------------------------------------------------
-set(DCMTK_BUILD_CMKDIR "${CMAKE_BINARY_DIR}")
-
-#-----------------------------------------------------------------------------
-# Start with clean DCMTKTargets.cmake, filled in GenerateCMakeExports.cmake
-#-----------------------------------------------------------------------------
-file(WRITE "${DCMTK_BUILD_CMKDIR}/DCMTKTargets.cmake" "")
+add_library(DCMTK INTERFACE)
+install(TARGETS DCMTK EXPORT DCMTKTargets)
+target_link_libraries(DCMTK INTERFACE config)
 
 #-----------------------------------------------------------------------------
 # Platform-independent settings
@@ -252,15 +336,9 @@ add_definitions(-DUSE_NULL_SAFE_OFSTRING)
 add_definitions(-DDCMTK_BUILD_IN_PROGRESS)
 
 # build output files in these directories
-if(WIN32)
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
-else()
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}")
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}")
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}")
-endif()
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 #-----------------------------------------------------------------------------
 # Platform-specific settings
@@ -269,52 +347,15 @@ endif()
 # set project wide flags for compiler and linker
 
 if(WIN32)
-  option(DCMTK_OVERWRITE_WIN32_COMPILER_FLAGS  "Overwrite compiler flags with DCMTK's WIN32 package default values." OFF)
+  option(DCMTK_OVERWRITE_WIN32_COMPILER_FLAGS  "Modify the default compiler flags selected by CMake." ON)
   option(DCMTK_COMPILE_WIN32_MULTITHREADED_DLL "Compile DCMTK using the Multithreaded DLL runtime library." OFF)
   if (BUILD_SHARED_LIBS)
     set(DCMTK_COMPILE_WIN32_MULTITHREADED_DLL ON)
   endif()
 else()
+  # these settings play no role on other platforms
   set(DCMTK_OVERWRITE_WIN32_COMPILER_FLAGS OFF)
   set(DCMTK_COMPILE_WIN32_MULTITHREADED_DLL OFF)
-endif()
-
-if(DCMTK_OVERWRITE_WIN32_COMPILER_FLAGS AND NOT BUILD_SHARED_LIBS)
-
-  # settings for Microsoft Visual Studio
-  if(CMAKE_GENERATOR MATCHES "Visual Studio .*")
-    # get Visual Studio Version
-    string(REGEX REPLACE "Visual Studio ([0-9]+).*" "\\1" VS_VERSION "${CMAKE_GENERATOR}")
-    # these settings never change even for C or C++
-    set(CMAKE_C_FLAGS_DEBUG "/MTd /Z7 /Od")
-    set(CMAKE_C_FLAGS_RELEASE "/DNDEBUG /MT /O2")
-    set(CMAKE_C_FLAGS_MINSIZEREL "/DNDEBUG /MT /O2")
-    set(CMAKE_C_FLAGS_RELWITHDEBINFO "/DNDEBUG /MTd /Z7 /Od")
-    set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Z7 /Od")
-    set(CMAKE_CXX_FLAGS_RELEASE "/DNDEBUG /MT /O2")
-    set(CMAKE_CXX_FLAGS_MINSIZEREL "/DNDEBUG /MT /O2")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/DNDEBUG /MTd /Z7 /Od")
-    # specific settings for the various Visual Studio versions
-    if(VS_VERSION EQUAL 6)
-      set(CMAKE_C_FLAGS "/nologo /W3 /GX /Gy /YX")
-      set(CMAKE_CXX_FLAGS "/nologo /W3 /GX /Gy /YX /Zm500") # /Zm500 increments heap size which is needed on some system to compile templates in dcmimgle
-    endif()
-    if(VS_VERSION EQUAL 7)
-      set(CMAKE_C_FLAGS "/nologo /W3 /Gy")
-      set(CMAKE_CXX_FLAGS "/nologo /W3 /Gy")
-    endif()
-    if(VS_VERSION GREATER 7)
-      set(CMAKE_C_FLAGS "/nologo /W3 /Gy /EHsc")
-      set(CMAKE_CXX_FLAGS "/nologo /W3 /Gy /EHsc")
-    endif()
-  endif()
-
-  # settings for Borland C++
-  if(CMAKE_GENERATOR MATCHES "Borland Makefiles")
-    # further settings required? not tested for a very long time!
-    set(CMAKE_STANDARD_LIBRARIES "import32.lib cw32mt.lib")
-  endif()
-
 endif()
 
 if(WIN32 AND CMAKE_GENERATOR MATCHES "Visual Studio .*")
@@ -333,18 +374,20 @@ if(WIN32 AND CMAKE_GENERATOR MATCHES "Visual Studio .*")
         CMAKE_C_FLAGS_RELWITHDEBINFO
         )
 
-  if(DCMTK_COMPILE_WIN32_MULTITHREADED_DLL OR BUILD_SHARED_LIBS)
-    # Convert any /MT or /MTd option to /MD or /MDd
-    foreach(CompilerFlag ${CompilerFlags})
-        string(REPLACE "/MT" "/MD" ${CompilerFlag} "${${CompilerFlag}}")
-        set(${CompilerFlag} "${${CompilerFlag}}" CACHE STRING "msvc compiler flags" FORCE)
-    endforeach()
-  else()
-    # Convert any /MD or /MDd option to /MT or /MTd
-    foreach(CompilerFlag ${CompilerFlags})
-        string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
-        set(${CompilerFlag} "${${CompilerFlag}}" CACHE STRING "msvc compiler flags" FORCE)
-    endforeach()
+  if(DCMTK_OVERWRITE_WIN32_COMPILER_FLAGS OR BUILD_SHARED_LIBS)
+    if(DCMTK_COMPILE_WIN32_MULTITHREADED_DLL OR BUILD_SHARED_LIBS)
+      # Convert any /MT or /MTd option to /MD or /MDd
+      foreach(CompilerFlag ${CompilerFlags})
+          string(REPLACE "/MT" "/MD" ${CompilerFlag} "${${CompilerFlag}}")
+          set(${CompilerFlag} "${${CompilerFlag}}" CACHE STRING "msvc compiler flags" FORCE)
+      endforeach()
+    else()
+      # Convert any /MD or /MDd option to /MT or /MTd
+      foreach(CompilerFlag ${CompilerFlags})
+          string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+          set(${CompilerFlag} "${${CompilerFlag}}" CACHE STRING "msvc compiler flags" FORCE)
+      endforeach()
+    endif()
   endif()
 endif()
 
@@ -411,7 +454,11 @@ if(WIN32)   # special handling for Windows systems
             -D_CRT_VCCLRIT_NO_DEPRECATE
             -D_SCL_SECURE_NO_DEPRECATE
             )
+          # suppress linker warning LNK4099 about missing .pdb files when compiling in debug mode
+          set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ignore:4099")
+          set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
         endif()
+        # Enable various warnings
       endif()
     endif()
   endif()
@@ -426,7 +473,13 @@ else()   # ... for non-Windows systems
   elseif(CMAKE_SYSTEM_NAME MATCHES "NetBSD")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_XOPEN_SOURCE_EXTENDED -D_XOPEN_SOURCE=500 -D_NETBSD_SOURCE -D_DEFAULT_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE -D_POSIX_C_SOURCE=199506L")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_XOPEN_SOURCE_EXTENDED -D_XOPEN_SOURCE=500 -D_NETBSD_SOURCE -D_DEFAULT_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE -D_POSIX_C_SOURCE=199506L")
+  # Compiler flags for DragonFly BSD
+  elseif(CMAKE_SYSTEM_NAME MATCHES "DragonFly")
+    # On DragonFly BSD, we don't set any of the feature macros because they are not needed and
+    # actually cause problems such as strlcpy() not being declared in <cstring>.
   # Solaris, FreeBSD and newer versions of OpenBSD fail with these flags
+  elseif(CMAKE_SYSTEM_NAME MATCHES "Android")
+    # On Android, we don't set any of the feature macros
   elseif(NOT CMAKE_SYSTEM_NAME MATCHES "SunOS" AND NOT CMAKE_SYSTEM_NAME MATCHES "FreeBSD" AND (NOT CMAKE_SYSTEM_NAME MATCHES "OpenBSD" OR CMAKE_SYSTEM_VERSION VERSION_LESS 4))
     # Compiler flags for all other non-Windows systems
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_XOPEN_SOURCE_EXTENDED -D_XOPEN_SOURCE=500 -D_BSD_SOURCE -D_DEFAULT_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE -D_POSIX_C_SOURCE=199506L")
@@ -510,16 +563,48 @@ define_property(GLOBAL PROPERTY DCMTK_MODERN_CXX_STANDARDS
 set_property(GLOBAL PROPERTY DCMTK_MODERN_CXX_STANDARDS 11 14 17)
 
 #-----------------------------------------------------------------------------
+# Enable various warnings by default
+#-----------------------------------------------------------------------------
+
+# fallback implementation of add_compile_options()
+if(CMAKE_MAJOR_VERSION LESS 3 AND NOT CMAKE_VERSION VERSION_EQUAL 2.8.12)
+  function(add_compile_options)
+    foreach(OPTION ${ARGN})
+        foreach(FLAG C CXX)
+            string(FIND "${CMAKE_${FLAG}_FLAGS}" "${OPTION}" IDX)
+            if(IDX EQUAL -1)
+                set("CMAKE_${FLAG}_FLAGS" "${CMAKE_${FLAG}_FLAGS} ${OPTION}" PARENT_SCOPE)
+            endif()
+        endforeach()
+    endforeach()
+  endfunction()
+endif()
+
+if(MSVC)
+    # This code removes existing warning flags to prevent MSVC warning D9025.
+    # Remove it once our minimum CMake version is >= 3.15, since those newer
+    # CMake versions no longer add those flags by default.
+    foreach(FLAG C CXX)
+        string(REGEX REPLACE "[ \t\r\n]+/[wW][0-9]" "" "CMAKE_${FLAG}_FLAGS" "${CMAKE_${FLAG}_FLAGS}")
+        string(REGEX REPLACE "/[wW][0-9][ \t\r\n]*" "" "CMAKE_${FLAG}_FLAGS" "${CMAKE_${FLAG}_FLAGS}")
+    endforeach()
+    add_compile_options("/W4")
+else()
+    # Add -Wall to the compiler flags if we are compiling with gcc or Clang.
+    if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR
+        (CMAKE_CXX_COMPILER_ID STREQUAL "Clang") OR
+        (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang") OR
+        (CMAKE_CXX_COMPILER_ID STREQUAL "ARMClang") OR
+        (CMAKE_CXX_COMPILER_ID STREQUAL "XLClang"))
+        add_compile_options("-Wall")
+    endif()
+endif()
+
+#-----------------------------------------------------------------------------
 # Third party libraries
 #-----------------------------------------------------------------------------
 
 include(${DCMTK_CMAKE_INCLUDE}CMake/3rdparty.cmake)
-
-#-----------------------------------------------------------------------------
-# DCMTK libraries
-#-----------------------------------------------------------------------------
-
-include(${DCMTK_CMAKE_INCLUDE}CMake/GenerateDCMTKConfigure.cmake)
 
 #-----------------------------------------------------------------------------
 # Dart configuration (disabled per default)
@@ -532,6 +617,12 @@ include(${DCMTK_CMAKE_INCLUDE}CMake/GenerateDCMTKConfigure.cmake)
 # if(BUILD_TESTING)
 #   enable_testing()
 # endif()
+
+#-----------------------------------------------------------------------------
+# DCMTK libraries
+#-----------------------------------------------------------------------------
+
+include(${DCMTK_CMAKE_INCLUDE}CMake/GenerateDCMTKConfigure.cmake)
 
 #-----------------------------------------------------------------------------
 # Thread support
@@ -560,6 +651,70 @@ if(WITH_THREADS)
     endif()
   endif()
 endif()
+
+#-----------------------------------------------------------------------------
+# OpenSSL functions (these tests must be run after THREAD_LIBS is set)
+#-----------------------------------------------------------------------------
+
+# Run the OpenSSL feature tests only if OpenSSL was detected and is enabled
+if(DCMTK_WITH_OPENSSL)
+  # save previous value of CMAKE_REQUIRED_LIBRARIES
+  set(CMAKE_REQUIRED_LIBRARIES_TEMP ${CMAKE_REQUIRED_LIBRARIES})
+
+  # add OpenSSL libraries
+  set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES} ${OPENSSL_LIBS} ${THREAD_LIBS})
+
+  # check whether we have <openssl/provider.h>
+  CHECK_INCLUDE_FILE_CXX("openssl/provider.h" HAVE_OPENSSL_PROVIDER_H)
+
+  # test presence of functions, constants and macros needed for the dcmtls module
+  CHECK_FUNCTIONWITHHEADER_EXISTS("SSL_CTX_get0_param" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_SSL_CTX_GET0_PARAM)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("RAND_egd" "openssl/rand.h" HAVE_OPENSSL_PROTOTYPE_RAND_EGD)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("DH_bits" "openssl/dh.h" HAVE_OPENSSL_PROTOTYPE_DH_BITS)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("EVP_PKEY_RSA_PSS" "openssl/evp.h" HAVE_OPENSSL_PROTOTYPE_EVP_PKEY_RSA_PSS)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("EVP_PKEY_base_id" "openssl/evp.h" HAVE_OPENSSL_PROTOTYPE_EVP_PKEY_BASE_ID)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("SSL_CTX_get_cert_store" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_SSL_CTX_GET_CERT_STORE)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("SSL_CTX_get_ciphers" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_SSL_CTX_GET_CIPHERS)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("SSL_CTX_set0_tmp_dh_pkey" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_SSL_CTX_SET0_TMP_DH_PKEY)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("SSL_CTX_set1_curves(0,0,0)" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_SSL_CTX_SET1_CURVES)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("SSL_CTX_set1_sigalgs" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_SSL_CTX_SET1_SIGALGS)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("SSL_CTX_set_ecdh_auto(0,0)" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_SSL_CTX_SET_ECDH_AUTO)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("SSL_CTX_set_max_proto_version(0,0)" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_SSL_CTX_SET_MAX_PROTO_VERSION)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("SSL_CTX_set_security_level" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_SSL_CTX_SET_SECURITY_LEVEL)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("SSL_ERROR_WANT_ASYNC" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_SSL_ERROR_WANT_ASYNC)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("SSL_ERROR_WANT_ASYNC_JOB" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_SSL_ERROR_WANT_ASYNC_JOB)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("SSL_ERROR_WANT_CLIENT_HELLO_CB" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_SSL_ERROR_WANT_CLIENT_HELLO_CB)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("TLS1_TXT_ECDHE_RSA_WITH_CHACHA20_POLY1305" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_TLS1_TXT_ECDHE_RSA_WITH_CHACHA20_POLY1305)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("TLS_method" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_TLS_METHOD)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("X509_STORE_get0_param" "openssl/x509.h" HAVE_OPENSSL_PROTOTYPE_X509_STORE_GET0_PARAM)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("X509_get_signature_nid" "openssl/x509.h" HAVE_OPENSSL_PROTOTYPE_X509_GET_SIGNATURE_NID)
+
+  # test presence of functions, constants and macros needed for the dcmsign module
+  CHECK_FUNCTIONWITHHEADER_EXISTS("ASN1_STRING_get0_data" "openssl/asn1.h" HAVE_OPENSSL_PROTOTYPE_ASN1_STRING_GET0_DATA)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("EVP_PKEY_get0_EC_KEY" "openssl/evp.h" HAVE_OPENSSL_PROTOTYPE_EVP_PKEY_GET0_EC_KEY)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("EVP_PKEY_get_group_name" "openssl/evp.h" HAVE_OPENSSL_PROTOTYPE_EVP_PKEY_GET_GROUP_NAME)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("EVP_PKEY_id" "openssl/evp.h" HAVE_OPENSSL_PROTOTYPE_EVP_PKEY_ID)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("OSSL_PROVIDER_load" "openssl/provider.h" HAVE_OPENSSL_PROTOTYPE_OSSL_PROVIDER_LOAD)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("TS_STATUS_INFO_get0_failure_info" "openssl/ts.h" HAVE_OPENSSL_PROTOTYPE_TS_STATUS_INFO_GET0_FAILURE_INFO)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("TS_STATUS_INFO_get0_status" "openssl/ts.h" HAVE_OPENSSL_PROTOTYPE_TS_STATUS_INFO_GET0_STATUS)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("TS_STATUS_INFO_get0_text" "openssl/ts.h" HAVE_OPENSSL_PROTOTYPE_TS_STATUS_INFO_GET0_TEXT)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("TS_VERIFY_CTS_set_certs(0,0)" "openssl/ts.h" HAVE_OPENSSL_PROTOTYPE_TS_VERIFY_CTS_SET_CERTS)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("TS_VERIFY_CTX_set_data" "openssl/ts.h" HAVE_OPENSSL_PROTOTYPE_TS_VERIFY_CTX_SET_DATA)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("TS_VERIFY_CTX_set_flags" "openssl/ts.h" HAVE_OPENSSL_PROTOTYPE_TS_VERIFY_CTX_SET_FLAGS)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("TS_VERIFY_CTX_set_store" "openssl/ts.h" HAVE_OPENSSL_PROTOTYPE_TS_VERIFY_CTX_SET_STORE)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("X509_get0_notAfter" "openssl/x509.h" HAVE_OPENSSL_PROTOTYPE_X509_GET0_NOTAFTER)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("X509_get0_notBefore" "openssl/x509.h" HAVE_OPENSSL_PROTOTYPE_X509_GET0_NOTBEFORE)
+
+  # check if type EVP_MD_CTX is defined as typedef for "struct evp_md_ctx_st" (new) or "struct env_md_ctx_st" (old)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("struct evp_md_ctx_st *a; EVP_MD_CTX *b=a" "openssl/evp.h" HAVE_OPENSSL_DECLARATION_NEW_EVP_MD_CTX)
+
+  # check if the first parameter passed to X509_ALGOR_get0() should be "const ASN1_OBJECT **" (new) or "ASN1_OBJECT **" (old)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("const ASN1_OBJECT *a; X509_ALGOR_get0(&a,0,0,0)" "openssl/x509.h" HAVE_OPENSSL_X509_ALGOR_GET0_CONST_PARAM)
+
+  # restore previous value of CMAKE_REQUIRED_LIBRARIES
+  set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES_TEMP})
+endif()
+
 
 #-----------------------------------------------------------------------------
 # Test for socket libraries if needed (Solaris)

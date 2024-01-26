@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2019, OFFIS e.V.
+ *  Copyright (C) 2019-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -21,15 +21,10 @@
 
 
 #include "dcmtk/config/osconfig.h"    /* make sure OS specific configuration is included first */
-
-#include "dcmtk/ofstd/ofstream.h"
 #include "dcmtk/dcmdata/dcvruv.h"
 
-#define INCLUDE_CSTDIO
-#define INCLUDE_CSTRING
-#define INCLUDE_CINTTYPES
-#include "dcmtk/ofstd/ofstdinc.h"
-
+#include "dcmtk/ofstd/ofstream.h"
+#include "dcmtk/dcmdata/dcjson.h"
 
 // ********************************
 
@@ -392,4 +387,66 @@ OFCondition DcmUnsigned64bitVeryLong::verify(const OFBool autocorrect)
     } else
         errorFlag = EC_Normal;
     return errorFlag;
+}
+
+
+// ********************************
+
+// The largest number permitted in Javascript
+#define JSON_MAX_SAFE_INTEGER 9007199254740991ull
+
+OFCondition DcmUnsigned64bitVeryLong::writeJson(STD_NAMESPACE ostream &out,
+                                                DcmJsonFormat &format)
+{
+    /* always write JSON Opener */
+    writeJsonOpener(out, format);
+
+    if (!isEmpty())
+    {
+
+        /* write element value */
+        OFString bulkDataValue;
+        if (format.asBulkDataURI(getTag(), bulkDataValue))
+        {
+            format.printBulkDataURIPrefix(out);
+            DcmJsonFormat::printString(out, bulkDataValue);
+        }
+        else
+        {
+            const unsigned long vm = getVM();
+            OFString value;
+            Uint64 v = 0;
+
+            OFCondition status = getOFString(value, 0L);
+            if (status.bad()) return status;
+            format.printValuePrefix(out);
+
+            // check if we can represent the value as a JSON number.
+            // Unsigned JSON numbers should be <= JSON_MAX_SAFE_INTEGER.
+            status = getUint64(v, 0L);
+            if (status.bad() || (v > JSON_MAX_SAFE_INTEGER))
+                DcmJsonFormat::printValueString(out, value);
+                else DcmJsonFormat::printNumberInteger(out, value);
+
+            for (unsigned long valNo = 1; valNo < vm; ++valNo)
+            {
+                status = getOFString(value, valNo);
+                if (status.bad()) return status;
+                format.printNextArrayElementPrefix(out);
+
+                // check if we can represent the value as a JSON number.
+                // Unsigned JSON numbers should be <= JSON_MAX_SAFE_INTEGER.
+                status = getUint64(v, valNo);
+                if (status.bad() || (v > JSON_MAX_SAFE_INTEGER))
+                    DcmJsonFormat::printValueString(out, value);
+                    else DcmJsonFormat::printNumberInteger(out, value);
+            }
+            format.printValueSuffix(out);
+        }
+    }
+
+    /* write JSON Closer  */
+    writeJsonCloser(out, format);
+    /* always report success */
+    return EC_Normal;
 }

@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2019, OFFIS e.V.
+ *  Copyright (C) 1994-2022, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -24,10 +24,6 @@
 #include "dcmtk/config/osconfig.h"    /* make sure OS specific configuration is included first */
 #include "dcmtk/dcmdata/dcvr.h"
 #include "dcmtk/dcmdata/dctypes.h"
-
-#define INCLUDE_CSTDLIB
-#define INCLUDE_CSTRING
-#include "dcmtk/ofstd/ofstdinc.h"
 
 /*
 ** global flags
@@ -131,41 +127,34 @@ static const DcmVREntry DcmVRDict[] = {
     { EVR_ST, "ST", &noDelimiters, sizeof(char), DCMVR_PROP_ISASTRING | DCMVR_PROP_ISAFFECTEDBYCHARSET | DCMVR_PROP_ISLENGTHINCHAR, 0, 1024 },
     { EVR_SV, "SV", &noDelimiters, sizeof(Sint64), DCMVR_PROP_EXTENDEDLENGTHENCODING, 8, 8 },
     { EVR_TM, "TM", &noDelimiters, sizeof(char), DCMVR_PROP_ISASTRING, 0, 16 },
-    { EVR_UC, "UC", &noDelimiters, sizeof(char), DCMVR_PROP_ISASTRING | DCMVR_PROP_EXTENDEDLENGTHENCODING | DCMVR_PROP_ISAFFECTEDBYCHARSET, 0, 4294967294U },
+    { EVR_UC, "UC", &bsDelimiter, sizeof(char), DCMVR_PROP_ISASTRING | DCMVR_PROP_EXTENDEDLENGTHENCODING | DCMVR_PROP_ISAFFECTEDBYCHARSET, 0, 4294967294U },
     { EVR_UI, "UI", &noDelimiters, sizeof(char), DCMVR_PROP_ISASTRING, 0, 64 },
     { EVR_UL, "UL", &noDelimiters, sizeof(Uint32), DCMVR_PROP_NONE, 4, 4 },
     { EVR_UR, "UR", &noDelimiters, sizeof(char), DCMVR_PROP_ISASTRING|DCMVR_PROP_EXTENDEDLENGTHENCODING, 0, 4294967294U },
     { EVR_US, "US", &noDelimiters, sizeof(Uint16), DCMVR_PROP_NONE, 2, 2 },
     { EVR_UT, "UT", &noDelimiters, sizeof(char), DCMVR_PROP_ISASTRING | DCMVR_PROP_EXTENDEDLENGTHENCODING | DCMVR_PROP_ISAFFECTEDBYCHARSET, 0, 4294967294U },
     { EVR_UV, "UV", &noDelimiters, sizeof(Uint64), DCMVR_PROP_EXTENDEDLENGTHENCODING, 8, 8 },
-    { EVR_ox, "ox", &noDelimiters, sizeof(Uint8), DCMVR_PROP_NONSTANDARD | DCMVR_PROP_EXTENDEDLENGTHENCODING, 0, 4294967294U },
+    { EVR_ox, "ox", &noDelimiters, sizeof(Uint8), DCMVR_PROP_NONSTANDARD | DCMVR_PROP_EXTENDEDLENGTHENCODING | DCMVR_PROP_UNDEFINEDLENGTH, 0, 4294967294U },
+    { EVR_px, "px", &noDelimiters, sizeof(Uint8), DCMVR_PROP_NONSTANDARD | DCMVR_PROP_EXTENDEDLENGTHENCODING | DCMVR_PROP_UNDEFINEDLENGTH, 0, 4294967294U },
     { EVR_xs, "xs", &noDelimiters, sizeof(Uint16), DCMVR_PROP_NONSTANDARD, 2, 2 },
     { EVR_lt, "lt", &noDelimiters, sizeof(Uint16), DCMVR_PROP_NONSTANDARD | DCMVR_PROP_EXTENDEDLENGTHENCODING, 0, 4294967294U },
     { EVR_na, "na", &noDelimiters, 0, DCMVR_PROP_NONSTANDARD, 0, 0 },
     { EVR_up, "up", &noDelimiters, sizeof(Uint32), DCMVR_PROP_NONSTANDARD, 4, 4 },
 
     /* unique prefixes have been "invented" for the following internal VRs */
-    { EVR_item, "it_EVR_item", &noDelimiters, 0,
-      DCMVR_PROP_NONSTANDARD | DCMVR_PROP_INTERNAL, 0, 0 },
-    { EVR_metainfo, "mi_EVR_metainfo", &noDelimiters, 0,
-      DCMVR_PROP_NONSTANDARD | DCMVR_PROP_INTERNAL, 0, 0 },
-    { EVR_dataset, "ds_EVR_dataset", &noDelimiters, 0,
-      DCMVR_PROP_NONSTANDARD | DCMVR_PROP_INTERNAL, 0, 0 },
-    { EVR_fileFormat, "ff_EVR_fileFormat", &noDelimiters, 0,
-      DCMVR_PROP_NONSTANDARD | DCMVR_PROP_INTERNAL, 0, 0 },
-    { EVR_dicomDir, "dd_EVR_dicomDir", &noDelimiters, 0,
-      DCMVR_PROP_NONSTANDARD | DCMVR_PROP_INTERNAL, 0, 0 },
-    { EVR_dirRecord, "dr_EVR_dirRecord", &noDelimiters, 0,
-      DCMVR_PROP_NONSTANDARD | DCMVR_PROP_INTERNAL, 0, 0 },
+    { EVR_item, "it_EVR_item", &noDelimiters, 0, DCMVR_PROP_NONSTANDARD | DCMVR_PROP_INTERNAL, 0, 0 },
+    { EVR_metainfo, "mi_EVR_metainfo", &noDelimiters, 0, DCMVR_PROP_NONSTANDARD | DCMVR_PROP_INTERNAL, 0, 0 },
+    { EVR_dataset, "ds_EVR_dataset", &noDelimiters, 0, DCMVR_PROP_NONSTANDARD | DCMVR_PROP_INTERNAL, 0, 0 },
+    { EVR_fileFormat, "ff_EVR_fileFormat", &noDelimiters, 0, DCMVR_PROP_NONSTANDARD | DCMVR_PROP_INTERNAL, 0, 0 },
+    { EVR_dicomDir, "dd_EVR_dicomDir", &noDelimiters, 0, DCMVR_PROP_NONSTANDARD | DCMVR_PROP_INTERNAL, 0, 0 },
+    { EVR_dirRecord, "dr_EVR_dirRecord", &noDelimiters, 0, DCMVR_PROP_NONSTANDARD | DCMVR_PROP_INTERNAL, 0, 0 },
 
-    { EVR_pixelSQ, "ps_EVR_pixelSQ", &noDelimiters, sizeof(Uint8),
-      DCMVR_PROP_NONSTANDARD | DCMVR_PROP_INTERNAL, 0, DCM_UndefinedLength },
+    { EVR_pixelSQ, "ps_EVR_pixelSQ", &noDelimiters, sizeof(Uint8), DCMVR_PROP_NONSTANDARD | DCMVR_PROP_INTERNAL, 0, DCM_UndefinedLength },
     /* Moved from internal use to non standard only: necessary to distinguish from "normal" OB */
-    { EVR_pixelItem, "pi", &noDelimiters, sizeof(Uint8),
-      DCMVR_PROP_NONSTANDARD, 0, DCM_UndefinedLength },
+    { EVR_pixelItem, "pi", &noDelimiters, sizeof(Uint8), DCMVR_PROP_NONSTANDARD, 0, DCM_UndefinedLength },
 
-    { EVR_UNKNOWN, "??", &noDelimiters, sizeof(Uint8), /* EVR_UNKNOWN (i.e. "future" VRs) should be mapped to UN or OB */
-      DCMVR_PROP_NONSTANDARD | DCMVR_PROP_INTERNAL | DCMVR_PROP_EXTENDEDLENGTHENCODING | DCMVR_PROP_UNDEFINEDLENGTH, 0, DCM_UndefinedLength },
+    /* EVR_UNKNOWN (i.e. "future" VRs) should be mapped to UN or OB */
+    { EVR_UNKNOWN, "??", &noDelimiters, sizeof(Uint8), DCMVR_PROP_NONSTANDARD | DCMVR_PROP_INTERNAL | DCMVR_PROP_EXTENDEDLENGTHENCODING | DCMVR_PROP_UNDEFINEDLENGTH, 0, DCM_UndefinedLength },
 
     /* Unknown Value Representation */
     { EVR_UN, "UN", &noDelimiters, sizeof(Uint8), DCMVR_PROP_EXTENDEDLENGTHENCODING | DCMVR_PROP_UNDEFINEDLENGTH, 0, 4294967294U },
@@ -175,8 +164,8 @@ static const DcmVREntry DcmVRDict[] = {
     /* Overlay Data - only used in ident() */
     { EVR_OverlayData, "OverlayData", &noDelimiters, 0, DCMVR_PROP_INTERNAL, 0, DCM_UndefinedLength },
 
-    { EVR_UNKNOWN2B, "??", &noDelimiters, sizeof(Uint8), /* illegal VRs, we assume no extended length coding */
-      DCMVR_PROP_NONSTANDARD | DCMVR_PROP_INTERNAL, 0, DCM_UndefinedLength },
+    /* illegal VRs, we assume no extended length coding */
+    { EVR_UNKNOWN2B, "??", &noDelimiters, sizeof(Uint8), DCMVR_PROP_NONSTANDARD | DCMVR_PROP_INTERNAL, 0, DCM_UndefinedLength },
 
 };
 
@@ -283,6 +272,7 @@ DcmVR::getValidEVR() const
                 evr = EVR_OW;
                 break;
             case EVR_ox:
+            case EVR_px:
             case EVR_pixelSQ:
                 evr = EVR_OB;
                 break;
@@ -477,16 +467,17 @@ DcmVR::isEquivalent(const DcmVR& avr) const
     switch (vr)
     {
       case EVR_ox:
+      case EVR_px:
           result = (evr == EVR_OB || evr == EVR_OW);
           break;
       case EVR_lt:
           result = (evr == EVR_OW || evr == EVR_US || evr == EVR_SS);
           break;
       case EVR_OB:
-          result = (evr == EVR_ox);
+          result = (evr == EVR_ox || evr == EVR_px);
           break;
       case EVR_OW:
-          result = (evr == EVR_ox || evr == EVR_lt);
+          result = (evr == EVR_ox || evr == EVR_px || evr == EVR_lt);
           break;
       case EVR_up:
           result = (evr == EVR_UL);

@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2014-2019, OFFIS e.V.
+ *  Copyright (C) 2014-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -23,10 +23,6 @@
 //       although it is part of configure testing itself.
 //       Therefore, ensure osconfig.h has already been generated
 //       before this program is used.
-#define INCLUDE_CLIMITS
-#define INCLUDE_CMATH
-#define INCLUDE_CSETJMP
-#define INCLUDE_CSIGNAL
 #include "../math.cc"
 
 #ifdef HAVE_FENV_H
@@ -40,7 +36,7 @@
 #include <ieeefp.h>
 #endif
 
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined(__aarch64__)
 // For controlling floating point exceptions on OS X.
 #include <xmmintrin.h>
 #endif
@@ -189,7 +185,13 @@ static void divide_by_zero()
     //       away or emit compile-time errors.
     volatile T t0 = 1;
     volatile T t1 = 0;
+#ifndef DCMTK_UNDEF_SANITIZER
+    // disable this line when compiling with gcc -fsanitize=undefined
+    // by defining DCMTK_UNDEF_SANITIZER because otherwise this
+    // program will be aborted with a runtime error, thus preventing
+    // CMake from creating the makefiles / project files.
     t0 /= t1;
+#endif
 }
 
 // gathers and prints information for integer types
@@ -334,13 +336,17 @@ static void provoke_snan()
 #ifdef HAVE_WINDOWS_H
     _clearfp();
     _controlfp( _controlfp(0,0) & ~_EM_INVALID, _MCW_EM );
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) && !defined(__aarch64__)
     _MM_SET_EXCEPTION_MASK( _MM_GET_EXCEPTION_MASK() & ~_MM_MASK_INVALID );
 #elif defined(HAVE_FENV_H) && defined(HAVE_PROTOTYPE_FEENABLEEXCEPT)
     feenableexcept( FE_INVALID );
 #elif defined(HAVE_IEEEFP_H) && !defined(__CYGWIN__)
     // Cygwin unfortunately seems to have <ieeefp.h> but no implementation of fgetmask/fpsetmask
+#ifdef HAVE_DECLARATION_FP_EXCEPT_T
+    fp_except_t cw = fpgetmask();
+#else
     fp_except cw = fpgetmask();
+#endif
 
 #ifdef FP_X_DX
     // on some systems, the devide-by-zero flag is called FP_X_DX
@@ -353,9 +359,14 @@ static void provoke_snan()
     // we assign a signaling NaN to another float variable
     // and convert it to a quiet NaN.
     volatile T t = guess<T>::snan();
-    // Other compilers will trigger only if we use
-    // arithmetics.
+    // Other compilers will trigger only if we use arithmetics.
+#ifndef DCMTK_UNDEF_SANITIZER
+    // disable this line when compiling with gcc -fsanitize=undefined
+    // by defining DCMTK_UNDEF_SANITIZER because otherwise this
+    // program will be aborted with a runtime error, thus preventing
+    // CMake from creating the makefiles / project files.
     ++t;
+#endif
 }
 
 template<typename T>
@@ -371,13 +382,17 @@ static int test_snan( STD_NAMESPACE ostream& out, const char* name )
     _controlfp( _controlfp(0,0) | _EM_INVALID, _MCW_EM );
 #elif defined(HAVE_FENV_H)
     feclearexcept( FE_INVALID );
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined(__aarch64__)
     _MM_SET_EXCEPTION_MASK( _MM_GET_EXCEPTION_MASK() | _MM_MASK_INVALID );
 #elif defined(HAVE_FENV_H) && defined(HAVE_PROTOTYPE_FEENABLEEXCEPT)
     fedisableexcept( FE_INVALID );
 #elif defined(HAVE_IEEEFP_H) && !defined(__CYGWIN__)
     // Cygwin unfortunately seems to have <ieeefp.h> but no implementation of fgetmask/fpsetmask
+#ifdef HAVE_DECLARATION_FP_EXCEPT_T
+    fp_except_t cw = fpgetmask();
+#else
     fp_except cw = fpgetmask();
+#endif
 
 #ifdef FP_X_DX
     // on some systems, the devide-by-zero flag is called FP_X_DX

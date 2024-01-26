@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2017, OFFIS e.V.
+ *  Copyright (C) 1994-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were partly developed by
@@ -87,12 +87,6 @@
 #include "dcmtk/ofstd/ofconsol.h"
 #include "dcmtk/ofstd/ofstd.h"
 #include "dcmtk/dcmnet/diutil.h"
-
-#define INCLUDE_CSTDLIB
-#define INCLUDE_CSTDIO
-#define INCLUDE_CSTRING
-#define INCLUDE_UNISTD
-#include "dcmtk/ofstd/ofstdinc.h"
 
 #ifdef HAVE_UNIX_H
 #if defined(macintosh) && defined (HAVE_WINSOCK_H)
@@ -306,7 +300,7 @@ int gethostname(char* name, int namelen)
     struct utsname uts;
     int rc;
 
-    bzero(&uts, sizeof(uts));
+    memset(&uts, 0, sizeof(uts));
     rc = utsname(&uts);
     if (rc >= 0) {
 	strncpy(name, uts.nodename, namelen);

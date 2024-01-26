@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2013-2017, OFFIS e.V.
+ *  Copyright (C) 2013-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -24,6 +24,8 @@
 
 #include "dcmtk/dcmnet/dstorscp.h"
 #include "dcmtk/dcmnet/diutil.h"
+#include "dcmtk/ofstd/ofstdinc.h"
+#include <ctime>
 
 
 // constant definitions

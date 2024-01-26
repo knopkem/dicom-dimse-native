@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1997-2019, OFFIS e.V.
+ *  Copyright (C) 1997-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -24,7 +24,7 @@
 ** A simple string class
 ** - for OFFIS projects when an ANSI string class is not always available
 ** - based on the ANSI-C++ specifications
-** - this impementation is intended to be slow but reliable
+** - this implementation is intended to be slow but reliable
 ** - it is known to be slow but is it reliable?
 */
 
@@ -37,9 +37,6 @@
 #include "dcmtk/ofstd/ofbmanip.h"
 #include "dcmtk/ofstd/oftypes.h"
 #include "dcmtk/ofstd/ofstd.h"
-
-#define INCLUDE_CCTYPE
-#include "dcmtk/ofstd/ofstdinc.h"
 
 static const char* verify_string(const char *s)
 {
@@ -527,7 +524,7 @@ OFString::find (const OFString& pattern, size_t pos) const
         return OFString_npos;
     }
     for (size_t i = pos; i < this_size; i++) {
-        /* is there enought space for the pattern? */
+        /* is there enough space for the pattern? */
         if ((i + pattern_size) > this_size) {
             return OFString_npos;
         }

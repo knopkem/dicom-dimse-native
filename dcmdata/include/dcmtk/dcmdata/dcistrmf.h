@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2018, OFFIS e.V.
+ *  Copyright (C) 1994-2020, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -25,7 +25,6 @@
 
 #include "dcmtk/config/osconfig.h"
 #include "dcmtk/dcmdata/dcistrma.h"
-
 
 /** producer class that reads data from a plain file.
  */
@@ -119,7 +118,9 @@ public:
    */
   DcmInputFileStreamFactory(const OFFilename &filename, offile_off_t offset);
 
-  /// copy constructor
+  /** copy constructor
+   * @param arg the factory to copy
+   */
   DcmInputFileStreamFactory(const DcmInputFileStreamFactory &arg);
 
   /// destructor
@@ -296,7 +297,9 @@ public:
    */
   DcmInputTempFileStreamFactory(DcmTempFileHandler *handler);
 
-  /// copy constructor
+  /** copy constructor
+   * @param arg the factory to copy
+   */
   DcmInputTempFileStreamFactory(const DcmInputTempFileStreamFactory &arg);
 
   /// destructor, decreases reference counter of temporary file handler
@@ -327,6 +330,5 @@ private:
   /// handler for temporary file
   DcmTempFileHandler *fileHandler_;
 };
-
 
 #endif

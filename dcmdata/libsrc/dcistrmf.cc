@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2002-2012, OFFIS e.V.
+ *  Copyright (C) 2002-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -22,12 +22,17 @@
 
 #include "dcmtk/config/osconfig.h"
 #include "dcmtk/dcmdata/dcistrmf.h"
+#include "dcmtk/dcmdata/dcistrmb.h"
 #include "dcmtk/dcmdata/dcerror.h"
 
-#define INCLUDE_CSTDIO
-#define INCLUDE_CERRNO
-#include "dcmtk/ofstd/ofstdinc.h"
-
+BEGIN_EXTERN_C
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+#ifdef HAVE_IO_H
+#include <io.h>
+#endif
+END_EXTERN_C
 
 DcmFileProducer::DcmFileProducer(const OFFilename &filename, offile_off_t offset)
 : DcmProducer()
@@ -88,7 +93,7 @@ offile_off_t DcmFileProducer::read(void *buf, offile_off_t buflen)
   offile_off_t result = 0;
   if (status_.good() && file_.open() && buf && buflen)
   {
-    result = file_.fread(buf, 1, OFstatic_cast(size_t, buflen));
+    result = OFstatic_cast(offile_off_t, file_.fread(buf, 1, OFstatic_cast(size_t, buflen)));
   }
   return result;
 }

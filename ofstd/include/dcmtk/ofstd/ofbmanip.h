@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1997-2019, OFFIS e.V.
+ *  Copyright (C) 1997-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -26,10 +26,9 @@
 #include "dcmtk/config/osconfig.h"
 #include "dcmtk/ofstd/ofcast.h"
 #include "dcmtk/ofstd/ofdefine.h"
+#include "dcmtk/ofstd/oftypes.h"
 
-#define INCLUDE_CSTRING
-#define INCLUDE_CSTDINT
-#include "dcmtk/ofstd/ofstdinc.h"
+#include <cstring>
 
 /*---------------------*
  *  class declaration  *
@@ -155,14 +154,7 @@ class OFBitmanipTemplate
     static void zeroMem(T *dest,
                         const size_t count)
     {
-#ifdef HAVE_MEMZERO
-        memzero(dest, count * sizeof(T));
-#else
-        size_t i;
-        T *q = dest;
-        for (i = count; i != 0; --i)
-            *q++ = 0;
-#endif
+        memset(dest, 0, count * sizeof(T));
     }
 };
 

@@ -24,7 +24,6 @@
 
 #include "dcmtk/config/osconfig.h"    /* make sure OS specific configuration is included first */
 
-#define INCLUDE_CSTDIO
 #include "dcmtk/ofstd/ofstdinc.h"
 #include "dcmtk/ofstd/ofcmdln.h"
 #include "dcmtk/oflog/oflog.h"

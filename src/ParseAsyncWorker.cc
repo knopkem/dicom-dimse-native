@@ -9,10 +9,6 @@
 
 #include "dcmtk/config/osconfig.h" /* make sure OS specific configuration is included first */
 
-#define INCLUDE_CSTDLIB
-#define INCLUDE_CSTDIO
-#define INCLUDE_CSTRING
-#define INCLUDE_CSTDARG
 #include "dcmtk/ofstd/ofstdinc.h"
 
 #include "dcmtk/dcmdata/cmdlnarg.h"
@@ -55,6 +51,7 @@ void ParseAsyncWorker::Execute(const ExecutionProgress &progress)
     }
     DcmDataset *dset = dfile.getDataset();
     std::ostringstream stream;
-    dset->writeJson(stream, DcmJsonFormatPretty());
+    DcmJsonFormatPretty format;
+    dset->writeJson(stream, format);
     _jsonOutput = stream.str();
 }

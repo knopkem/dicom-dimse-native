@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2019, OFFIS e.V.
+ *  Copyright (C) 1994-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were partly developed by
@@ -79,14 +79,6 @@
 
 #include "dcmtk/dcmnet/diutil.h"
 
-#define INCLUDE_CSTDLIB
-#define INCLUDE_CSTDIO
-#define INCLUDE_CSTRING
-#define INCLUDE_CERRNO
-#define INCLUDE_CSIGNAL
-#define INCLUDE_CTIME
-#include "dcmtk/ofstd/ofstdinc.h"
-
 BEGIN_EXTERN_C
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -109,29 +101,20 @@ BEGIN_EXTERN_C
 #endif
 #ifdef WITH_TCPWRAPPER
 #include <tcpd.h>               /* for hosts_ctl */
-
-BEGIN_EXTERN_C
 int dcmtk_hosts_access(struct request_info *req);
-END_EXTERN_C
 #endif
-#ifdef HAVE_SIGNAL_H
-// On Solaris with Sun Workshop 11, <signal.h> declares signal() but <csignal> does not
-#include <signal.h>
-#endif
-END_EXTERN_C
-
-BEGIN_EXTERN_C
 /* declare extern "C" typedef for signal handler function pointer */
 #ifdef SIGNAL_HANDLER_WITH_ELLIPSE
-typedef void (*mySIG_TYP)(...);
+typedef void(*mySIG_TYP)(...);
 #else
-typedef void (*mySIG_TYP)(int);
+typedef void(*mySIG_TYP)(int);
 #endif
 END_EXTERN_C
 
 #ifdef DCMTK_HAVE_POLL
 #include <poll.h>
 #endif
+
 
 #include "dcmtk/ofstd/ofstream.h"
 #include "dcmtk/dcmnet/dcompat.h"
@@ -142,7 +125,7 @@ END_EXTERN_C
 #include "dcmtk/ofstd/ofstd.h"
 
 #include "dcmtk/dcmnet/dul.h"
-#include "dulstruc.h"
+#include "dcmtk/dcmnet/dulstruc.h"
 #include "dulpriv.h"
 #include "dulfsm.h"
 #include "dcmtk/dcmnet/dcmtrans.h"
@@ -542,7 +525,7 @@ DUL_RequestAssociation(
          */
         OFCondition cond2 = PRV_StateMachine(network, association, TRANS_CONN_CLOSED, (*association)->protocolState, NULL);
         destroyAssociationKey(association);
-        return makeDcmnetSubCondition(DULC_REQUESTASSOCIATIONFAILED, OF_error, "Failed to establish association", DimseCondition::push(cond2, cond));
+        return cond;
     }
     cond = PRV_StateMachine(network, association,
       TRANS_CONN_CONFIRM_LOCAL_USER, (*association)->protocolState, params);
@@ -929,6 +912,40 @@ DUL_DropAssociation(DUL_ASSOCIATIONKEY ** callerAssociation)
     if ((*association)->connection)
     {
      (*association)->connection->close();
+     delete (*association)->connection;
+     (*association)->connection = NULL;
+    }
+    destroyAssociationKey(association);
+    return EC_Normal;
+}
+
+
+/* DUL_CloseTransportConnection
+**
+** Purpose:
+**      This function closes the transport connection of an Association
+**      without notifying the peer application. This routine should only
+**      be used by the parent process after an association has been
+**      delegated to a forked child.
+**
+** Parameter Dictionary:
+**      callerAssociation  Caller's handle to the Association that is to
+**                         be dropped.
+**
+** Return Values:
+**
+**
+*/
+OFCondition
+DUL_CloseTransportConnection(DUL_ASSOCIATIONKEY ** callerAssociation)
+{
+    PRIVATE_ASSOCIATIONKEY ** association = (PRIVATE_ASSOCIATIONKEY **) callerAssociation;
+    OFCondition cond = checkAssociation(association);
+    if (cond.bad()) return cond;
+
+    if ((*association)->connection)
+    {
+     (*association)->connection->closeTransportConnection();
      delete (*association)->connection;
      (*association)->connection = NULL;
     }
@@ -1773,8 +1790,8 @@ receiveTransportConnectionTCP(PRIVATE_NETWORKKEY ** network,
              * '"\my\dir\"' but instead ends up as '"\my\dir\\"' (single quotes for
              *  demonstration purposes). Make sure nobody passes a zero length string.
              */
-            size_t len = strlen(command_argv[i]);
-            if ((len > 0) && (command_argv[i][len - 1] == '\\'))
+            size_t len2 = strlen(command_argv[i]);
+            if ((len2 > 0) && (command_argv[i][len2 - 1] == '\\'))
             {
 	            cmdLine += "\\";
             }
@@ -1803,7 +1820,7 @@ receiveTransportConnectionTCP(PRIVATE_NETWORKKEY ** network,
         CloseHandle(hChildStdInWrite);
 
         // we need a STARTUPINFO and a PROCESS_INFORMATION structure for CreateProcess.
-        STARTUPINFO si;
+        STARTUPINFOA si;
         PROCESS_INFORMATION pi;
         memset(&pi,0,sizeof(pi));
         memset(&si,0,sizeof(si));
@@ -1818,7 +1835,7 @@ receiveTransportConnectionTCP(PRIVATE_NETWORKKEY ** network,
         si.hStdInput = hChildStdInRead;
 
         // create child process.
-        if (!CreateProcess(NULL,OFconst_cast(char *, cmdLine.c_str()), NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi))
+        if (!CreateProcessA(NULL,OFconst_cast(char *, cmdLine.c_str()), NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi))
         {
             OFOStringStream stream;
             stream << "Multi-Process Error: Creating process failed with error code "
@@ -1923,7 +1940,11 @@ receiveTransportConnectionTCP(PRIVATE_NETWORKKEY ** network,
      */
 
 #ifdef DONT_DISABLE_NAGLE_ALGORITHM
+#ifdef _MSC_VER
+#pragma message("The macro DONT_DISABLE_NAGLE_ALGORITHM is not supported anymore. See 'macros.txt' for details.")
+#else
 #warning The macro DONT_DISABLE_NAGLE_ALGORITHM is not supported anymore. See "macros.txt" for details.
+#endif
 #endif
 
 #ifdef DISABLE_NAGLE_ALGORITHM
@@ -2046,15 +2067,7 @@ receiveTransportConnectionTCP(PRIVATE_NETWORKKEY ** network,
       return makeDcmnetCondition(DULC_TCPINITERROR, OF_error, msg.c_str());
     }
 
-    DcmTransportLayerStatus tcsStatus;
-    if (TCS_ok != (tcsStatus = (*association)->connection->serverSideHandshake()))
-    {
-      OFString msg = "DUL secure transport layer: ";
-      msg += (*association)->connection->errorString(tcsStatus);
-      return makeDcmnetCondition(DULC_TLSERROR, OF_error, msg.c_str());
-    }
-
-    return EC_Normal;
+    return (*association)->connection->serverSideHandshake();
 }
 
 
@@ -2212,7 +2225,7 @@ initializeNetworkTCP(PRIVATE_NETWORKKEY ** key, void *parameter)
       /* Name socket using wildcards */
       server.sin_family = AF_INET;
       server.sin_addr.s_addr = INADDR_ANY;
-      server.sin_port = (unsigned short) htons((*key)->networkSpecific.TCP.port);
+      server.sin_port = (unsigned short) htons(OFstatic_cast(u_short, ((*key)->networkSpecific.TCP.port)));
       if (bind(sock, (struct sockaddr *) & server, sizeof(server)))
       {
         OFString msg = "TCP Initialization Error: ";

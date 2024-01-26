@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2011, OFFIS e.V.
+ *  Copyright (C) 1994-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -25,9 +25,6 @@
 #include "dcmtk/config/osconfig.h"    /* make sure OS specific configuration is included first */
 #include "dcmtk/dcmdata/dctagkey.h"
 #include "dcmtk/dcmdata/dcvr.h"
-
-#define INCLUDE_CSTRING               /* for strcmp() */
-#include "dcmtk/ofstd/ofstdinc.h"
 
 /// constant describing an unlimited VM
 #define DcmVariableVM   -1
@@ -93,7 +90,9 @@ public:
         const char* vers, OFBool doCopyStrings,
         const char* pcreator);
 
-    /// copy constructor
+    /** copy constructor
+     * @param e the entry to copy
+     */
     DcmDictEntry(const DcmDictEntry& e);
 
     /// destructor
@@ -262,7 +261,9 @@ public:
         return groupRangeRestriction;
     }
 
-    /// sets group range restriction
+    /** sets group range restriction
+     * @param rr the new range restriction
+     */
     void setGroupRangeRestriction(DcmDictRangeRestriction rr)
     {
         groupRangeRestriction = rr;
@@ -274,7 +275,9 @@ public:
         return elementRangeRestriction;
     }
 
-    /// sets element range restriction
+    /** sets element range restriction
+    * @param rr the new range restriction
+    */
     void setElementRangeRestriction(DcmDictRangeRestriction rr)
     {
         elementRangeRestriction = rr;
@@ -356,7 +359,11 @@ public:
             );
     }
 
-    /// friend operator<<
+    /** friend operator<<
+     * @param s the ostream to append upon
+     * @param e the dictionary entry
+     * @return the appended on ostream
+     */
     friend DCMTK_DCMDATA_EXPORT STD_NAMESPACE ostream& operator<<(STD_NAMESPACE ostream& s, const DcmDictEntry& e);
 
 private:

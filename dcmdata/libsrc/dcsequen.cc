@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2019, OFFIS e.V.
+ *  Copyright (C) 1994-2021, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -21,10 +21,6 @@
 
 
 #include "dcmtk/config/osconfig.h"    /* make sure OS specific configuration is included first */
-
-#define INCLUDE_CSTDLIB
-#define INCLUDE_CSTDIO
-#include "dcmtk/ofstd/ofstdinc.h"
 
 #include "dcmtk/ofstd/ofstream.h"
 #include "dcmtk/ofstd/ofstd.h"
@@ -484,11 +480,9 @@ Uint32 DcmSequenceOfItems::getLength(const E_TransferSyntax xfer,
     Uint32 sublen = 0;
     if (!itemList->empty())
     {
-        DcmItem *dI;
         itemList->seek(ELP_first);
         do {
-            dI = OFstatic_cast(DcmItem *, itemList->get());
-            sublen = dI->calcElementLength(xfer, enctype);
+            sublen = itemList->get()->calcElementLength(xfer, enctype);
             /* explicit length: be sure that total size of contained elements fits into sequence's
                32 Bit length field. If not, switch encoding automatically to undefined
                length for this sequence. Nevertheless, any contained items will be
@@ -1046,15 +1040,25 @@ OFCondition DcmSequenceOfItems::insert(DcmItem *item,
     errorFlag = EC_Normal;
     if (item != NULL)
     {
-        itemList->seek_to(where);
-        // insert before or after "where"
-        E_ListPos whichSide = (before) ? (ELP_prev) : (ELP_next);
-        itemList->insert(item, whichSide);
+        // special case: last position
         if (where == DCM_EndOfListIndex)
         {
+            if (before)
+            {
+                // insert before end of list
+                itemList->seek(ELP_last);
+                itemList->prepend(item);
+            } else {
+                // insert at end of list
+                itemList->append(item);
+            }
             DCMDATA_TRACE("DcmSequenceOfItems::insert() Item inserted "
                 << (before ? "before" : "after") << " last position");
         } else {
+            itemList->seek_to(where);
+            // insert before or after "where"
+            E_ListPos whichSide = (before) ? (ELP_prev) : (ELP_next);
+            itemList->insert(item, whichSide);
             DCMDATA_TRACE("DcmSequenceOfItems::insert() Item inserted "
                 << (before ? "before" : "after") << " position " << where);
         }

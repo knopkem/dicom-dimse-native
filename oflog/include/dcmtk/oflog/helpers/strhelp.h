@@ -42,13 +42,15 @@ namespace log4cplus {
     namespace helpers {
 
         /**
-         * Returns <code>s</code> in upper case.
+         * @param s the value to be converted into uppercase
+         * @returns <code>s</code> in upper case.
          */
         DCMTK_LOG4CPLUS_EXPORT log4cplus::tstring toUpper(const log4cplus::tstring& s);
 
 
         /**
-         * Returns <code>s</code> in lower case.
+         * @param s the value to be converted into lowercase
+         * @returns <code>s</code> in upper case.
          */
         DCMTK_LOG4CPLUS_EXPORT log4cplus::tstring toLower(const log4cplus::tstring& s);
 
@@ -65,6 +67,11 @@ namespace log4cplus {
          *   list<tstring> tokens;
          *   tokenize(s, '.', back_insert_iterator<list<string> >(tokens));
          * </pre>
+         * @param s the string to be tokenized
+         * @param c the delimiter to be used to tokenized
+         * @param result the resulting tokens
+         * @param collapseTokens when false, multiple adjacent delimiters
+         * will result in zero length tokens.
          */
         template <class StringType>
         inline
@@ -103,9 +110,6 @@ namespace log4cplus {
                 // integer overflow of an signed type is undefined behavior :(
                 // This code is based upon http://www.fefe.de/intof.html
 
-                // True if intType is unsigned
-                const OFBool isUnsigned = (OFstatic_cast(intType, -1) < 0) ? OFFalse : OFTrue;
-
                 // If intType is a signed type, halfMaxSigned is intType_MAX / 2
                 const intType halfMaxSigned = OFstatic_cast(intType, 1) << (sizeof(intType) * 8 - 2);
 
@@ -116,7 +120,7 @@ namespace log4cplus {
                 const intType minSigned = OFstatic_cast(intType, -1) - maxSigned;
 
                 // This is the minimum value that intType can represent;
-                const intType minVal = isUnsigned ? 0 : minSigned;
+                const intType minVal = (OFstatic_cast(intType, -1) < 0) ? minSigned : 0;
 
                 //if (value == (STD_NAMESPACE numeric_limits<intType>::min) ())
                 if (value == minVal)
