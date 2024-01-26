@@ -77,6 +77,11 @@ configure_file("${DCMTK_SOURCE_DIR}/CMake/osconfig.h.in"
 
 INSPECT_FUNDAMENTAL_ARITHMETIC_TYPES()
 
+if(MSVC AND CMAKE_JS_NODELIB_DEF AND CMAKE_JS_NODELIB_TARGET)
+  # Generate node.lib
+  execute_process(COMMAND ${CMAKE_AR} /def:${CMAKE_JS_NODELIB_DEF} /out:${CMAKE_JS_NODELIB_TARGET} ${CMAKE_STATIC_LINKER_FLAGS})
+endif()
+
 # Add flags specific to the compiler
 #-----------------------------------
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
