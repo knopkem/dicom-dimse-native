@@ -311,7 +311,7 @@ bool DcmQueryRetrieveSQLiteDatabaseHandlePrivate::DB_TagSupported(const DcmTagKe
 
 void DcmQueryRetrieveSQLiteDatabaseHandlePrivate::DB_DuplicateElement(DB_SmallDcmElmt* src, DB_SmallDcmElmt* dst)
 {
-    bzero((char*)dst, sizeof(DB_SmallDcmElmt));
+    memset((char*)dst, 0, sizeof(DB_SmallDcmElmt));
     dst->XTag = src->XTag;
     dst->ValueLength = src->ValueLength;
 
@@ -319,7 +319,7 @@ void DcmQueryRetrieveSQLiteDatabaseHandlePrivate::DB_DuplicateElement(DB_SmallDc
         dst->PValueField = NULL;
     else {
         dst->PValueField = (char*)malloc((int)src->ValueLength + 1);
-        bzero(dst->PValueField, (size_t)(src->ValueLength + 1));
+        memset(dst->PValueField, 0, (size_t)(src->ValueLength + 1));
         if (dst->PValueField != NULL) {
             memcpy(dst->PValueField, src->PValueField,
                 (size_t)src->ValueLength);
