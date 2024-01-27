@@ -9,12 +9,15 @@ project(DCMTK)
 
 
 #-------------------------------------DCMTK-----------------------------------
+if(MSVC)
+    set( DCMTK_OVERWRITE_WIN32_COMPILER_FLAGS "ON")
+endif()
 
-
+set(DCMTK_WITH_ICONV "ON")
 if(DEFINED ENV{LIB_ICONV})
-    message("LIB_ICONV set to: $ENV{LIB_ICONV}")
-    set(WITH_LIBICONVINC "ON")
+    message("LIB_ICONV set to: $ENV{LIB_ICONV}")    
     set(WITH_LIBICONVINC $ENV{LIB_ICONV})
+    set(DCMTK_ENABLE_CHARSET_CONVERSION "libiconv")
     if(UNIX)
         set(LIBCHARSET_INCLUDE_DIR $ENV{LIB_ICONV}/include) 
         set(LIBCHARSET_LIBRARY $ENV{LIB_ICONV}/lib/libcharset.a)
@@ -25,8 +28,6 @@ if(DEFINED ENV{LIB_ICONV})
     endif()
     mark_as_advanced(DCMTK_WITH_ICONV)
     mark_as_advanced(WITH_LIBICONVINC)
-    #set(Iconv_IS_BUILT_IN "OFF")
-    #set(DCMTK_WITH_ICONV "ON")
 else()
     message("NOTICE: To enable support for UTF-8 you need to build ICONV statically outside of this project and set LIB_ICONV environment to point to the install directory")
 endif()
