@@ -34,7 +34,7 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
 {
   ns::sInput in = ns::parseInputJson(_input);
 
-  EnableVerboseLogging(in.verbose, progress);
+  EnableVerboseLogging(in.verbose);
 
   if (!in.source.valid())
   {

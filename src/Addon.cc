@@ -1,5 +1,12 @@
 #include <napi.h>
 
+#include "dcmtk/config/osconfig.h" /* make sure OS specific configuration is included first */
+#include "dcmtk/oflog/oflog.h"
+#include "dcmtk/oflog/oflog.h"
+#include "dcmtk/oflog/spi/logevent.h"
+#include "dcmtk/oflog/appender.h"
+#include "dcmtk/oflog/fileap.h"
+
 #include "EchoAsyncWorker.h"
 #include "FindAsyncWorker.h"
 #include "GetAsyncWorker.h"
@@ -97,6 +104,14 @@ Value DoShutdown(const CallbackInfo& info) {
 
 
 Object Init(Env env, Object exports) {
+
+    using namespace dcmtk::log4cplus;
+    Logger rootLogger = Logger::getRoot();
+    rootLogger.removeAllAppenders();
+    dcmtk::log4cplus::SharedAppenderPtr logfile(new dcmtk::log4cplus::FileAppender("dicom.log"));
+    dcmtk::log4cplus::Logger log = dcmtk::log4cplus::Logger::getRoot();
+    log.addAppender(logfile);
+
     exports.Set(String::New(env, "echoScu"),
                 Function::New(env, DoEcho));
     exports.Set(String::New(env, "findScu"),

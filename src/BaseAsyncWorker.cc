@@ -8,6 +8,8 @@
 #include "dcmtk/oflog/spi/logevent.h"
 #include "dcmtk/oflog/appender.h"
 
+#include <vector>
+
 class BufferAppender : public dcmtk::log4cplus::Appender {
 public:
     BufferAppender() {}
@@ -18,40 +20,36 @@ public:
 
     virtual void close() {}
 
-    void setExecutionProgress(const BaseAsyncWorker::ExecutionProgress &progress) {
-        this->_progress = &progress;
-    }
+    std::vector<std::string> StringBuffer;
 
 protected:
     virtual void append(const dcmtk::log4cplus::spi::InternalLoggingEvent& ev) {
         dcmtk::log4cplus::tostringstream oss;
         layout->formatAndAppend(oss, ev);
 
-        if (this->_progress != NULL) {
-          std::string msg2 = ns::createJsonResponse(ns::PENDING, DCMTK_LOG4CPLUS_TSTRING_TO_STRING(oss.str()).c_str());
-          this->_progress->Send(msg2.c_str(), msg2.length());
-        }
+        StringBuffer.push_back(DCMTK_LOG4CPLUS_TSTRING_TO_STRING(oss.str()));
     }
-
-private:
-    const BaseAsyncWorker::ExecutionProgress* _progress;
 };
 
 
 BaseAsyncWorker::BaseAsyncWorker(std::string data, Function &callback) : AsyncProgressQueueWorker<char>(callback),
                                                                            _input(data)
 {
-        // remove default appender and add the custom appender
+        //add the custom appender
         using namespace dcmtk::log4cplus;
         Logger rootLogger = Logger::getRoot();
-        rootLogger.removeAllAppenders();
-
-        this->app = new BufferAppender();
-        rootLogger.addAppender(dcmtk::log4cplus::SharedAppenderPtr(app));
-
+        this->_appender = new BufferAppender();
+        // rootLogger.addAppender(this->_appender);
 
         // disable verbose logging
         OFLog::configure(OFLogger::WARN_LOG_LEVEL);
+}
+
+BaseAsyncWorker::~BaseAsyncWorker() 
+{
+    using namespace dcmtk::log4cplus;
+    Logger rootLogger = Logger::getRoot();
+    rootLogger.removeAppender(this->_appender);
 }
 
 void BaseAsyncWorker::OnOK()
@@ -83,12 +81,11 @@ void BaseAsyncWorker::SendInfo(const std::string& msg, const ExecutionProgress& 
 }
 
 
-void BaseAsyncWorker::EnableVerboseLogging(bool enabled, const ExecutionProgress &progress)
+void BaseAsyncWorker::EnableVerboseLogging(bool enabled)
 {
     if (enabled) {
         OFLog::configure(OFLogger::DEBUG_LOG_LEVEL);
     } else {
         OFLog::configure(OFLogger::WARN_LOG_LEVEL);
     }
-    this->app->setExecutionProgress(progress);
 }
