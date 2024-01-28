@@ -35,6 +35,14 @@ include(CMake/dcmtkPrepare.cmake NO_POLICY_SCOPE)
 
 set(DCMTK_MODULES ofstd oflog dcmdata dcmnet dcmjpeg dcmjpls dcmimage dcmimgle dcmqrdb dcmj2k oficonv dcmtls
   CACHE STRING "List of modules that should be built.")
+  
+# Provide an interface target to elegantly include the config directory
+add_library(config INTERFACE)
+target_include_directories(config INTERFACE
+  $<BUILD_INTERFACE:${DCMTK_BINARY_DIR}/config/include>
+  $<INSTALL_INTERFACE:include>
+)
+install(TARGETS config EXPORT DCMTKTargets)
 
 #-----------------------------------------------------------------------------
 # Include directories
