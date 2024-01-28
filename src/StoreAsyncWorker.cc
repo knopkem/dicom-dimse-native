@@ -45,7 +45,7 @@ void StoreAsyncWorker::Execute(const ExecutionProgress &progress)
 {
     ns::sInput in = ns::parseInputJson(_input);
 
-    EnableVerboseLogging(in.verbose, progress);
+    EnableVerboseLogging(in.verbose);
 
     if (!in.source.valid())
     {
@@ -73,7 +73,6 @@ void StoreAsyncWorker::Execute(const ExecutionProgress &progress)
     if (!success) {
         SetErrorJson("Failed to send DICOM files to target");
     }
-
 }
 
 bool StoreAsyncWorker::setScanDirectory(const OFFilename &dir)
