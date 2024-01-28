@@ -66,6 +66,12 @@ enum DcmStorageMode
     DCMSCU_STORAGE_BIT_PRESERVING
 };
 
+class DCMTK_DCMNET_EXPORT DcmNotifier
+{
+  public:
+    virtual void sendMessage(const OFString& msg, const OFString& container) = 0;
+};
+
 /** Base class for C-FIND, C-MOVE and C-GET responses
  */
 class DCMTK_DCMNET_EXPORT QRResponse
@@ -636,6 +642,11 @@ public:
 
     /* Set methods */
 
+    /** Set a notifier object so progress can be reported
+     *  @param DcmNotifier needs concreate implementation of abstract class
+     */
+    void setNotifier(DcmNotifier* ptr);
+
     /** Set maximum PDU length (to be received by SCU)
      *  @param maxRecPDU [in] The maximum PDU size to use in bytes
      */
@@ -1120,6 +1131,9 @@ private:
 
     /// Progress notification mode (default: enabled)
     OFBool m_progressNotificationMode;
+
+    /// object able to send messages
+    DcmNotifier* m_notifier;
 };
 
 #endif // SCU_H
