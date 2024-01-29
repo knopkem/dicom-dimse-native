@@ -1411,19 +1411,25 @@ DcmSCU::sendSTOREResponse(T_ASC_PresentationContextID presID, Uint16 status, con
 
 OFString DcmSCU::createStorageFilename(DcmDataset* dataset)
 {
-    OFString sopClassUID, sopInstanceUID;
-    E_TransferSyntax dummy;
-    getDatasetInfo(dataset, sopClassUID, sopInstanceUID, dummy);
-    // Create unique filename
-    if (sopClassUID.empty() || sopInstanceUID.empty())
-        return "";
-    OFString name = dcmSOPClassUIDToModality(sopClassUID.c_str(), "UNKNOWN");
-    name += ".";
-    name += sopInstanceUID;
-    OFStandard::sanitizeFilename(name);
-    OFString returnStr;
-    OFStandard::combineDirAndFilename(returnStr, m_storageDir, name, OFTrue);
-    return returnStr;
+  OFString sopClassUID, sopInstanceUID, studyInstanceUID;
+  E_TransferSyntax dummy;
+  getDatasetInfo(dataset, sopClassUID, sopInstanceUID, dummy);
+  dataset->findAndGetOFString(DCM_StudyInstanceUID, studyInstanceUID);
+
+  // Create unique filename
+  OFString name = sopInstanceUID;
+
+  OFString baseStr;
+  OFStandard::combineDirAndFilename(baseStr, m_storageDir, studyInstanceUID, OFTrue);
+  if (!OFStandard::dirExists(baseStr)) {
+    if (OFStandard::createDirectory(baseStr, m_storageDir).bad()) {
+      return "";
+    }
+  }
+
+  OFString returnStr;
+  OFStandard::combineDirAndFilename(returnStr, baseStr, name, OFTrue);
+  return returnStr;
 }
 
 OFCondition DcmSCU::ignoreSTORERequest(T_ASC_PresentationContextID presID, const T_DIMSE_C_StoreRQ& request)
