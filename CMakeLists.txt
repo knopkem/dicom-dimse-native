@@ -22,6 +22,13 @@ else()
 endif()
 cmake_policy(VERSION "${DCMTK_CMAKE_POLICY_VERSION}")
 
+
+set(BUILD_APPS "OFF")
+
+if(MSVC)
+    set(DCMTK_OVERWRITE_WIN32_COMPILER_FLAGS "OFF")
+endif()
+
 if(DEFINED ENV{LIB_ICONV})
     message("LIB_ICONV set to: $ENV{LIB_ICONV}")
     set(Iconv_IS_BUILT_IN OFF)
@@ -46,6 +53,14 @@ include(CMake/dcmtkPrepare.cmake NO_POLICY_SCOPE)
 
 set(DCMTK_MODULES ofstd oflog dcmdata dcmnet dcmjpeg dcmjpls dcmimage dcmimgle dcmqrdb dcmj2k
   CACHE STRING "List of modules that should be built.")
+
+# Provide an interface target to elegantly include the config directory
+add_library(config INTERFACE)
+target_include_directories(config INTERFACE
+  $<BUILD_INTERFACE:${DCMTK_BINARY_DIR}/config/include>
+  $<INSTALL_INTERFACE:include>
+)
+install(TARGETS config EXPORT DCMTKTargets)
 
 #-----------------------------------------------------------------------------
 # Include directories
