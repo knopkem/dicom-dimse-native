@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2001-2021, OFFIS e.V.
+ *  Copyright (C) 2001-2022, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -25,6 +25,7 @@
 #include "dcmtk/config/osconfig.h"
 #include "dcmtk/dcmdata/libi2d/i2doutpl.h"
 
+/** img2dcm output plugin for VL Photographic Image Storage SOP Class */
 class DCMTK_I2D_EXPORT I2DOutputPlugVLP : public I2DOutputPlug
 {
 
@@ -47,7 +48,6 @@ public:
    *  written by this plugin
    *  @param suppSOPs - [out] List of UIDs representing SOP classes supported by
    *                    this plugin
-   *  @return A string holding the Storage SOP class written by this plugin
    */
   virtual void supportedSOPClassUIDs(OFList<OFString>& suppSOPs);
 
@@ -71,7 +71,7 @@ public:
   virtual OFBool supportsMultiframe() const;
 
   /** Add multiframe specific attributes
-   *  @param datset pointer to DICOM dataset, must not be NULL
+   *  @param targetDataset pointer to DICOM dataset, must not be NULL
    *  @param numberOfFrames number of frames in this dataset
    *  @return EC_Normal if successful, an error code otherwise
    */

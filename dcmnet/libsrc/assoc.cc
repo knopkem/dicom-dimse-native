@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2021, OFFIS e.V.
+ *  Copyright (C) 1994-2023, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were partly developed by
@@ -273,7 +273,8 @@ ASC_dropNetwork(T_ASC_Network ** network)
 
 OFCondition
 ASC_createAssociationParameters(T_ASC_Parameters ** params,
-        long maxReceivePDUSize)
+                                long maxReceivePDUSize,
+                                Sint32 tcpConnectTimeout)
 {
 
     *params = (T_ASC_Parameters *) malloc(sizeof(**params));
@@ -304,7 +305,7 @@ ASC_createAssociationParameters(T_ASC_Parameters ** params,
     ASC_setAPTitles(*params,
                     "calling AP Title",
                     "called AP Title",
-                    "resp. AP Title");
+                    "");
 
     /* make sure max pdv length is even */
     if ((maxReceivePDUSize % 2) != 0)
@@ -334,7 +335,18 @@ ASC_createAssociationParameters(T_ASC_Parameters ** params,
     (*params)->DULparams.acceptedPresentationContext = NULL;
 
     (*params)->DULparams.useSecureLayer = OFFalse;
+    (*params)->DULparams.tcpConnectTimeout = tcpConnectTimeout;
     return EC_Normal;
+}
+
+
+
+OFCondition
+ASC_createAssociationParameters(T_ASC_Parameters ** params,
+                                long maxReceivePDUSize)
+{
+    /* pass global TCP connection timeout to the real function */
+    return ASC_createAssociationParameters(params, maxReceivePDUSize, dcmConnectionTimeout.get());
 }
 
 
@@ -380,12 +392,12 @@ ASC_setAPTitles(T_ASC_Parameters * params,
 
 OFCondition
 ASC_getAPTitles(T_ASC_Parameters * params,
-    char* callingAPTitle,
-    size_t callingAPTitleSize,
-    char* calledAPTitle,
-    size_t calledAPTitleSize,
-    char* respondingAPTitle,
-    size_t respondingAPTitleSize)
+                char* callingAPTitle,
+                size_t callingAPTitleSize,
+                char* calledAPTitle,
+                size_t calledAPTitleSize,
+                char* respondingAPTitle,
+                size_t respondingAPTitleSize)
 {
     if (callingAPTitle)
         OFStandard::strlcpy(callingAPTitle, params->DULparams.callingAPTitle, callingAPTitleSize);
@@ -1388,7 +1400,7 @@ void ASC_getCopyOfIdentResponse(T_ASC_Parameters * params,
 OFCondition ASC_setIdentAC(
     T_ASC_Parameters * params,
     const char* response,
-    const Uint16& length )
+    const Uint16 length )
 {
   if (params == NULL)
     return ASC_NULLKEY;
@@ -1754,7 +1766,7 @@ ASC_receiveAssociation(T_ASC_Network * network,
     int retrieveRawPDU = 0;
     if (associatePDU && associatePDUlength) retrieveRawPDU = 1;
 
-    OFCondition cond = ASC_createAssociationParameters(&params, maxReceivePDUSize);
+    OFCondition cond = ASC_createAssociationParameters(&params, maxReceivePDUSize, dcmConnectionTimeout.get());
     if (cond.bad()) return cond;
 
     cond = ASC_setTransportLayerType(params, useSecureLayer);

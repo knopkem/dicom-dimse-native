@@ -64,6 +64,6 @@ set(OPENJPEG_SRCS
 add_definitions(-DOPJ_STATIC)
 
 # create library from source files
-DCMTK_ADD_LIBRARY(dcmj2k djcparam djdecode djencode djrparam djcodecd djutils djcodece memory_file ${OPENJPEG_SRCS})
+DCMTK_ADD_LIBRARY(dcmj2k djcparam.cc djdecode.cc djencode.cc djrparam.cc djcodecd.cc djutils.cc djcodece.cc memory_file.cc ${OPENJPEG_SRCS})
 
 DCMTK_TARGET_LINK_MODULES(dcmj2k ofstd oflog dcmdata dcmimgle dcmimage)

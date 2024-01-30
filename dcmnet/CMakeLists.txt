@@ -5,6 +5,6 @@ project(dcmnet)
 include_directories("${dcmnet_SOURCE_DIR}/include" "${dcmtls_SOURCE_DIR}/include" ${OPENSSL_INCDIR} "${ofstd_SOURCE_DIR}/include" "${oflog_SOURCE_DIR}/include" "${dcmdata_SOURCE_DIR}/include" ${ZLIB_INCDIR})
 
 # recurse into subdirectories
-foreach(SUBDIR libsrc include etc)
+foreach(SUBDIR libsrc include)
   add_subdirectory(${SUBDIR})
 endforeach()

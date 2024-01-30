@@ -108,9 +108,10 @@ void CompressAsyncWorker::Execute(const ExecutionProgress &progress)
   OFList<OFFilename> fileNameList;
 
   /* create list of input files */
-  DCMNET_INFO("determining input files ...");
+  DCMNET_INFO("determining input files from path: " << in.sourcePath.c_str());
 
   OFFilename sourcePath(in.sourcePath.c_str());
+  OFFilename storagePath(in.storagePath.c_str());
 
   if (OFStandard::dirExists(sourcePath))
   {
@@ -128,6 +129,13 @@ void CompressAsyncWorker::Execute(const ExecutionProgress &progress)
     SetErrorJson("Invalid source path set, no DICOM files found");
     return;
   }
+
+   if (!OFStandard::dirExists(storagePath))
+   {
+    SetErrorJson("Invalid storage path set, directory does not exist");
+    return;
+   }
+
 
   /* check input files */
   OFString errormsg;
@@ -162,6 +170,8 @@ void CompressAsyncWorker::Execute(const ExecutionProgress &progress)
     ++if_iter;
   }
 
+
+
   OFListIterator(OFFilename) iter = fileNameList.begin();
   OFListIterator(OFFilename) enditer = fileNameList.end();
 
@@ -182,7 +192,7 @@ void CompressAsyncWorker::Execute(const ExecutionProgress &progress)
 
   if (!validFileFound)
   {
-    SetErrorJson("Invalid source path set, no DICOM files found");
+    SetErrorJson("No valid DICOM files found or there was an issue");
   }
 }
 

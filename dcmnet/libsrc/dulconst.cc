@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2021, OFFIS e.V.
+ *  Copyright (C) 1994-2022, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were partly developed by
@@ -687,7 +687,7 @@ constructSubItem(char *name, unsigned char type,
 **  contextID               Unique value identifying this presentation
 **                          context
 **  reason                  Reason to be included in the result field
-**  abstractSyntax          Used to build teh abstract syntax list
+**  abstractSyntax          Used to build the abstract syntax list
 **  proposedTransferSyntax  Proposed transfer characteristics (to be
 **                          negotiated)
 **  acceptedTransferSyntax  Accepted transfer characteristics (after
@@ -712,7 +712,7 @@ constructPresentationContext(unsigned char associateType,
            PRV_PRESENTATIONCONTEXTITEM * context, unsigned long *rtnLen)
 {
     OFCondition cond = EC_Normal;
-    unsigned long length;
+    unsigned long length = 0;
     /* Subitem pointer created for transfer syntax items */
     DUL_SUBITEM * subItem;
     /* Pointer to loop through list of transfer syntaxes */
@@ -973,7 +973,7 @@ constructSCUSCPRoles(unsigned char type,
   DUL_PRESENTATIONCONTEXT* presentationCtx;
   PRV_SCUSCPROLE* scuscpItem;
   unsigned char scuRole = 0, scpRole = 0;
-  unsigned long length;
+  unsigned long length = 0;
 
   *rtnLength = 0;
   OFCondition cond = EC_Normal;

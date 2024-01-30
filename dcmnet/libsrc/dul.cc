@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2021, OFFIS e.V.
+ *  Copyright (C) 1994-2022, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were partly developed by
@@ -1368,7 +1368,7 @@ DUL_NextPDV(DUL_ASSOCIATIONKEY ** callerAssociation, DUL_PDV * pdv)
         condition stack because this is no real error, but normal
         behaviour - A callback function registered in the condition stack
         would (unnecessarily) be called once for each PDV.
-        the #ifdef allows to mimick the old behaviour.
+        the #ifdef allows to mimic the old behaviour.
       */
     return DUL_NOPDVS;
 
@@ -2225,7 +2225,7 @@ initializeNetworkTCP(PRIVATE_NETWORKKEY ** key, void *parameter)
       /* Name socket using wildcards */
       server.sin_family = AF_INET;
       server.sin_addr.s_addr = INADDR_ANY;
-      server.sin_port = (unsigned short) htons(OFstatic_cast(u_short, ((*key)->networkSpecific.TCP.port)));
+      server.sin_port = htons(OFstatic_cast(Uint16, ((*key)->networkSpecific.TCP.port)));
       if (bind(sock, (struct sockaddr *) & server, sizeof(server)))
       {
         OFString msg = "TCP Initialization Error: ";
@@ -2240,6 +2240,14 @@ initializeNetworkTCP(PRIVATE_NETWORKKEY ** key, void *parameter)
         msg += OFStandard::getLastNetworkErrorCode().message();
         return makeDcmnetCondition(DULC_TCPINITERROR, OF_error, msg.c_str());
       }
+
+      /* If port 0 was specified by the client, the OS has assigned an unused port. */
+      if ((*key)->networkSpecific.TCP.port == 0) {
+        const u_short assignedPort = ntohs(server.sin_port);
+        (*key)->networkSpecific.TCP.port = assignedPort;
+        *(int *) parameter = assignedPort;
+      }
+
       sockarg.l_onoff = 0;
       if (setsockopt(sock, SOL_SOCKET, SO_LINGER, (char *) &sockarg, sizeof(sockarg)) < 0)
       {

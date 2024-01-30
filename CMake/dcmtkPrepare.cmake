@@ -33,14 +33,14 @@ endif()
 #  a development snapshot and an even number indicates an official release.)
 set(DCMTK_MAJOR_VERSION 3)
 set(DCMTK_MINOR_VERSION 6)
-set(DCMTK_BUILD_VERSION 7)
+set(DCMTK_BUILD_VERSION 8)
 # The ABI is not guaranteed to be stable between different snapshots/releases,
 # so this particular version number is increased for each snapshot or release.
-set(DCMTK_ABI_VERSION 17)
+set(DCMTK_ABI_VERSION 18)
 
 # Package "release" settings (some are currently unused and, therefore, disabled)
 set(DCMTK_PACKAGE_NAME "dcmtk")
-set(DCMTK_PACKAGE_DATE "2022-04-22")
+set(DCMTK_PACKAGE_DATE "2023-12-19")
 set(DCMTK_PACKAGE_VERSION "${DCMTK_MAJOR_VERSION}.${DCMTK_MINOR_VERSION}.${DCMTK_BUILD_VERSION}")
 set(DCMTK_PACKAGE_VERSION_NUMBER ${DCMTK_MAJOR_VERSION}${DCMTK_MINOR_VERSION}${DCMTK_BUILD_VERSION})
 set(DCMTK_PACKAGE_VERSION_SUFFIX "")
@@ -141,11 +141,11 @@ endif()
 
 # Gather information about the employed CMake version's behavior
 set(DCMTK_CMAKE_HAS_CXX_STANDARD FALSE)
-if(NOT CMAKE_MAJOR_VERSION LESS 3) # CMake versions prior to 3 don't understand VERSION_LESS etc.
-  if(NOT CMAKE_VERSION VERSION_LESS "3.1.3")
-    set(DCMTK_CMAKE_HAS_CXX_STANDARD TRUE)
-  endif()
+
+if(NOT CMAKE_VERSION VERSION_LESS "3.1.3")
+  set(DCMTK_CMAKE_HAS_CXX_STANDARD TRUE)
 endif()
+
 define_property(GLOBAL PROPERTY DCMTK_CMAKE_HAS_CXX_STANDARD
   BRIEF_DOCS "TRUE iff the CXX_STANDARD property exists."
   FULL_DOCS "TRUE for CMake versions since 3.1.3 that evaluate the CXX_STANDARD property and CMAKE_CXX_STANDARD variable."
@@ -209,11 +209,17 @@ DCMTK_INFERABLE_OPTION(DCMTK_ENABLE_CXX11 "Enable use of native C++11 features (
 
 # On Windows, the built-in dictionary is default, on Unix the external one.
 # It is not possible to use both, built-in plus external default dictionary.
-if(WIN32 OR MINGW)
-  set(DCMTK_DEFAULT_DICT "builtin" CACHE STRING "Denotes whether DCMTK will use built-in (compiled-in), external (file), or no default dictionary on startup")
-else() # built-in dictionary turned off on Unix per default
-  set(DCMTK_DEFAULT_DICT "external" CACHE STRING "Denotes whether DCMTK will use built-in (compiled-in), external (file), or no default dictionary on startup")
+if(NOT DEFINED DCMTK_DEFAULT_DICT)
+  if(WIN32 OR MINGW)
+    set(DCMTK_DEFAULT_DICT_DEFAULT "builtin")
+  else() # built-in dictionary turned off on Unix per default
+    set(DCMTK_DEFAULT_DICT_DEFAULT "external")
+  endif()
+else()
+  # prefer user specified one:
+  set(DCMTK_DEFAULT_DICT_DEFAULT "${DCMTK_DEFAULT_DICT}")
 endif()
+set(DCMTK_DEFAULT_DICT "${DCMTK_DEFAULT_DICT_DEFAULT}" CACHE STRING "Denotes whether DCMTK will use built-in (compiled-in), external (file), or no default dictionary on startup")
 set_property(CACHE DCMTK_DEFAULT_DICT PROPERTY STRINGS builtin external none)
 if (DCMTK_DEFAULT_DICT EQUAL "none")
   message(WARNING "Denotes whether DCMTK will use built-in (compiled-in), external (file), or no default dictionary on startup")
@@ -223,6 +229,18 @@ endif()
 # environment variable DCMDICTPATH.
 option(DCMTK_USE_DCMDICTPATH "Enable reading dictionary that is defined through DCMDICTPATH environment variable." ON)
 
+# Declare the option DCMTK_ENABLE_BUILTIN_OFICONV_DATA, which by default is ON when
+# we are compiling shared libraries.
+if (BUILD_SHARED_LIBS)
+  option(DCMTK_ENABLE_BUILTIN_OFICONV_DATA "Embed oficonv data files into oficonv library" ON)
+else()
+  option(DCMTK_ENABLE_BUILTIN_OFICONV_DATA "Embed oficonv data files into oficonv library" OFF)
+endif()
+
+# evaluate the option DCMTK_ENABLE_BUILTIN_OFICONV_DATA
+if (DCMTK_ENABLE_BUILTIN_OFICONV_DATA)
+  add_definitions(-DDCMTK_ENABLE_BUILTIN_OFICONV_DATA)
+endif()
 
 # Mark various settings as "advanced"
 mark_as_advanced(DCMTK_USE_DCMDICTPATH)
@@ -358,37 +376,49 @@ else()
   set(DCMTK_COMPILE_WIN32_MULTITHREADED_DLL OFF)
 endif()
 
-if(WIN32 AND CMAKE_GENERATOR MATCHES "Visual Studio .*")
-  # Evaluate the DCMTK_COMPILE_WIN32_MULTITHREADED_DLL option and adjust
-  # the runtime library setting (/MT or /MD) accordingly
-  set(CompilerFlags
-        CMAKE_CXX_FLAGS
-        CMAKE_CXX_FLAGS_DEBUG
-        CMAKE_CXX_FLAGS_RELEASE
-        CMAKE_CXX_FLAGS_MINSIZEREL
-        CMAKE_CXX_FLAGS_RELWITHDEBINFO
-        CMAKE_C_FLAGS
-        CMAKE_C_FLAGS_DEBUG
-        CMAKE_C_FLAGS_RELEASE
-        CMAKE_C_FLAGS_MINSIZEREL
-        CMAKE_C_FLAGS_RELWITHDEBINFO
-        )
-
-  if(DCMTK_OVERWRITE_WIN32_COMPILER_FLAGS OR BUILD_SHARED_LIBS)
+if(WIN32 AND CMAKE_GENERATOR MATCHES "Visual Studio .*|NMake .*")
+  if (POLICY CMP0091)
+    # CMake 3.15 and newer use CMAKE_MSVC_RUNTIME_LIBRARY to select
+    # the MSVC runtime library
     if(DCMTK_COMPILE_WIN32_MULTITHREADED_DLL OR BUILD_SHARED_LIBS)
-      # Convert any /MT or /MTd option to /MD or /MDd
-      foreach(CompilerFlag ${CompilerFlags})
-          string(REPLACE "/MT" "/MD" ${CompilerFlag} "${${CompilerFlag}}")
-          set(${CompilerFlag} "${${CompilerFlag}}" CACHE STRING "msvc compiler flags" FORCE)
-      endforeach()
+       set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
     else()
-      # Convert any /MD or /MDd option to /MT or /MTd
-      foreach(CompilerFlag ${CompilerFlags})
-          string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
-          set(${CompilerFlag} "${${CompilerFlag}}" CACHE STRING "msvc compiler flags" FORCE)
-      endforeach()
+       set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     endif()
-  endif()
+  else()
+    # CMake 3.14 and older automatically set the MSVC runtime
+    # library to a built-in default.
+    # Evaluate the DCMTK_COMPILE_WIN32_MULTITHREADED_DLL option and adjust
+    # the runtime library setting (/MT or /MD) accordingly
+    set(CompilerFlags
+          CMAKE_CXX_FLAGS
+          CMAKE_CXX_FLAGS_DEBUG
+          CMAKE_CXX_FLAGS_RELEASE
+          CMAKE_CXX_FLAGS_MINSIZEREL
+          CMAKE_CXX_FLAGS_RELWITHDEBINFO
+          CMAKE_C_FLAGS
+          CMAKE_C_FLAGS_DEBUG
+          CMAKE_C_FLAGS_RELEASE
+          CMAKE_C_FLAGS_MINSIZEREL
+          CMAKE_C_FLAGS_RELWITHDEBINFO
+          )
+
+    if(DCMTK_OVERWRITE_WIN32_COMPILER_FLAGS OR BUILD_SHARED_LIBS)
+      if(DCMTK_COMPILE_WIN32_MULTITHREADED_DLL OR BUILD_SHARED_LIBS)
+        # Convert any /MT or /MTd option to /MD or /MDd
+        foreach(CompilerFlag ${CompilerFlags})
+            string(REPLACE "/MT" "/MD" ${CompilerFlag} "${${CompilerFlag}}")
+            set(${CompilerFlag} "${${CompilerFlag}}" CACHE STRING "msvc compiler flags" FORCE)
+        endforeach()
+      else()
+        # Convert any /MD or /MDd option to /MT or /MTd
+        foreach(CompilerFlag ${CompilerFlags})
+            string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+            set(${CompilerFlag} "${${CompilerFlag}}" CACHE STRING "msvc compiler flags" FORCE)
+        endforeach()
+      endif()
+    endif()
+  endif() # Policy CMP0091
 endif()
 
 if(BUILD_SHARED_LIBS)
@@ -407,8 +437,6 @@ if(BUILD_SHARED_LIBS)
     # make sure that it doesn't get confused when a "normal" library turns into
     # an object library. Do this via a suffix.
     set(DCMTK_LIBRARY_SUFFIX _obj)
-    # This uses object libraries which are new in CMake 2.8.8
-    cmake_minimum_required(VERSION 2.8.8)
   endif()
 
   option(USE_COMPILER_HIDDEN_VISIBILITY
@@ -566,20 +594,6 @@ set_property(GLOBAL PROPERTY DCMTK_MODERN_CXX_STANDARDS 11 14 17)
 # Enable various warnings by default
 #-----------------------------------------------------------------------------
 
-# fallback implementation of add_compile_options()
-if(CMAKE_MAJOR_VERSION LESS 3 AND NOT CMAKE_VERSION VERSION_EQUAL 2.8.12)
-  function(add_compile_options)
-    foreach(OPTION ${ARGN})
-        foreach(FLAG C CXX)
-            string(FIND "${CMAKE_${FLAG}_FLAGS}" "${OPTION}" IDX)
-            if(IDX EQUAL -1)
-                set("CMAKE_${FLAG}_FLAGS" "${CMAKE_${FLAG}_FLAGS} ${OPTION}" PARENT_SCOPE)
-            endif()
-        endforeach()
-    endforeach()
-  endfunction()
-endif()
-
 if(MSVC)
     # This code removes existing warning flags to prevent MSVC warning D9025.
     # Remove it once our minimum CMake version is >= 3.15, since those newer
@@ -628,28 +642,35 @@ include(${DCMTK_CMAKE_INCLUDE}CMake/GenerateDCMTKConfigure.cmake)
 # Thread support
 #-----------------------------------------------------------------------------
 
-# See dcmtk/config/configure.in
+# Compile reentrant code when WITH_THREADS is active
 if(WITH_THREADS)
   add_definitions(-D_REENTRANT)
-  if(HAVE_PTHREAD_RWLOCK)
-    if(APPLE)
-      add_definitions(-D_XOPEN_SOURCE_EXTENDED -D_BSD_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE)
-    endif()
-    if(CMAKE_SYSTEM_NAME MATCHES "^IRIX")
-      add_definitions(-D_XOPEN_SOURCE_EXTENDED -D_BSD_SOURCE -D_BSD_COMPAT)
-    endif()
-  endif()
+endif()
 
-  if(HAVE_PTHREAD_H)
-    CHECK_LIBRARY_EXISTS(pthread pthread_key_create "" HAVE_LIBPTHREAD)
-    if(HAVE_LIBPTHREAD)
-      set(THREAD_LIBS pthread)
-    endif()
-    CHECK_LIBRARY_EXISTS(rt sem_init "" HAVE_LIBRT)
-    if(HAVE_LIBRT)
-      set(THREAD_LIBS ${THREAD_LIBS} rt)
-    endif()
+# add feature macros needed for libpthread
+if(HAVE_PTHREAD_RWLOCK)
+  if(APPLE)
+    add_definitions(-D_XOPEN_SOURCE_EXTENDED -D_BSD_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE)
   endif()
+  if(CMAKE_SYSTEM_NAME MATCHES "^IRIX")
+    add_definitions(-D_XOPEN_SOURCE_EXTENDED -D_BSD_SOURCE -D_BSD_COMPAT)
+  endif()
+endif()
+
+# add libpthread to THREAD_LIBS. This is needed in WITH_THREADS mode,
+# but also when linking against OpenSSL
+if(HAVE_PTHREAD_H)
+  CHECK_LIBRARY_EXISTS(pthread pthread_key_create "" HAVE_LIBPTHREAD)
+  if(HAVE_LIBPTHREAD)
+    set(THREAD_LIBS pthread)
+  endif()
+endif()
+
+# Add librt to THREAD_LIBS even if we are not compiling WITH_THREADS,
+# since OFIPCMessageQueueServer also needs it
+CHECK_LIBRARY_EXISTS(rt mq_open "" HAVE_LIBRT)
+if(HAVE_LIBRT)
+  set(THREAD_LIBS ${THREAD_LIBS} rt)
 endif()
 
 #-----------------------------------------------------------------------------
@@ -668,11 +689,14 @@ if(DCMTK_WITH_OPENSSL)
   CHECK_INCLUDE_FILE_CXX("openssl/provider.h" HAVE_OPENSSL_PROVIDER_H)
 
   # test presence of functions, constants and macros needed for the dcmtls module
-  CHECK_FUNCTIONWITHHEADER_EXISTS("SSL_CTX_get0_param" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_SSL_CTX_GET0_PARAM)
-  CHECK_FUNCTIONWITHHEADER_EXISTS("RAND_egd" "openssl/rand.h" HAVE_OPENSSL_PROTOTYPE_RAND_EGD)
   CHECK_FUNCTIONWITHHEADER_EXISTS("DH_bits" "openssl/dh.h" HAVE_OPENSSL_PROTOTYPE_DH_BITS)
   CHECK_FUNCTIONWITHHEADER_EXISTS("EVP_PKEY_RSA_PSS" "openssl/evp.h" HAVE_OPENSSL_PROTOTYPE_EVP_PKEY_RSA_PSS)
   CHECK_FUNCTIONWITHHEADER_EXISTS("EVP_PKEY_base_id" "openssl/evp.h" HAVE_OPENSSL_PROTOTYPE_EVP_PKEY_BASE_ID)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("NID_dsa_with_SHA512" "openssl/obj_mac.h" HAVE_OPENSSL_PROTOTYPE_NID_DSA_WITH_SHA512)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("NID_ecdsa_with_SHA3_256" "openssl/obj_mac.h" HAVE_OPENSSL_PROTOTYPE_NID_ECDSA_WITH_SHA3_256)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("NID_sha512_256WithRSAEncryption" "openssl/obj_mac.h" HAVE_OPENSSL_PROTOTYPE_NID_SHA512_256WITHRSAENCRYPTION)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("RAND_egd" "openssl/rand.h" HAVE_OPENSSL_PROTOTYPE_RAND_EGD)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("SSL_CTX_get0_param" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_SSL_CTX_GET0_PARAM)
   CHECK_FUNCTIONWITHHEADER_EXISTS("SSL_CTX_get_cert_store" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_SSL_CTX_GET_CERT_STORE)
   CHECK_FUNCTIONWITHHEADER_EXISTS("SSL_CTX_get_ciphers" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_SSL_CTX_GET_CIPHERS)
   CHECK_FUNCTIONWITHHEADER_EXISTS("SSL_CTX_set0_tmp_dh_pkey" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_SSL_CTX_SET0_TMP_DH_PKEY)
@@ -684,8 +708,14 @@ if(DCMTK_WITH_OPENSSL)
   CHECK_FUNCTIONWITHHEADER_EXISTS("SSL_ERROR_WANT_ASYNC" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_SSL_ERROR_WANT_ASYNC)
   CHECK_FUNCTIONWITHHEADER_EXISTS("SSL_ERROR_WANT_ASYNC_JOB" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_SSL_ERROR_WANT_ASYNC_JOB)
   CHECK_FUNCTIONWITHHEADER_EXISTS("SSL_ERROR_WANT_CLIENT_HELLO_CB" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_SSL_ERROR_WANT_CLIENT_HELLO_CB)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("TLS1_3_RFC_AES_128_CCM_8_SHA256" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_TLS1_3_RFC_AES_128_CCM_8_SHA256)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("TLS1_3_RFC_AES_256_GCM_SHA384" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_TLS1_3_RFC_AES_256_GCM_SHA384)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("TLS1_3_RFC_CHACHA20_POLY1305_SHA256" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_TLS1_3_RFC_CHACHA20_POLY1305_SHA256)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("TLS1_TXT_ECDHE_ECDSA_WITH_AES_256_CCM_8" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_TLS1_TXT_ECDHE_ECDSA_WITH_AES_256_CCM_8)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("TLS1_TXT_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_TLS1_TXT_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384)
   CHECK_FUNCTIONWITHHEADER_EXISTS("TLS1_TXT_ECDHE_RSA_WITH_CHACHA20_POLY1305" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_TLS1_TXT_ECDHE_RSA_WITH_CHACHA20_POLY1305)
   CHECK_FUNCTIONWITHHEADER_EXISTS("TLS_method" "openssl/ssl.h" HAVE_OPENSSL_PROTOTYPE_TLS_METHOD)
+  CHECK_FUNCTIONWITHHEADER_EXISTS("X509_STORE_CTX_get0_cert" "openssl/x509_vfy.h" HAVE_OPENSSL_PROTOTYPE_X509_STORE_CTX_GET0_CERT)
   CHECK_FUNCTIONWITHHEADER_EXISTS("X509_STORE_get0_param" "openssl/x509.h" HAVE_OPENSSL_PROTOTYPE_X509_STORE_GET0_PARAM)
   CHECK_FUNCTIONWITHHEADER_EXISTS("X509_get_signature_nid" "openssl/x509.h" HAVE_OPENSSL_PROTOTYPE_X509_GET_SIGNATURE_NID)
 
@@ -746,11 +776,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL SunPro)
 endif()
 
 #-----------------------------------------------------------------------------
-# workaround for using the deprecated generator expression $<CONFIGURATION>
-# with old CMake versions that do not understand $<CONFIG>
+# generator expression $<CONFIG>
 #-----------------------------------------------------------------------------
-if(CMAKE_VERSION VERSION_LESS 3.0.0)
-  set(DCMTK_CONFIG_GENERATOR_EXPRESSION "$<CONFIGURATION>" CACHE INTERNAL "the generator expression to use for retriving the current config")
-else()
-  set(DCMTK_CONFIG_GENERATOR_EXPRESSION "$<CONFIG>" CACHE INTERNAL "the generator expression to use for retriving the current config")
-endif()
+set(DCMTK_CONFIG_GENERATOR_EXPRESSION "$<CONFIG>" CACHE INTERNAL "the generator expression to use for retrieving the current config")

@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2001-2021, OFFIS e.V.
+ *  Copyright (C) 2001-2022, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -30,6 +30,10 @@
 
 class DcmPixelItem;
 
+/** Class implementing the image2dcm engine. Conversion takes place by combining an input plugin
+ *  reading a general purpose image format and output plugins for conversion to specific
+ *  DICOM SOP class(es)
+ */
 class DCMTK_I2D_EXPORT Image2Dcm
 {
 
@@ -76,6 +80,7 @@ public:
     size_t frameNumber);
 
   /** Update the offset table in the case of an encapsulated image
+   *  @return EC_Normal if offset table could be updated, error code otherwise
    */
   OFCondition updateOffsetTable();
 
@@ -95,37 +100,31 @@ public:
     * DICOM object. Only the dataset of the given file is imported.
     * @param file - [in] The filename of the template file,
     *   which is either in DICOM or XML format.
-    * @return none
     */
   void setTemplateFile(const OFString& file);
 
   /** Sets the format of the template file.
     * @param isXML - [in] true for XML, false for DICOM format
-    * @return none
     */
   void setTemplateFileIsXML(OFBool isXML);
 
   /** activates or deactivates XML validation
     * @param enabled - [in] true to enable validation
-    * @return none
     */
   void setXMLvalidation(OFBool enabled);
 
   /** activates or deactivates an XML namespace check
     * @param enabled - [in] true to enable namespace check
-    * @return none
     */
   void setXMLnamespaceCheck(OFBool enabled);
 
   /** Set file from which patient/study/series data should be imported from.
    *  @param file - [in] The DICOM file to read from
-   *  @return none
    */
   void setSeriesFrom(const OFString& file);
 
   /** Set file from which patient/study/series data should be imported from.
    *  @param file - [in] The DICOM file to read from
-   *  @return none
    */
   void setStudyFrom(const OFString& file);
 
@@ -133,14 +132,12 @@ public:
    *  This can either be a the study/series file or the template file
    *  provided.
    *  @param incInstNo - [in] If true, the instance number will be incremented
-   *  @return none
    */
   void setIncrementInstanceNumber(OFBool incInstNo);
 
   /** Sets the conversion flags for character set conversion of
    *  the study/series file
    * @param conversionFlags - [in] conversion flags
-   * @return none;
    */
   void setConversionFlags(size_t conversionFlags);
 
@@ -153,7 +150,6 @@ public:
    *                     permitted to set a value if appropriate, e. g.
    *                     "PatientName=Doe^John" would be a valid override
    *                     key.
-   *  @return none
    */
   void setOverrideKeys(const OFList<OFString>& ovkeys);
 
@@ -165,7 +161,6 @@ public:
    *         attributes are inserted automatically with a predefined
    *         value (if possible). An existing empty type 1 attribute is
    *         assigned a value, too.
-   *  @return none
    */
   void setValidityChecking(OFBool doChecks,
                            OFBool insertMissingType2 = OFTrue,
@@ -175,8 +170,7 @@ protected:
 
   /** Cleans up template for future insertion of pixel data information, ie
     * generally removes attributes from image pixel module
-    * @param targetDset - [out] The dataset that should be cleand up
-    * @return none
+    * @param targetDset - [out] The dataset that should be cleaned up
     */
   void cleanupTemplate(DcmDataset *targetDset);
 
@@ -322,7 +316,7 @@ private:
   /// File to read study and series from
   OFString m_studySeriesFile;
 
-  /// If true, Instance Number ist read from file and incremented by 1
+  /// If true, Instance Number is read from file and incremented by 1
   OFBool m_incInstNoFromFile;
 
   ///  If true, some simple attribute checks (missing type 2 attributes or

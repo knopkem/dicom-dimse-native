@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1997-2020, OFFIS e.V.
+ *  Copyright (C) 1997-2023, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -1189,7 +1189,7 @@ OFCondition DcmPixelData::getUncompressedFrame(
     if (numberOfFrames < 1) numberOfFrames = 1;
 
     Uint32 frameSize;
-    OFCondition result = getUncompressedFrameSize(dataset, frameSize);
+    OFCondition result = getUncompressedFrameSize(dataset, frameSize, existUnencapsulated);
     if (result.bad()) return result;
 
     // determine the minimum buffer size, which may be frame size plus one pad byte if frame size is odd.
@@ -1344,6 +1344,10 @@ OFCondition DcmPixelData::writeJson(STD_NAMESPACE ostream &out,
       writeJsonCloser(out, format);
       return EC_Normal;
     }
+
+    /* write JSON Opener and Closer, because otherwise the output is not valid JSON */
+    writeJsonOpener(out, format);
+    writeJsonCloser(out, format);
 
     // pixel data is encapsulated, return error
     return EC_CannotWriteJsonInlineBinary;

@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2018, OFFIS e.V.
+ *  Copyright (C) 1994-2023, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -103,24 +103,38 @@ typedef enum {
     EXS_JPIPReferencedDeflate = 31,
     /// MPEG2 Main Profile at Main Level
     EXS_MPEG2MainProfileAtMainLevel = 32,
+    /// Fragmentable MPEG2 Main Profile / Main Level
+    EXS_FragmentableMPEG2MainProfileMainLevel = 33,
     /// MPEG2 Main Profile at High Level
-    EXS_MPEG2MainProfileAtHighLevel = 33,
+    EXS_MPEG2MainProfileAtHighLevel = 34,
+    /// Fragmentable MPEG2 Main Profile / High Level
+    EXS_FragmentableMPEG2MainProfileHighLevel = 35,
     /// MPEG4 High Profile / Level 4.1
-    EXS_MPEG4HighProfileLevel4_1 = 34,
+    EXS_MPEG4HighProfileLevel4_1 = 36,
+    /// Fragmentable MPEG4 High Profile / Level 4.1
+    EXS_FragmentableMPEG4HighProfileLevel4_1 = 37,
     /// MPEG4 BD-compatible High Profile / Level 4.1
-    EXS_MPEG4BDcompatibleHighProfileLevel4_1 = 35,
+    EXS_MPEG4BDcompatibleHighProfileLevel4_1 = 38,
+    /// Fragmentable MPEG4 BD-compatible High Profile / Level 4.1
+    EXS_FragmentableMPEG4BDcompatibleHighProfileLevel4_1 = 39,
     /// MPEG4 High Profile / Level 4.2 For 2D Video
-    EXS_MPEG4HighProfileLevel4_2_For2DVideo = 36,
+    EXS_MPEG4HighProfileLevel4_2_For2DVideo = 40,
+    /// Fragmentable MPEG4 High Profile / Level 4.2 For 2D Video
+    EXS_FragmentableMPEG4HighProfileLevel4_2_For2DVideo = 41,
     /// MPEG4 High Profile / Level 4.2 For 3D Video
-    EXS_MPEG4HighProfileLevel4_2_For3DVideo = 37,
+    EXS_MPEG4HighProfileLevel4_2_For3DVideo = 42,
+    /// Fragmentable MPEG4 Stereo High Profile / Level 4.2
+    EXS_FragmentableMPEG4HighProfileLevel4_2_For3DVideo = 43,
     /// MPEG4 Stereo High Profile / Level 4.2
-    EXS_MPEG4StereoHighProfileLevel4_2 = 38,
+    EXS_MPEG4StereoHighProfileLevel4_2 = 44,
+    /// Fragmentable HEVC/H.265 Main Profile / Level 5.1
+    EXS_FragmentableMPEG4StereoHighProfileLevel4_2 = 45,
     /// HEVC/H.265 Main Profile / Level 5.1
-    EXS_HEVCMainProfileLevel5_1 = 39,
+    EXS_HEVCMainProfileLevel5_1 = 46,
     /// HEVC/H.265 Main 10 Profile / Level 5.1
-    EXS_HEVCMain10ProfileLevel5_1 = 40,
+    EXS_HEVCMain10ProfileLevel5_1 = 47,
     /// Private GE Little Endian Implicit with big endian pixel data
-    EXS_PrivateGE_LEI_WithBigEndianPixelData = 41
+    EXS_PrivateGE_LEI_WithBigEndianPixelData = 48
 } E_TransferSyntax;
 
 /** enumeration of byte orders
@@ -180,39 +194,93 @@ public:
     /** constructor
      *  @param xfer transfer syntax enum
      */
-    DcmXfer( E_TransferSyntax xfer );
+    DcmXfer(E_TransferSyntax xfer);
 
     /** constructor
      *  @param xferName_xferID transfer syntax name as string
      */
-    DcmXfer( const char *xferName_xferID );
+    DcmXfer(const char *xferName_xferID);
 
     /// copy constructor
-    DcmXfer( const DcmXfer &newXfer );
+    DcmXfer(const DcmXfer &newXfer);
 
     /// destructor
     ~DcmXfer();
 
     /// assignment operator for transfer syntax enum
-    DcmXfer & operator = ( const E_TransferSyntax xfer );
+    DcmXfer & operator=(const E_TransferSyntax xfer);
 
     /// copy assignment operator
-    DcmXfer & operator = ( const DcmXfer &newtag );
+    DcmXfer & operator=(const DcmXfer &newXfer);
+
+    /** comparison operator
+     *  @param xfer transfer syntax enum to compare with
+     *  @return true if equal, false if not equal
+     */
+    OFBool operator==(const E_TransferSyntax xfer) const
+    {
+        return xferSyn == xfer;
+    }
+
+    /** comparison operator
+     *  @param xfer transfer syntax to compare with
+     *  @return true if equal, false if not equal
+     */
+    OFBool operator==(const DcmXfer &xfer) const
+    {
+        return xferSyn == xfer.getXfer();
+    }
+
+    /** comparison operator
+     *  @param xfer transfer syntax enum to compare with
+     *  @return true if not equal, false if equal
+     */
+    OFBool operator!=(const E_TransferSyntax xfer) const
+    {
+        return xferSyn != xfer;
+    }
+
+    /** comparison operator
+     *  @param xfer transfer syntax to compare with
+     *  @return true if not equal, false if equal
+     */
+    OFBool operator!=(const DcmXfer &xfer) const
+    {
+        return xferSyn != xfer.getXfer();
+    }
 
     /// return transfer syntax enum for this transfer syntax
-    inline E_TransferSyntax getXfer() const  { return xferSyn; }
+    inline E_TransferSyntax getXfer() const
+    {
+        return xferSyn;
+    }
 
     /// return byte order for this transfer syntax
-    inline E_ByteOrder getByteOrder() const { return byteOrder; }
+    inline E_ByteOrder getByteOrder() const
+    {
+        return byteOrder;
+    }
 
     /// return byte order for this transfer syntax
-    inline E_ByteOrder getPixelDataByteOrder() const { return pixelDataByteOrder; }
+    inline E_ByteOrder getPixelDataByteOrder() const
+    {
+        return pixelDataByteOrder;
+    }
 
     /// return name string for this transfer syntax
-    inline const char* getXferName() const { return xferName; }
+    inline const char* getXferName() const
+    {
+        return xferName;
+    }
+
+    /// return keyword string for this transfer syntax
+    const char* getXferKeyword() const;
 
     /// return UID string for this transfer syntax
-    inline const char* getXferID() const { return xferID; }
+    inline const char* getXferID() const
+    {
+        return xferID;
+    }
 
     /// return true if transfer syntax is little endian, false otherwise
     inline OFBool isLittleEndian() const
@@ -221,13 +289,22 @@ public:
     }
 
     /// return true if transfer syntax is big endian, false otherwise
-    inline OFBool isBigEndian() const { return byteOrder == EBO_BigEndian; }
+    inline OFBool isBigEndian() const
+    {
+        return byteOrder == EBO_BigEndian;
+    }
 
     /// return true if transfer syntax is implicit VR, false otherwise
-    inline OFBool isImplicitVR() const { return vrType == EVT_Implicit; }
+    inline OFBool isImplicitVR() const
+    {
+        return vrType == EVT_Implicit;
+    }
 
     /// return true if transfer syntax is explicit VR, false otherwise
-    inline OFBool isExplicitVR() const { return vrType == EVT_Explicit; }
+    inline OFBool isExplicitVR() const
+    {
+        return vrType == EVT_Explicit;
+    }
 
     /// return true if transfer syntax is encapsulated, false otherwise
     inline OFBool isEncapsulated() const
@@ -246,14 +323,20 @@ public:
      *  When called for a non-JPEG transfer syntax, returns 0.
      *  @return 8-bit JPEG process ID
      */
-    inline Uint32 getJPEGProcess8Bit() const { return JPEGProcess8; }
+    inline Uint32 getJPEGProcess8Bit() const
+    {
+        return JPEGProcess8;
+    }
 
     /** return 12-bit JPEG process ID for this transfer syntax.
      *  Lossy JPEG transfer syntaxes support two alternative JPEG encoding processes - 8 and 12 bits.
      *  When called for a non-JPEG transfer syntax, returns 0.
      *  @return 12-bit JPEG process ID
      */
-    inline Uint32 getJPEGProcess12Bit() const { return JPEGProcess12;}
+    inline Uint32 getJPEGProcess12Bit() const
+    {
+        return JPEGProcess12;
+    }
 
     /** check whether transfer syntax uses a lossy compression
      *  @return true if transfer syntax uses a lossy compression, false otherwise
@@ -295,6 +378,15 @@ public:
     inline OFBool isReferenced() const
     {
         return referenced;
+    }
+
+    /** check whether transfer syntax allows the encapsulated pixel stream of
+     *  encoded pixel data to be split into one or more fragments
+     *  @return true if transfer syntax supports fragmentable pixel data
+     */
+    inline OFBool isFragmentable() const
+    {
+        return fragmentable;
     }
 
     /** return the number of bytes needed to describe the tag, length, VR
@@ -344,6 +436,9 @@ private:
 
     /// flag indicating whether this transfer syntax uses a pixel data URL reference
     OFBool              referenced;
+
+    /// flag indicating whether this transfer syntax supports fragmentable pixel data
+    OFBool              fragmentable;
 
 };
 

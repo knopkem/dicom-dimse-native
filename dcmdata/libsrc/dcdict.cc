@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 1994-2021, OFFIS e.V.
+ *  Copyright (C) 1994-2023, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -22,13 +22,17 @@
 
 #include "dcmtk/config/osconfig.h"    /* make sure OS specific configuration is included first */
 
-#include "dcmtk/ofstd/ofstd.h"
 #include "dcmtk/dcmdata/dcdict.h"
-#include "dcmtk/ofstd/ofdefine.h"
 #include "dcmtk/dcmdata/dcdicent.h"
 #include "dcmtk/dcmdata/dctypes.h"
+#include "dcmtk/ofstd/ofdefine.h"
 #include "dcmtk/ofstd/ofstd.h"
 #include "dcmtk/ofstd/offile.h"
+
+#ifdef HAVE_WINDOWS_H
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
 
 /*
 ** The separator character between fields in the data dictionary file(s)
@@ -356,7 +360,7 @@ parseWholeTagField(char* s, DcmTagKey& key,
 
     if (pi > 0)
     {
-      // copy private creator name
+      // copy private creator identifier
       size_t buflen = strlen(pc) + 1;
       privCreator = new char[buflen]; // deleted by caller
       if (privCreator) OFStandard::strlcpy(privCreator, pc, buflen);
@@ -604,6 +608,10 @@ DcmDataDictionary::loadExternalDictionaries()
 #endif
     }
 
+#ifdef HAVE_WINDOWS_H
+    char buf[MAX_PATH+1];
+#endif
+
     /* if any mechanism for external dictionary (environment or default external)
      * is actually provided it, parse env and load all dictionaries specified therein.
      */
@@ -616,6 +624,11 @@ DcmDataDictionary::loadExternalDictionaries()
         }
 
         if (sepCnt == 0) {
+#ifdef HAVE_WINDOWS_H
+            memset(buf, 0, sizeof(buf));
+            (void) ExpandEnvironmentStringsA(env, buf, sizeof(buf));
+            env = buf;
+#endif
             if (!loadDictionary(env, OFTrue)) {
                 return OFFalse;
             }
@@ -629,9 +642,18 @@ DcmDataDictionary::loadExternalDictionaries()
 
             for (int ii = 0; ii < ndicts; ii++) {
                 if ((dictArray[ii] != NULL) && (strlen(dictArray[ii]) > 0)) {
+#ifdef HAVE_WINDOWS_H
+                    memset(buf, 0, sizeof(buf));
+                    (void) ExpandEnvironmentStringsA(dictArray[ii], buf, sizeof(buf));
+                    env = buf;
+                    if (!loadDictionary(buf, OFTrue)) {
+                        loadFailed = OFTrue;
+                    }
+#else
                     if (!loadDictionary(dictArray[ii], OFTrue)) {
                         loadFailed = OFTrue;
                     }
+#endif
                 }
                 free(dictArray[ii]);
             }

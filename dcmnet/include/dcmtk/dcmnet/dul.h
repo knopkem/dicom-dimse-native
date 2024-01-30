@@ -68,6 +68,7 @@
 #include "dcmtk/ofstd/ofglobal.h"
 #include "dcmtk/ofstd/oftypes.h"
 #include "dcmtk/ofstd/ofcast.h"
+#include "dcmtk/ofstd/ofdeprec.h"
 #include "dcmtk/dcmnet/extneg.h"
 #include "dcmtk/dcmnet/dicom.h"
 #include "dcmtk/dcmnet/dcuserid.h"
@@ -93,8 +94,10 @@ extern DCMTK_DCMNET_EXPORT OFGlobal<OFBool> dcmDisableGethostbyaddr;   /* defaul
 
 /** Global timeout in seconds for connecting to remote hosts.
  *  Default value is -1, which selects infinite timeout, i.e. blocking connect().
+ *  @deprecated The use of this global variable is deprecated. Please pass the TCP
+ *    connection timeout to ASC_createAssociationParameters() as a parameter.
  */
-extern DCMTK_DCMNET_EXPORT OFGlobal<Sint32> dcmConnectionTimeout;   /* default: -1 */
+extern /* TODO: OFdeprecated */ DCMTK_DCMNET_EXPORT OFGlobal<Sint32> dcmConnectionTimeout;   /* default: -1 */
 
 /** This global flag allows to set an already opened socket file descriptor which
  *  will be used by dcmnet the next time receiveTransportConnectionTCP() is called.
@@ -199,6 +202,7 @@ typedef struct {
     UserIdentityNegotiationSubItemAC *ackUserIdentNeg;
 
     OFBool useSecureLayer;
+    Sint32 tcpConnectTimeout;
 }   DUL_ASSOCIATESERVICEPARAMETERS;
 
 /** Enum describing the possible role settings for role negotiation sub items.
@@ -564,10 +568,10 @@ DCMTK_DCMNET_EXPORT void DUL_requestForkOnTransportConnectionReceipt(int argc, c
 
 
 /// @deprecated Use OFString& DUL_DumpParams(OFString&, DUL_ASSOCIATESERVICEPARAMETERS) instead.
-DCMTK_DCMNET_EXPORT void DUL_DumpParams(DUL_ASSOCIATESERVICEPARAMETERS * params);
+OFdeprecated DCMTK_DCMNET_EXPORT void DUL_DumpParams(DUL_ASSOCIATESERVICEPARAMETERS * params);
 /// @deprecated Use OFString& DUL_DumpConnectionParameters(OFString&, DUL_ASSOCIATIONKEY*) instead.
-DCMTK_DCMNET_EXPORT void DUL_DumpConnectionParameters(DUL_ASSOCIATIONKEY *association, STD_NAMESPACE ostream& outstream);
+OFdeprecated DCMTK_DCMNET_EXPORT void DUL_DumpConnectionParameters(DUL_ASSOCIATIONKEY *association, STD_NAMESPACE ostream& outstream);
 /// @deprecated Use OFString& dumpExtNegList(OFString&, SOPClassExtendedNegotiationSubItemList&) instead.
-DCMTK_DCMNET_EXPORT void dumpExtNegList(SOPClassExtendedNegotiationSubItemList& lst);
+OFdeprecated DCMTK_DCMNET_EXPORT void dumpExtNegList(SOPClassExtendedNegotiationSubItemList& lst);
 
 #endif

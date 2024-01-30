@@ -5,6 +5,6 @@ project(oflog)
 include_directories("${oflog_SOURCE_DIR}/include" "${ofstd_SOURCE_DIR}/include")
 
 # recurse into subdirectories
-foreach(SUBDIR libsrc include etc)
+foreach(SUBDIR libsrc include)
   add_subdirectory(${SUBDIR})
 endforeach()

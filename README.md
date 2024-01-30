@@ -4,7 +4,7 @@
 [![Greenkeeper badge](https://badges.greenkeeper.io/knopkem/dicom-dimse-native.svg)](https://greenkeeper.io/)
 
 # dicom-dimse-native
-Nodejs native addon for DICOM DIMSE services using the DCMTK DICOM c++ toolkit (v.3.6.7).
+Nodejs native addon for DICOM DIMSE services using the DCMTK DICOM c++ toolkit (v.3.6.8).
 
 # Supported DIMSE services
 * C-Echo as SCU and SCP

@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright (C) 2011-2017, OFFIS e.V.
+ *  Copyright (C) 2011-2022, OFFIS e.V.
  *  All rights reserved.  See COPYRIGHT file for details.
  *
  *  This software and supporting documentation were developed by
@@ -29,8 +29,43 @@
 #include "dcmtk/ofstd/ofstream.h"
 #include "dcmtk/ofstd/ofstd.h"
 
+#if DCMTK_ENABLE_CHARSET_CONVERSION == DCMTK_CHARSET_CONVERSION_OFICONV
+#include "dcmtk/oficonv/iconv.h"
+
+BEGIN_EXTERN_C
+
+/* logger function that forwards oficonv log output to the dcmdata logger */
+static void oficonv_logger_callback(int level, const char *text1, const char *text2, const char *text3)
+{
+    switch(level)
+    {
+        case 0:
+            DCMDATA_TRACE(text1 << text2 << text3);
+            break;
+        case 1:
+            DCMDATA_DEBUG(text1 << text2 << text3);
+            break;
+        case 2:
+            DCMDATA_INFO(text1 << text2 << text3);
+            break;
+        case 3:
+            DCMDATA_WARN(text1 << text2 << text3);
+            break;
+        case 4:
+            DCMDATA_ERROR(text1 << text2 << text3);
+            break;
+        default:
+            DCMDATA_FATAL(text1 << text2 << text3);
+            break;
+    }
+}
+END_EXTERN_C
+
+#endif
+
 
 #define MAX_OUTPUT_STRING_LENGTH 60
+
 
 
 /*------------------*
@@ -44,6 +79,13 @@ DcmSpecificCharacterSet::DcmSpecificCharacterSet()
     DefaultEncodingConverter(),
     EncodingConverters()
 {
+#if DCMTK_ENABLE_CHARSET_CONVERSION == DCMTK_CHARSET_CONVERSION_OFICONV
+    // set the callback function for oficonv so that logger output goes to the dcmdata logger
+    if (get_oficonv_logger_callback() == NULL)
+    {
+        set_oficonv_logger_callback(oficonv_logger_callback);
+    }
+#endif
 }
 
 
@@ -199,11 +241,13 @@ OFCondition DcmSpecificCharacterSet::determineDestinationEncoding(const OFString
         DestinationEncoding = "ISO-8859-8";
     else if (DestinationCharacterSet == "ISO_IR 148")   // Latin alphabet No. 5
         DestinationEncoding = "ISO-8859-9";
+    else if (DestinationCharacterSet == "ISO_IR 203")   // Latin alphabet No. 9
+        DestinationEncoding = "ISO-8859-15";
     else if (DestinationCharacterSet == "ISO_IR 13")    // Japanese
 #if DCMTK_ENABLE_CHARSET_CONVERSION == DCMTK_CHARSET_CONVERSION_ICONV
         DestinationEncoding = "JIS_X0201";              // - the name "ISO-IR-13" is not supported by libiconv
 #else
-        DestinationEncoding = "Shift_JIS";              // - ICU and stdlibc iconv only know "Shift_JIS" (is this mapping correct?)
+        DestinationEncoding = "Shift_JIS";              // - ICU and stdlibc iconv only know "Shift_JIS", which is a superset of JIS X0201
 #endif
     else if (DestinationCharacterSet == "ISO_IR 166")   // Thai
 #if DCMTK_ENABLE_CHARSET_CONVERSION == DCMTK_CHARSET_CONVERSION_ICU
@@ -260,11 +304,13 @@ OFCondition DcmSpecificCharacterSet::selectCharacterSetWithoutCodeExtensions()
         fromEncoding = "ISO-8859-8";
     else if (SourceCharacterSet == "ISO_IR 148")    // Latin alphabet No. 5
         fromEncoding = "ISO-8859-9";
+    else if (SourceCharacterSet == "ISO_IR 203")    // Latin alphabet No. 9
+        fromEncoding = "ISO-8859-15";
     else if (SourceCharacterSet == "ISO_IR 13")     // Japanese
 #if DCMTK_ENABLE_CHARSET_CONVERSION == DCMTK_CHARSET_CONVERSION_ICONV
         fromEncoding = "JIS_X0201";                 // - the name "ISO-IR-13" is not supported by libiconv
 #else
-        fromEncoding = "Shift_JIS";                 // - ICU and stdlibc iconv only know "Shift_JIS" (is this mapping correct?)
+        fromEncoding = "Shift_JIS";                 // - ICU and stdlibc iconv only know "Shift_JIS", which is a superset of JIS X0201
 #endif
     else if (SourceCharacterSet == "ISO_IR 166")    // Thai
 #if DCMTK_ENABLE_CHARSET_CONVERSION == DCMTK_CHARSET_CONVERSION_ICU
@@ -368,12 +414,17 @@ OFCondition DcmSpecificCharacterSet::selectCharacterSetWithCodeExtensions(const 
             encodingName = "ISO-8859-9";
             needsASCII = OFTrue;
         }
+        else if (definedTerm == "ISO 2022 IR 203")      // Latin alphabet No. 9
+        {
+            encodingName = "ISO-8859-15";
+            needsASCII = OFTrue;
+        }
         else if (definedTerm == "ISO 2022 IR 13")       // Japanese
         {
 #if DCMTK_ENABLE_CHARSET_CONVERSION == DCMTK_CHARSET_CONVERSION_ICONV
             encodingName = "JIS_X0201";                 // - the name "ISO-IR-13" is not supported by libiconv
 #else
-            encodingName = "Shift_JIS";                 // - ICU and stdlibc iconv only know "Shift_JIS" (is this mapping correct?)
+            encodingName = "Shift_JIS";                 // - ICU and stdlibc iconv only know "Shift_JIS", which is a superset of JIS X0201
 #endif
         }
         else if (definedTerm == "ISO 2022 IR 166")      // Thai
@@ -385,20 +436,20 @@ OFCondition DcmSpecificCharacterSet::selectCharacterSetWithCodeExtensions(const 
 #endif
             needsASCII = OFTrue;
         }
-        else if (definedTerm == "ISO 2022 IR 87")       // Japanese (multi-byte)
+        else if (definedTerm == "ISO 2022 IR 87")       // Japanese (multi-byte), JIS X0208
         {
             encodingName = "ISO-IR-87";                 // - this might generate an error since "ISO-IR-87" is not supported by ICU and stdlibc iconv
             notFirstValue = OFTrue;
         }
-        else if (definedTerm == "ISO 2022 IR 159")      // Japanese (multi-byte)
+        else if (definedTerm == "ISO 2022 IR 159")      // Japanese (multi-byte), JIS X0212
         {
             encodingName = "ISO-IR-159";                // - this might generate an error since "ISO-IR-159" is not supported by ICU and stdlibc iconv
             notFirstValue = OFTrue;
         }
         else if (definedTerm == "ISO 2022 IR 149")      // Korean (multi-byte)
         {
-            encodingName = "EUC-KR";                    // - is this mapping really correct?
-            notFirstValue = OFTrue;                     //   "ISO-IR-149" does not work with the sample from DICOM PS 3.5
+            encodingName = "EUC-KR";
+            notFirstValue = OFTrue;
         }
         else if (definedTerm == "ISO 2022 IR 58")       // Simplified Chinese (multi-byte)
         {
@@ -594,15 +645,17 @@ OFCondition DcmSpecificCharacterSet::convertString(const char *fromString,
                         key = "ISO 2022 IR 138";
                     else if ((c1 == 0x2d) && (c2 == 0x4d))  // Latin alphabet No. 5
                         key = "ISO 2022 IR 148";
-                    else if ((c1 == 0x29) && (c2 == 0x49))  // Japanese
+                    else if ((c1 == 0x2d) && (c2 == 0x62))  // Latin alphabet No. 9
+                        key = "ISO 2022 IR 203";
+                    else if ((c1 == 0x29) && (c2 == 0x49))  // Japanese, JIS X0201, G1 set (Katakana)
                         key = "ISO 2022 IR 13";
-                    else if ((c1 == 0x28) && (c2 == 0x4a))  // Japanese - is this really correct?
+                    else if ((c1 == 0x28) && (c2 == 0x4a))  // Japanese, JIS X0201, G0 set (Romaji, i.e. ASCII)
                         key = "ISO 2022 IR 13";
                     else if ((c1 == 0x2d) && (c2 == 0x54))  // Thai
                         key = "ISO 2022 IR 166";
-                    else if ((c1 == 0x24) && (c2 == 0x42))  // Japanese (multi-byte)
+                    else if ((c1 == 0x24) && (c2 == 0x42))  // Japanese (multi-byte), JIS X0208 (Kanji)
                         key = "ISO 2022 IR 87";
-                    else if ((c1 == 0x24) && (c2 == 0x28))  // Japanese (multi-byte)
+                    else if ((c1 == 0x24) && (c2 == 0x28))  // Japanese (multi-byte), JIS X0212 (Supplementary Kanji set)
                     {
                         escLength = 3;
                         // do we still have another character in the string?
