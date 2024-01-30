@@ -105,11 +105,12 @@ Value DoShutdown(const CallbackInfo& info) {
 
 Object Init(Env env, Object exports) {
 
-    using namespace dcmtk::log4cplus;
-    Logger rootLogger = Logger::getRoot();
-    rootLogger.removeAllAppenders();
-    dcmtk::log4cplus::SharedAppenderPtr logfile(new dcmtk::log4cplus::FileAppender("dicom.log"));
+    const char *pattern = "%-5p [%d{%d-%m-%Y %H:%M:%S:%q}]: %m%n";
+    OFunique_ptr<dcmtk::log4cplus::Layout> layout(new dcmtk::log4cplus::PatternLayout(pattern));
+    dcmtk::log4cplus::SharedAppenderPtr logfile(new dcmtk::log4cplus::RollingFileAppender("dicom.log"));
     dcmtk::log4cplus::Logger log = dcmtk::log4cplus::Logger::getRoot();
+    logfile->setLayout(OFmove(layout));
+    log.removeAllAppenders();
     log.addAppender(logfile);
 
     exports.Set(String::New(env, "echoScu"),
