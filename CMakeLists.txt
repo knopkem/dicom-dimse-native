@@ -11,6 +11,7 @@ project(DCMTK)
 #-------------------------------------DCMTK-----------------------------------
 
 set(BUILD_APPS "OFF")
+set(DCMTK_DEFAULT_DICT "builtin")
 
 if(MSVC)
     set(DCMTK_OVERWRITE_WIN32_COMPILER_FLAGS "OFF")
