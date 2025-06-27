@@ -20,10 +20,6 @@ using json = nlohmann::json;
 #include "dcmtk/dcmdata/dcostrmz.h" /* for dcmZlibCompressionLevel */
 
 
-#ifdef WITH_ZLIB
-#include <zlib.h>
-#endif
-
 namespace
 {
     typedef enum
@@ -37,76 +33,6 @@ namespace
         UID_GETPatientRootQueryRetrieveInformationModel,
         UID_GETStudyRootQueryRetrieveInformationModel,
         UID_RETIRED_GETPatientStudyOnlyQueryRetrieveInformationModel};
-
-    void applyOverrideKeys(DcmDataset *dataset, const OFList<OFString> &overrideKeys)
-    {
-        /* replace specific keys by those in overrideKeys */
-        OFListConstIterator(OFString) path = overrideKeys.begin();
-        OFListConstIterator(OFString) endOfList = overrideKeys.end();
-        DcmPathProcessor proc;
-        proc.setItemWildcardSupport(OFFalse);
-        proc.checkPrivateReservations(OFFalse);
-        OFCondition cond;
-        while (path != endOfList)
-        {
-            cond = proc.applyPathWithValue(dataset, *path);
-            if (cond.bad())
-            {
-                std::cerr << "bad override key provided" << std::endl;
-            }
-            path++;
-        }
-    }
-
-    void prepareTS(E_TransferSyntax ts,  OFList<OFString> &syntaxes)
-    {
-        switch (ts)
-        {
-        case EXS_LittleEndianImplicit:
-            /* we only support Little Endian Implicit */
-            syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
-            break;
-        case EXS_LittleEndianExplicit:
-            /* we prefer Little Endian Explicit */
-            syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
-            syntaxes.push_back(UID_BigEndianExplicitTransferSyntax);
-            syntaxes.push_back(UID_LittleEndianImplicitTransferSyntax);
-            break;
-        case EXS_BigEndianExplicit:
-            /* we prefer Big Endian Explicit */
-            syntaxes.push_back(UID_BigEndianExplicitTransferSyntax);
-            syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
-            syntaxes.push_back(UID_LittleEndianImplicitTransferSyntax);
-            break;
-    #ifdef WITH_ZLIB
-        case EXS_DeflatedLittleEndianExplicit:
-            /* we prefer Deflated Little Endian Explicit */
-            syntaxes.push_back(UID_DeflatedExplicitVRLittleEndianTransferSyntax);
-            syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
-            syntaxes.push_back(UID_BigEndianExplicitTransferSyntax);
-            syntaxes.push_back(UID_LittleEndianImplicitTransferSyntax);
-            break;
-    #endif
-        default:
-            DcmXfer xfer(ts);
-            if (xfer.isEncapsulated())
-            {
-                syntaxes.push_back(xfer.getXferID());
-            }
-            if (gLocalByteOrder == EBO_LittleEndian) /* defined in dcxfer.h */
-            {
-                syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
-                syntaxes.push_back(UID_BigEndianExplicitTransferSyntax);
-            }
-            else
-            {
-                syntaxes.push_back(UID_BigEndianExplicitTransferSyntax);
-                syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
-            }
-            syntaxes.push_back(UID_LittleEndianImplicitTransferSyntax);
-            break;
-        }
-    }
 
     class NanNotifier : public DcmNotifier 
     {
@@ -172,12 +98,11 @@ void GetAsyncWorker::Execute(const ExecutionProgress &progress)
 
     OFCmdUnsignedInt opt_maxPDU = ASC_DEFAULTMAXPDU;
     E_TransferSyntax opt_store_networkTransferSyntax = netTransPrefer.getXfer();
-    E_TransferSyntax opt_get_networkTransferSyntax = EXS_Unknown;
+    E_TransferSyntax opt_get_networkTransferSyntax =  netTransPrefer.getXfer();
     DcmStorageMode opt_storageMode = DCMSCU_STORAGE_DISK;
-    OFBool opt_showPresentationContexts = OFFalse;
-    OFBool opt_abortAssociation = OFFalse;
-    OFCmdUnsignedInt opt_repeatCount = 1;
-    QueryModel opt_queryModel = QMPatientRoot;
+    OFBool opt_showPresentationContexts = OFTrue;
+    QueryModel opt_queryModel = QMPatientRoot; // FIXME this should be configurable
+
     T_DIMSE_BlockingMode opt_blockMode = DIMSE_BLOCKING;
     int opt_dimse_timeout = 0;
     int opt_acse_timeout = 30;
@@ -199,7 +124,7 @@ void GetAsyncWorker::Execute(const ExecutionProgress &progress)
 
     /* setup SCU */
     OFList<OFString> syntaxes;
-    prepareTS(opt_get_networkTransferSyntax, syntaxes);
+    this->prepareTS(opt_get_networkTransferSyntax, syntaxes);
     NanNotifier notifier(progress);
     DcmSCU scu;
     scu.setNotifier(&notifier);
@@ -213,9 +138,7 @@ void GetAsyncWorker::Execute(const ExecutionProgress &progress)
     scu.setPeerAETitle(in.target.aet.c_str());
     scu.setVerbosePCMode(opt_showPresentationContexts);
 
-    /* add presentation contexts for get and find (we do not actually need find...)
-   * (only uncompressed)
-   */
+    /* add presentation contexts for get depending on query level*/
     scu.addPresentationContext(querySyntax[opt_queryModel], syntaxes);
 
     /* add storage presentation contexts (long list of storage SOP classes, uncompressed) */
@@ -260,7 +183,7 @@ void GetAsyncWorker::Execute(const ExecutionProgress &progress)
 
     OFList<RetrieveResponse *> responses;
     /* for all files (or at least one run from override keys) */
-    applyOverrideKeys(dset, overrideKeys);
+    this->applyOverrideKeys(dset, overrideKeys);
     cond = scu.sendCGETRequest(pcid, dset, &responses);
     if (cond.bad())
     {

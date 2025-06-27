@@ -33,103 +33,6 @@ using json = nlohmann::json;
 #include "dcmtk/dcmdata/dcpath.h"
 #include "dcmtk/dcmdata/dcostrmz.h" /* for dcmZlibCompressionLevel */
 
-#ifdef WITH_ZLIB
-#include <zlib.h>
-#endif
-
-namespace
-{
-
-void prepareTS(E_TransferSyntax ts, OFList<OFString> &syntaxes)
-{
-    /*
-  ** We prefer to use Explicitly encoded transfer syntaxes.
-  ** If we are running on a Little Endian machine we prefer
-  ** LittleEndianExplicitTransferSyntax to BigEndianTransferSyntax.
-  ** Some SCP implementations will just select the first transfer
-  ** syntax they support (this is not part of the standard) so
-  ** organize the proposed transfer syntaxes to take advantage
-  ** of such behavior.
-  **
-  ** The presentation contexts proposed here are only used for
-  ** C-FIND and C-MOVE, so there is no need to support compressed
-  ** transmission.
-  */
-
-    switch (ts)
-    {
-    case EXS_LittleEndianImplicit:
-        /* we only support Little Endian Implicit */
-        syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
-        break;
-    case EXS_LittleEndianExplicit:
-        /* we prefer Little Endian Explicit */
-        syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
-        syntaxes.push_back(UID_BigEndianExplicitTransferSyntax);
-        syntaxes.push_back(UID_LittleEndianImplicitTransferSyntax);
-        break;
-    case EXS_BigEndianExplicit:
-        /* we prefer Big Endian Explicit */
-        syntaxes.push_back(UID_BigEndianExplicitTransferSyntax);
-        syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
-        syntaxes.push_back(UID_LittleEndianImplicitTransferSyntax);
-        break;
-#ifdef WITH_ZLIB
-    case EXS_DeflatedLittleEndianExplicit:
-        /* we prefer Deflated Little Endian Explicit */
-        syntaxes.push_back(UID_DeflatedExplicitVRLittleEndianTransferSyntax);
-        syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
-        syntaxes.push_back(UID_BigEndianExplicitTransferSyntax);
-        syntaxes.push_back(UID_LittleEndianImplicitTransferSyntax);
-        break;
-#endif
-    default:
-        DcmXfer xfer(ts);
-        if (xfer.isEncapsulated())
-        {
-            syntaxes.push_back(xfer.getXferID());
-        }
-        /* We prefer explicit transfer syntaxes.
-       * If we are running on a Little Endian machine we prefer
-       * LittleEndianExplicitTransferSyntax to BigEndianTransferSyntax.
-       */
-        if (gLocalByteOrder == EBO_LittleEndian) /* defined in dcxfer.h */
-        {
-            syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
-            syntaxes.push_back(UID_BigEndianExplicitTransferSyntax);
-        }
-        else
-        {
-            syntaxes.push_back(UID_BigEndianExplicitTransferSyntax);
-            syntaxes.push_back(UID_LittleEndianExplicitTransferSyntax);
-        }
-        syntaxes.push_back(UID_LittleEndianImplicitTransferSyntax);
-        break;
-    }
-}
-
-void applyOverrideKeys(DcmDataset *dataset, OFList<OFString> overrideKeys)
-{
-    /* replace specific keys by those in overrideKeys */
-    OFListConstIterator(OFString) path = overrideKeys.begin();
-    OFListConstIterator(OFString) endOfList = overrideKeys.end();
-    DcmPathProcessor proc;
-    proc.setItemWildcardSupport(OFFalse);
-    proc.checkPrivateReservations(OFFalse);
-    OFCondition cond;
-    while (path != endOfList)
-    {
-        cond = proc.applyPathWithValue(dataset, *path);
-        if (cond.bad())
-        {
-            std::cerr << "Bad override key: " << cond.text() << std::endl;
-        }
-        path++;
-    }
-}
-
-} // namespace
-
 MoveAsyncWorker::MoveAsyncWorker(std::string data, Function &callback) : BaseAsyncWorker(data, callback)
 {
 }
@@ -179,9 +82,11 @@ void MoveAsyncWorker::Execute(const ExecutionProgress &progress)
         overrideKeys.push_back(key);
     }
 
+    DcmXfer netTransPrefer = in.netTransferPrefer.empty() ? DcmXfer(EXS_Unknown) : DcmXfer(in.netTransferPrefer.c_str());
+
     // setup SCU
     OFList<OFString> syntaxes;
-    prepareTS(EXS_Unknown, syntaxes);
+    this->prepareTS(netTransPrefer.getXferID(), syntaxes);
     DcmSCU scu;
     scu.setMaxReceivePDULength(ASC_DEFAULTMAXPDU);
     scu.setACSETimeout(60);
@@ -192,7 +97,7 @@ void MoveAsyncWorker::Execute(const ExecutionProgress &progress)
     scu.setPeerPort(in.target.port);
     scu.setPeerAETitle(in.target.aet.c_str());
 
-    scu.addPresentationContext(UID_MOVEStudyRootQueryRetrieveInformationModel, syntaxes);
+    scu.addPresentationContext(UID_MOVEStudyRootQueryRetrieveInformationModel, syntaxes); // FIXME: this should depend on query level selected
 
     /* initialize network and negotiate association */
     OFCondition cond = scu.initNetwork();
@@ -219,7 +124,7 @@ void MoveAsyncWorker::Execute(const ExecutionProgress &progress)
 
     // do the real work, i.e. send C-MOVE requests and receive response
     DcmDataset *dset = new DcmDataset;
-    applyOverrideKeys(dset, overrideKeys);
+    this->applyOverrideKeys(dset, overrideKeys);
 
     OFList<RetrieveResponse *> responses;
     cond = scu.sendMOVERequest(pcid, in.destination.c_str(), dset, &responses);

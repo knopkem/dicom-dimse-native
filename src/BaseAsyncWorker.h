@@ -34,6 +34,11 @@ class BaseAsyncWorker : public AsyncProgressQueueWorker<char>
 
         void EnableVerboseLogging(bool enabled);
 
+        void applyOverrideKeys(DcmDataset *dataset, const OFList<OFString> &overrideKeys);
+
+        void addDefaultTs(OFList<OFString> &syntaxes);
+
+        void prepareTS(E_TransferSyntax ts,  OFList<OFString> &syntaxes);
 
         std::string _input;
         nlohmann::json _jsonOutput;
