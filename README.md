@@ -27,7 +27,7 @@ Nodejs native addon for DICOM DIMSE services using the DCMTK DICOM c++ toolkit (
 ## How to install
 This package uses prebuild to fetch precompiled binaries, so provided your platform is supported, all you need to do is:
 
-```npm i -s dicom-native-addon```
+```npm i -s dicom-dimse-native```
 
 Otherwise install will try to compile the sources for your platform, you will need:
 * CMake installed and in path
