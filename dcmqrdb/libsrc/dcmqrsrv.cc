@@ -996,7 +996,8 @@ OFCondition DcmQueryRetrieveSCP::waitForAssociation(T_ASC_Network * theNet)
     int timeout;
     OFBool go_cleanup = OFFalse;
 
-    if (options_.singleProcess_) timeout = 1000;
+    // ALWAYS use thread mode for Node.js
+        if (true) timeout = 1000;
     else
     {
       if (processtable_.countChildProcesses() > 0)
@@ -1079,8 +1080,10 @@ OFCondition DcmQueryRetrieveSCP::waitForAssociation(T_ASC_Network * theNet)
     {
         // too many concurrent associations ??
         // In singleProcess mode, use activeAssociations_ counter instead of processtable_
-        size_t currentAssociations = options_.singleProcess_ ?
-            activeAssociations_.load() : processtable_.countChildProcesses();
+        // ALWAYS use activeAssociations_ since Node.js uses threads, not fork
+        size_t currentAssociations = activeAssociations_.load();
+        DCMQRDB_INFO("DEBUG: activeAssociations=" << currentAssociations << " maxAssociations=" << options_.maxAssociations_); // FIXED: direct use
+        // OLD: size_t currentAssociations = true ?
         if (currentAssociations >= OFstatic_cast(size_t, options_.maxAssociations_))
         {
             DCMQRDB_INFO("Refusing association: " << currentAssociations << "/" << options_.maxAssociations_ << " associations active");
@@ -1112,15 +1115,16 @@ OFCondition DcmQueryRetrieveSCP::waitForAssociation(T_ASC_Network * theNet)
             DCMQRDB_INFO("    (but no valid presentation contexts)");
         DCMQRDB_DEBUG(ASC_dumpParameters(temp_str, assoc->params, ASC_ASSOC_AC));
 
-        if (options_.singleProcess_)
+        // ALWAYS use thread mode for Node.js
+        if (true)
         {
             /* don't spawn a sub-process to handle the association */
             /* Increment active association counter and decrement when done */
             activeAssociations_++;
-            std::async(std::launch::async, [this, assoc]() {
+            std::thread([this, assoc]() {
                 this->handleAssociation(assoc, options_.correctUIDPadding_);
                 activeAssociations_--;
-            });
+            }).detach();
         }
 #ifdef HAVE_FORK
         else
