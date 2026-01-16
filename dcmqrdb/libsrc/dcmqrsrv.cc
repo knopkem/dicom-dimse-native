@@ -135,6 +135,7 @@ DcmQueryRetrieveSCP::DcmQueryRetrieveSCP(
 , factory_(factory)
 , options_(options)
 , associationConfiguration_(associationConfiguration)
+, activeAssociations_(0)
 {
 }
 
@@ -1077,8 +1078,12 @@ OFCondition DcmQueryRetrieveSCP::waitForAssociation(T_ASC_Network * theNet)
     if (! go_cleanup)
     {
         // too many concurrent associations ??
-        if (processtable_.countChildProcesses() >= OFstatic_cast(size_t, options_.maxAssociations_))
+        // In singleProcess mode, use activeAssociations_ counter instead of processtable_
+        size_t currentAssociations = options_.singleProcess_ ?
+            activeAssociations_.load() : processtable_.countChildProcesses();
+        if (currentAssociations >= OFstatic_cast(size_t, options_.maxAssociations_))
         {
+            DCMQRDB_INFO("Refusing association: " << currentAssociations << "/" << options_.maxAssociations_ << " associations active");
             cond = refuseAssociation(&assoc, CTN_TooManyAssociations);
             go_cleanup = OFTrue;
         }
@@ -1110,7 +1115,12 @@ OFCondition DcmQueryRetrieveSCP::waitForAssociation(T_ASC_Network * theNet)
         if (options_.singleProcess_)
         {
             /* don't spawn a sub-process to handle the association */
-            std::async(std::launch::async, &DcmQueryRetrieveSCP::handleAssociation, this, assoc, options_.correctUIDPadding_);
+            /* Increment active association counter and decrement when done */
+            activeAssociations_++;
+            std::async(std::launch::async, [this, assoc]() {
+                this->handleAssociation(assoc, options_.correctUIDPadding_);
+                activeAssociations_--;
+            });
         }
 #ifdef HAVE_FORK
         else
