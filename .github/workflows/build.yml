@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: ['*']
+    tags:
+      - 'v*'
+  pull_request:
+    branches: ['*']
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+          - windows-latest
+          - macos-latest
+          - macos-13
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install build tools (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y cmake build-essential
+
+      # Cache the cmake-js build directory to avoid recompiling DCMTK from
+      # scratch on every run (DCMTK source build can take 10+ minutes).
+      - name: Cache cmake build
+        uses: actions/cache@v4
+        id: cmake-cache
+        with:
+          path: build
+          key: cmake-${{ matrix.os }}-${{ hashFiles('CMakeLists.txt', 'CMake/**', 'src/**') }}
+          restore-keys: |
+            cmake-${{ matrix.os }}-
+
+      - name: Install npm dependencies
+        run: npm install --ignore-scripts
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Compile native addon
+        run: npx cmake-js compile --verbose
+
+      - name: Run tests
+        run: npm test
+
+      # -----------------------------------------------------------------------
+      # The steps below only run when a version tag (v*) is pushed.
+      # They create a platform-specific prebuilt binary and upload it as an
+      # artifact so the release job can attach it to the GitHub Release.
+      # -----------------------------------------------------------------------
+      - name: Create prebuilt binary
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: npm run prebuild
+
+      - name: Upload prebuilt artifact
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: prebuilds-${{ matrix.os }}
+          path: prebuilds/
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Collect all platform prebuilt binaries and attach them to the GitHub
+  # Release that triggered this run.
+  # ---------------------------------------------------------------------------
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all prebuild artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: prebuilds-*
+          path: prebuilds
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: prebuilds/**
+          generate_release_notes: true

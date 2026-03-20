@@ -5,9 +5,9 @@
 
 export default {
   "transform": {
-    ".(ts|tsx)": "ts-jest"
+    "^.+\\.(ts|tsx)$": "ts-jest"
   },
-  "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx|js)$",
+  "testRegex": ["(/__tests__/.*|\\.(test|spec))\\.(ts|tsx|js)$"],
   "moduleFileExtensions": ["ts", "tsx", "js"],
   // All imported modules in your tests should be mocked automatically
   // automock: false,
