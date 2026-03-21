@@ -7,8 +7,7 @@ const path = require('node:path');
 const repoRoot = path.resolve(__dirname, '..');
 const libIconvCmakeRepository =
   process.env.LIBICONV_CMAKE_REPOSITORY || 'https://github.com/knopkem/libiconv-cmake.git';
-const libIconvCmakeRef =
-  process.env.LIBICONV_CMAKE_REF || 'ddbb89e5625ee4c05bb817ab47a0e566fa06eb9c';
+const libIconvCmakeRef = process.env.LIBICONV_CMAKE_REF || 'v1.0.0';
 const libIconvCmakeSourceDir = process.env.LIBICONV_CMAKE_SOURCE_DIR || '';
 
 function sanitizePathSegment(value) {

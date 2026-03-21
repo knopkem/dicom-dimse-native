@@ -16,10 +16,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Temporarily keep CI focused on Windows until the native bootstrap
-          # and compile path is stable there again.
+          - name: ubuntu-x64
+            runner: ubuntu-latest
+          - name: ubuntu-arm64
+            runner: ubuntu-24.04-arm
           - name: windows-x64
             runner: windows-latest
+          - name: macos-arm64
+            runner: macos-15
+          - name: macos-x64
+            runner: macos-15-intel
 
     steps:
       - name: Checkout
@@ -59,7 +65,12 @@ jobs:
         run: npm run build
 
       - name: Bootstrap libiconv
-        run: npm run setup:libiconv
+        shell: bash
+        run: |
+          npm run setup:libiconv
+          prefix="$(node -e "const fs = require('node:fs'); const path = require('node:path'); const { getLibIconvPrefix } = require('./scripts/libiconv'); const prefix = getLibIconvPrefix(); const header = path.join(prefix, 'include', 'iconv.h'); if (!fs.existsSync(header)) { console.error('Expected libiconv header not found at ' + header); process.exit(1); } process.stdout.write(prefix);")"
+          echo "Using bootstrapped LIB_ICONV=$prefix"
+          echo "LIB_ICONV=$prefix" >> "$GITHUB_ENV"
 
       - name: Compile native addon
         run: npm run compile -- -l verbose
