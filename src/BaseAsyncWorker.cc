@@ -7,6 +7,7 @@
 #include "dcmtk/oflog/oflog.h"
 #include "dcmtk/oflog/spi/logevent.h"
 #include "dcmtk/oflog/appender.h"
+#include "dcmtk/dcmdata/dcpath.h"
 
 #include <vector>
 
@@ -144,94 +145,93 @@ void BaseAsyncWorker::prepareTS(E_TransferSyntax ts,  OFList<OFString> &syntaxes
     case EXS_DeflatedLittleEndianExplicit:
         /* we prefer Deflated Little Endian Explicit */
         syntaxes.push_back(UID_DeflatedExplicitVRLittleEndianTransferSyntax);
-        this.addDefaultTs(syntaxes);
+        this->addDefaultTs(syntaxes);
         break;
     case EXS_JPEGProcess14SV1:
         /* we prefer JPEGLossless:Hierarchical-1stOrderPrediction (default lossless) */
         syntaxes.push_back(UID_JPEGProcess14SV1TransferSyntax);
-        this.addDefaultTs(syntaxes);
+        this->addDefaultTs(syntaxes);
         break;
   case EXS_JPEGProcess1:
         /* we prefer JPEGBaseline (default lossy for 8 bit images) */
         syntaxes.push_back(UID_JPEGProcess1TransferSyntax);
-        this.addDefaultTs(syntaxes);
+        this->addDefaultTs(syntaxes);
         break;
   case EXS_JPEGProcess2_4:
         /* we prefer JPEGExtended (default lossy for 12 bit images) */
         syntaxes.push_back(UID_JPEGProcess2_4TransferSyntax);
-        this.addDefaultTs(syntaxes);
+        this->addDefaultTs(syntaxes);
         break;
   case EXS_JPEG2000LosslessOnly:
         /* we prefer JPEG 2000 lossless */
         syntaxes.push_back(UID_JPEG2000LosslessOnlyTransferSyntax);
-        this.addDefaultTs(syntaxes);
+        this->addDefaultTs(syntaxes);
         break;
   case EXS_JPEG2000:
         /* we prefer JPEG 2000 lossy or lossless */
         syntaxes.push_back(UID_JPEG2000TransferSyntax);
-        this.addDefaultTs(syntaxes);
+        this->addDefaultTs(syntaxes);
         break;
   case EXS_JPEGLSLossless:
         /* we prefer JPEG-LS Lossless */
         syntaxes.push_back(UID_JPEGLSLosslessTransferSyntax);
-        this.addDefaultTs(syntaxes);
+        this->addDefaultTs(syntaxes);
         break;
   case EXS_JPEGLSLossy:
         /* we prefer JPEG-LS Lossy */
         syntaxes.push_back(UID_JPEGLSLossyTransferSyntax);
-        this.addDefaultTs(syntaxes);
+        this->addDefaultTs(syntaxes);
         break;
   case EXS_MPEG2MainProfileAtMainLevel:
         /* we prefer MPEG2 MP@ML */
         syntaxes.push_back(UID_MPEG2MainProfileAtMainLevelTransferSyntax);
-        this.addDefaultTs(syntaxes);
+        this->addDefaultTs(syntaxes);
         break;
   case EXS_MPEG2MainProfileAtHighLevel:
         /* we prefer MPEG2 MP@HL */
         syntaxes.push_back(UID_MPEG2MainProfileAtHighLevelTransferSyntax);
-        this.addDefaultTs(syntaxes);
+        this->addDefaultTs(syntaxes);
         break;
   case EXS_MPEG4HighProfileLevel4_1:
         /* we prefer MPEG4 HP/L4.1 */
         syntaxes.push_back(UID_MPEG4HighProfileLevel4_1TransferSyntax);
-        this.addDefaultTs(syntaxes);
+        this->addDefaultTs(syntaxes);
         break;
   case EXS_MPEG4BDcompatibleHighProfileLevel4_1:
         /* we prefer MPEG4 BD HP/L4.1 */
         syntaxes.push_back(UID_MPEG4BDcompatibleHighProfileLevel4_1TransferSyntax);
-        this.addDefaultTs(syntaxes);
+        this->addDefaultTs(syntaxes);
         break;
   case EXS_MPEG4HighProfileLevel4_2_For2DVideo:
         /* we prefer MPEG4 HP/L4.2 for 2D Videos */
         syntaxes.push_back(UID_MPEG4HighProfileLevel4_2_For2DVideoTransferSyntax);
-        this.addDefaultTs(syntaxes);
+        this->addDefaultTs(syntaxes);
         break;
   case EXS_MPEG4HighProfileLevel4_2_For3DVideo:
         /* we prefer MPEG4 HP/L4.2 for 3D Videos */
         syntaxes.push_back(UID_MPEG4HighProfileLevel4_2_For3DVideoTransferSyntax);
-        this.addDefaultTs(syntaxes);
+        this->addDefaultTs(syntaxes);
         break;
   case EXS_MPEG4StereoHighProfileLevel4_2:
         /* we prefer MPEG4 Stereo HP/L4.2 */
         syntaxes.push_back(UID_MPEG4StereoHighProfileLevel4_2TransferSyntax);
-        this.addDefaultTs(syntaxes);
+        this->addDefaultTs(syntaxes);
         break;
   case EXS_HEVCMainProfileLevel5_1:
         /* we prefer HEVC/H.265 Main Profile/L5.1 */
         syntaxes.push_back(UID_HEVCMainProfileLevel5_1TransferSyntax);
-        this.addDefaultTs(syntaxes);
+        this->addDefaultTs(syntaxes);
         break;
   case EXS_HEVCMain10ProfileLevel5_1:
         /* we prefer HEVC/H.265 Main 10 Profile/L5.1 */
         syntaxes.push_back(UID_HEVCMain10ProfileLevel5_1TransferSyntax);
-        this.addDefaultTs(syntaxes);
+        this->addDefaultTs(syntaxes);
         break;
   case EXS_RLELossless:
         /* we prefer RLE Lossless */
-        syntaxes.push_back(UID_RLELosslessTransferSyntax;
-        this.addDefaultTs(syntaxes);
+        syntaxes.push_back(UID_RLELosslessTransferSyntax);
+        this->addDefaultTs(syntaxes);
         break;
-#endif
     default:
         DcmXfer xfer(ts);
         if (xfer.isEncapsulated())

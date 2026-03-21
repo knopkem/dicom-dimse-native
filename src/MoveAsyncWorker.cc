@@ -86,7 +86,7 @@ void MoveAsyncWorker::Execute(const ExecutionProgress &progress)
 
     // setup SCU
     OFList<OFString> syntaxes;
-    this->prepareTS(netTransPrefer.getXferID(), syntaxes);
+    this->prepareTS(netTransPrefer.getXfer(), syntaxes);
     DcmSCU scu;
     scu.setMaxReceivePDULength(ASC_DEFAULTMAXPDU);
     scu.setACSETimeout(60);

@@ -129,7 +129,6 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
       DCMNET_INFO("preferred (accepted) network transfer syntax for incoming associations: " << netTransPrefer.getXferName());
       DCMNET_INFO("proposed network transfer syntax for outgoing associations: " << netTransPropose.getXferName());
       DCMNET_INFO("write transfer syntax (recompress if different to accepted ts): " << writeTrans.getXferName());
-      DCMNET_INFO("max associations: " << options.maxAssociations_);
       DCMNET_INFO("permissive mode: " << in.permissive);
 
  
@@ -143,6 +142,8 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
       options.networkTransferSyntax_ = netTransPrefer.getXfer();
       options.networkTransferSyntaxOut_ = netTransPropose.getXfer();
       options.writeTransferSyntax_ = writeTrans.getXfer();
+
+      DCMNET_INFO("max associations: " << options.maxAssociations_);
 
       DcmQueryRetrieveSQLiteDatabaseHandleFactory factory(&cfg);
       DcmAssociationConfiguration associationConfiguration;
