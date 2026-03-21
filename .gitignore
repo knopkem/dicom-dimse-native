@@ -1,4 +1,5 @@
 build
+.build-deps
 /prebuilds
 /data
 /examples/output

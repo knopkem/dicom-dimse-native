@@ -25,13 +25,16 @@ Nodejs native addon for DICOM DIMSE services using the DCMTK DICOM c++ toolkit (
 * Worklist SCP and SCU
 
 ## How to install
-This package uses prebuild to fetch precompiled binaries, so provided your platform is supported, all you need to do is:
+This package uses prebuilds from GitHub Releases to fetch precompiled binaries, so provided your platform is supported, all you need to do is:
 
 ```npm i -s dicom-dimse-native```
 
 Otherwise install will try to compile the sources for your platform, you will need:
 * CMake installed and in path
 * a working c++ compiler (vs 2015+ or g++5.3+)
+* network access to bootstrap `libiconv` for full charset conversion support, unless `LIB_ICONV` already points at a compatible prefix
+
+Source builds now bootstrap `libiconv` before running `cmake-js compile` so the addon can enable DCMTK's `libiconv` charset conversion path automatically.
 
 ## Examples
 
@@ -159,4 +162,3 @@ C-FIND results are returned in DICOMJSON format see https://www.dicomstandard.or
 
 ## License
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fknopkem%2Fdicom-dimse-native.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fknopkem%2Fdicom-dimse-native?ref=badge_large)
-

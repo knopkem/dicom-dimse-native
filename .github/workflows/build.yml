@@ -47,8 +47,10 @@ jobs:
         uses: actions/cache@v4
         id: cmake-cache
         with:
-          path: build
-          key: cmake-${{ matrix.name }}-${{ hashFiles('CMakeLists.txt', 'CMake/**', 'src/**') }}
+          path: |
+            .build-deps
+            build
+          key: cmake-${{ matrix.name }}-${{ hashFiles('CMakeLists.txt', 'CMake/**', 'src/**', 'scripts/**', 'package.json') }}
           restore-keys: |
             cmake-${{ matrix.name }}-
 
@@ -59,7 +61,7 @@ jobs:
         run: npm run build
 
       - name: Compile native addon
-        run: npx cmake-js compile --verbose
+        run: npm run compile -- -l verbose
 
       - name: Run tests
         run: npm test
