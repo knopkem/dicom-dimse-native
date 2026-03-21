@@ -94,6 +94,55 @@ function getWindowsPlatform() {
   }
 }
 
+function tryReadCommandOutput(command, args) {
+  try {
+    return execFileSync(command, args, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore']
+    }).trim();
+  } catch (error) {
+    return '';
+  }
+}
+
+function resolveWindowsMsbuild() {
+  const msbuildFromPath = tryReadCommandOutput('where.exe', ['msbuild.exe']);
+  if (msbuildFromPath) {
+    return msbuildFromPath.split(/\r?\n/)[0].trim();
+  }
+
+  const vswhereCandidates = [
+    process.env['ProgramFiles(x86)'],
+    process.env.ProgramFiles
+  ]
+    .filter(Boolean)
+    .map((rootDir) => path.join(rootDir, 'Microsoft Visual Studio', 'Installer', 'vswhere.exe'));
+
+  for (const vswherePath of vswhereCandidates) {
+    if (!fs.existsSync(vswherePath)) {
+      continue;
+    }
+
+    const locatedMsbuild = tryReadCommandOutput(vswherePath, [
+      '-latest',
+      '-products',
+      '*',
+      '-requires',
+      'Microsoft.Component.MSBuild',
+      '-find',
+      'MSBuild\\**\\Bin\\MSBuild.exe'
+    ]);
+
+    if (locatedMsbuild) {
+      return locatedMsbuild.split(/\r?\n/)[0].trim();
+    }
+  }
+
+  throw new Error(
+    'Could not locate MSBuild. Install Visual Studio 2022 with Desktop development with C++ or add msbuild.exe to PATH.'
+  );
+}
+
 function buildWindowsLibIconv() {
   ensureDir(libIconvRoot);
 
@@ -104,11 +153,12 @@ function buildWindowsLibIconv() {
   }
 
   const platform = getWindowsPlatform();
+  const msbuildPath = resolveWindowsMsbuild();
 
-  run('msbuild', ['LibIconv.sln', '/m', `/p:Configuration=ReleaseStatic`, `/p:Platform=${platform}`], {
+  run(msbuildPath, ['LibIconv.sln', '/m', `/p:Configuration=ReleaseStatic`, `/p:Platform=${platform}`], {
     cwd: sourceDir
   });
-  run('msbuild', ['LibIconv.sln', '/m', `/p:Configuration=DebugStatic`, `/p:Platform=${platform}`], {
+  run(msbuildPath, ['LibIconv.sln', '/m', `/p:Configuration=DebugStatic`, `/p:Platform=${platform}`], {
     cwd: sourceDir
   });
 
