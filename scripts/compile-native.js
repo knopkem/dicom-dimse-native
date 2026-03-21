@@ -1,9 +1,12 @@
 'use strict';
 
+const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const { ensureLibIconvPrefix } = require('./libiconv');
 
+const repoRoot = path.resolve(__dirname, '..');
+const cmakeJsCli = require.resolve('cmake-js/bin/cmake-js');
 const env = { ...process.env };
 const sharedArgs = process.argv.slice(2);
 
@@ -17,10 +20,9 @@ if (env.LIB_ICONV) {
   console.log('SKIP_LIB_ICONV_BOOTSTRAP=1, proceeding without bootstrapping libiconv.');
 }
 
-const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-
 for (const cmakeJsCommand of ['configure', 'compile']) {
-  const result = spawnSync(command, ['cmake-js', cmakeJsCommand, ...sharedArgs], {
+  const result = spawnSync(process.execPath, [cmakeJsCli, cmakeJsCommand, ...sharedArgs], {
+    cwd: repoRoot,
     env,
     stdio: 'inherit'
   });
