@@ -45,8 +45,8 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y cmake build-essential
 
-      # Cache the cmake-js build directory to avoid recompiling DCMTK from
-      # scratch on every run (DCMTK source build can take 10+ minutes).
+      # Cache the libiconv bootstrap prefix and cmake-js build directory to
+      # avoid rebuilding external/native dependencies from scratch.
       - name: Cache cmake build
         uses: actions/cache@v4
         id: cmake-cache
@@ -63,6 +63,9 @@ jobs:
 
       - name: Build TypeScript
         run: npm run build
+
+      - name: Bootstrap libiconv
+        run: npm run setup:libiconv
 
       - name: Compile native addon
         run: npm run compile -- -l verbose

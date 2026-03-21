@@ -5,9 +5,10 @@ const { spawnSync } = require('node:child_process');
 const { ensureLibIconvPrefix } = require('./libiconv');
 
 const env = { ...process.env };
+const sharedArgs = process.argv.slice(2);
 
 if (!env.LIB_ICONV && env.SKIP_LIB_ICONV_BOOTSTRAP !== '1') {
-  env.LIB_ICONV = ensureLibIconvPrefix();
+  env.LIB_ICONV = ensureLibIconvPrefix({ argv: sharedArgs });
 }
 
 if (env.LIB_ICONV) {
@@ -17,7 +18,6 @@ if (env.LIB_ICONV) {
 }
 
 const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-const sharedArgs = process.argv.slice(2);
 
 for (const cmakeJsCommand of ['configure', 'compile']) {
   const result = spawnSync(command, ['cmake-js', cmakeJsCommand, ...sharedArgs], {
