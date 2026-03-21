@@ -10,17 +10,22 @@ on:
 
 jobs:
   build:
-    name: Build on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: Build on ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-latest
-          - ubuntu-24.04-arm
-          - windows-latest
-          - macos-latest
-          - macos-13
+        include:
+          - name: ubuntu-x64
+            runner: ubuntu-latest
+          - name: ubuntu-arm64
+            runner: ubuntu-24.04-arm
+          - name: windows-x64
+            runner: windows-latest
+          - name: macos-arm64
+            runner: macos-15
+          - name: macos-x64
+            runner: macos-15-intel
 
     steps:
       - name: Checkout
@@ -43,9 +48,9 @@ jobs:
         id: cmake-cache
         with:
           path: build
-          key: cmake-${{ matrix.os }}-${{ hashFiles('CMakeLists.txt', 'CMake/**', 'src/**') }}
+          key: cmake-${{ matrix.name }}-${{ hashFiles('CMakeLists.txt', 'CMake/**', 'src/**') }}
           restore-keys: |
-            cmake-${{ matrix.os }}-
+            cmake-${{ matrix.name }}-
 
       - name: Install npm dependencies
         run: npm install --ignore-scripts
@@ -66,13 +71,13 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Create prebuilt binary
         if: startsWith(github.ref, 'refs/tags/v')
-        run: npm run prebuild
+        run: npm run pack:prebuilds
 
       - name: Upload prebuilt artifact
         if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v4
         with:
-          name: prebuilds-${{ matrix.os }}
+          name: prebuilds-${{ matrix.name }}
           path: prebuilds/
           if-no-files-found: error
 
