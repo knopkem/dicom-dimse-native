@@ -28,8 +28,6 @@
 #include "dcmtk/dcmnet/dimse.h"
 #include "dcmtk/dcmnet/dcasccfg.h"
 #include "dcmtk/dcmqrdb/dcmqrptb.h"
-#include <atomic>
-#include <thread>
 
 class DcmQueryRetrieveConfig;
 class DcmQueryRetrieveOptions;
@@ -156,9 +154,6 @@ private:
 
   /// child process table, only used in multi-processing mode
   DcmQueryRetrieveProcessTable processtable_;
-
-  /// atomic counter for active associations in single-process mode
-  std::atomic<size_t> activeAssociations_{0};
 
   /// flag for database interface: check C-FIND identifier
   OFBool dbCheckFindIdentifier_;
