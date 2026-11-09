@@ -139,6 +139,11 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
       options.maxAssociations_ = 128;
       options.correctUIDPadding_ = true;
       options.maxPDU_ = ASC_DEFAULTMAXPDU;
+      /* Never fork() inside the Node.js process: forking a multi-threaded process
+       * can leave the child blocked on a lock held by another thread, and the child
+       * inherits Node's pipes (child_process.execSync then waits forever).
+       * Each association is handled in its own thread instead. */
+      options.singleProcess_ = OFTrue;
       options.networkTransferSyntax_ = netTransPrefer.getXfer();
       options.networkTransferSyntaxOut_ = netTransPropose.getXfer();
       options.writeTransferSyntax_ = writeTrans.getXfer();
@@ -151,6 +156,13 @@ void ServerAsyncWorker::Execute(const ExecutionProgress &progress)
       DcmQueryRetrieveSCP scp(cfg, options, factory, associationConfiguration);
       while (cond.good()) {
           cond = scp.waitForAssociation(net);
+          /* In multi-process mode (default on platforms with fork()) every
+           * association is handled by a forked child. Reap the children that
+           * have finished, otherwise they stay as zombies in the process table
+           * and countChildProcesses() eventually reaches maxAssociations,
+           * refusing every new association with TooManyAssociations.
+           * (dcmqrscp does the same in its main loop.) */
+          scp.cleanChildren();
       }
   }
     

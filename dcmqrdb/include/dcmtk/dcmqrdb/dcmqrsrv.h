@@ -28,6 +28,7 @@
 #include "dcmtk/dcmnet/dimse.h"
 #include "dcmtk/dcmnet/dcasccfg.h"
 #include "dcmtk/dcmqrdb/dcmqrptb.h"
+#include <atomic>
 
 class DcmQueryRetrieveConfig;
 class DcmQueryRetrieveOptions;
@@ -68,8 +69,10 @@ public:
     const DcmQueryRetrieveDatabaseHandleFactory& factory,
     const DcmAssociationConfiguration& associationConfiguration);
 
-  /// destructor
-  virtual ~DcmQueryRetrieveSCP() { }
+  /** destructor. In single-process mode, waits for the association threads
+   *  still running (they reference this object and its options/factory).
+   */
+  virtual ~DcmQueryRetrieveSCP();
 
   /** wait for incoming A-ASSOCIATE requests, perform association negotiation
    *  and serve the requests. May fork child processes depending on availability
@@ -154,6 +157,9 @@ private:
 
   /// child process table, only used in multi-processing mode
   DcmQueryRetrieveProcessTable processtable_;
+
+  /// number of association threads currently running (single-process mode only)
+  std::atomic<size_t> activeAssociations_;
 
   /// flag for database interface: check C-FIND identifier
   OFBool dbCheckFindIdentifier_;

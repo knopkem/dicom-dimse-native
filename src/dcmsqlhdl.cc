@@ -89,7 +89,14 @@ DcmQueryRetrieveDatabaseHandle* DcmQueryRetrieveSQLiteDatabaseHandleFactory::cre
     const char* calledAETitle,
     OFCondition& result) const
 {
-    return new DcmQueryRetrieveSQLiteDatabaseHandle(config_->getStorageArea(calledAETitle));
+    try {
+        return new DcmQueryRetrieveSQLiteDatabaseHandle(config_->getStorageArea(calledAETitle));
+    }
+    catch (const std::exception& e) {
+        DCMNET_ERROR("DB: cannot open database: " << e.what());
+        result = QR_EC_IndexDatabaseError;
+        return NULL;
+    }
 }
 
 //------------------------------------------------------------------------------------------------------
@@ -158,6 +165,10 @@ DcmQueryRetrieveSQLiteDatabaseHandlePrivate::~DcmQueryRetrieveSQLiteDatabaseHand
     DB_FreeElementList(handle->findResponseList);
     delete handle;
     handle = NULL;
+    /* close the SQLite connection of this association (was leaked; harmless
+     * with fork() since the child exits, but one fd per association with threads) */
+    delete db;
+    db = NULL;
 }
 
 //------------------------------------------------------------------------------------------------------
@@ -635,7 +646,15 @@ OFCondition DcmQueryRetrieveSQLiteDatabaseHandle::startFindRequest( const char *
 
     std::list<DcmSmallDcmElm> findRequestList = d->convertList(d->handle->findRequestList);
 
-    std::list< std::list<DcmSmallDcmElm> > resultList = d->db->find(findRequestList, d->handle->queryLevel, qLevel, lLevel);
+    std::list< std::list<DcmSmallDcmElm> > resultList;
+    try {
+        resultList = d->db->find(findRequestList, d->handle->queryLevel, qLevel, lLevel);
+    }
+    catch (const std::exception& e) {
+        DCMNET_ERROR("DB: startFindRequest failed: " << e.what());
+        status->setStatus(STATUS_FIND_Failed_UnableToProcess);
+        return (QR_EC_IndexDatabaseError);
+    }
 
     for( auto lst: resultList) {
         d->findResult.push(lst);
@@ -777,6 +796,7 @@ OFCondition DcmQueryRetrieveSQLiteDatabaseHandle::startMoveRequest( const char *
         findRequestList.push_back(DcmSmallDcmElm(DCM_SeriesInstanceUID, ""));
     }
 
+    try {
     std::list< std::list<DcmSmallDcmElm> > seriesResult = d->db->find(findRequestList, SERIE_LEVEL, qLevel, lLevel);
     for (auto seriesList: seriesResult) {
         std::list<DcmSmallDcmElm> imgRequestList(seriesList);
@@ -794,6 +814,13 @@ OFCondition DcmQueryRetrieveSQLiteDatabaseHandle::startMoveRequest( const char *
         for(auto imgList: imgResult) {
             d->findResult.push(imgList);
         }
+    }
+    }
+    catch (const std::exception& e) {
+        DCMNET_ERROR("DB: startMoveRequest failed: " << e.what());
+        while (!d->findResult.empty()) d->findResult.pop();
+        status->setStatus(STATUS_MOVE_Failed_UnableToProcess);
+        return (QR_EC_IndexDatabaseError);
     }
 
     if (d->findResult.empty()) {
@@ -892,7 +919,24 @@ OFCondition DcmQueryRetrieveSQLiteDatabaseHandle::storeRequest(const char* SOPCl
         return (QR_EC_IndexDatabaseError);
     }
 
-    return d->db->insertMetaData(dcmff.getDataset(), imageFileName);
+    /* sqlite3pp throws on SQL errors (e.g. malformed/incomplete dataset, locked db).
+     * Report it as a database error for this instance instead of letting the
+     * exception escape: with association threads it would terminate the process. */
+    try {
+        OFCondition cond = d->db->insertMetaData(dcmff.getDataset(), imageFileName);
+        if (cond.bad()) {
+            /* the image was not indexed: do not answer "Success" to the modality
+             * (it would never resend it and the study would be invisible) */
+            DCMNET_ERROR("DB: image not indexed: " << imageFileName);
+            status->setStatus(STATUS_STORE_Refused_OutOfResources);
+        }
+        return cond;
+    }
+    catch (const std::exception& e) {
+        DCMNET_ERROR("DB: storeRequest failed for " << imageFileName << ": " << e.what());
+        status->setStatus(STATUS_STORE_Error_CannotUnderstand);
+        return (QR_EC_IndexDatabaseError);
+    }
 }
 
 //------------------------------------------------------------------------------------------------------

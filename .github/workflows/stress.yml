@@ -1,0 +1,115 @@
+name: SCP stress test
+
+# Builds the native addon from source and stresses startStoreScp on Linux, macOS
+# (Apple Silicon) and Windows: concurrent C-STORE/C-ECHO, >128 associations,
+# aborted connections, child_process activity in the SCP process, charset.
+# 'fix' = this branch (strict: must pass); 'baseline' = upstream master (for comparison).
+
+on:
+  push:
+    branches: [ 'fix/**' ]
+  workflow_dispatch:
+
+jobs:
+  stress:
+    name: ${{ matrix.os }} / ${{ matrix.variant }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-22.04, macos-15, windows-2022 ]
+        variant: [ fix, baseline ]
+    env:
+      CMAKE_POLICY_VERSION_MINIMUM: '3.5'
+      CMAKE_BUILD_PARALLEL_LEVEL: '4'
+    steps:
+      - name: Checkout this branch (test harness + fix)
+        uses: actions/checkout@v4
+        with:
+          path: harness
+
+      - name: Checkout upstream master (baseline)
+        if: matrix.variant == 'baseline'
+        uses: actions/checkout@v4
+        with:
+          repository: knopkem/dicom-dimse-native
+          ref: master
+          path: lib
+
+      - name: Use this branch as library (fix)
+        if: matrix.variant == 'fix'
+        shell: bash
+        run: cp -R harness lib
+
+      # GitHub macOS runners have a 68-char host name; DCMTK SCUs refuse local host
+      # names longer than 62 chars ("cannot initialize network"). Use a short one.
+      - name: Short host name (macOS runners)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          sudo scutil --set HostName dimse-stress
+          sudo scutil --set LocalHostName dimse-stress
+          sudo scutil --set ComputerName dimse-stress
+          hostname
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install JS dependencies (no install scripts, no prebuilt binary)
+        working-directory: lib
+        shell: bash
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Build native addon from source
+        working-directory: lib
+        shell: bash
+        run: npx cmake-js compile --CDDCMTK_ENABLE_BUILTIN_OFICONV_DATA=ON --CDCMAKE_POLICY_VERSION_MINIMUM=3.5
+
+      - name: Generate synthetic DICOM samples
+        shell: bash
+        run: node harness/test/stress/gen_samples.js samples
+
+      - name: Stress (no child_process activity)
+        shell: bash
+        env:
+          STRESS_ARTIFACT_DIR: ${{ runner.temp }}/stress-artifacts
+        run: node harness/test/stress/run.js --lib lib --samples samples --port 11201 --exec 0 --label ${{ matrix.variant }}-exec0 ${{ matrix.variant == 'fix' && '--strict' || '' }}
+
+      - name: Stress (execSync/spawnSync every 100 ms in the SCP process)
+        if: always()
+        shell: bash
+        env:
+          STRESS_ARTIFACT_DIR: ${{ runner.temp }}/stress-artifacts
+        run: node harness/test/stress/run.js --lib lib --samples samples --port 11202 --exec 100 --label ${{ matrix.variant }}-exec100 ${{ matrix.variant == 'fix' && '--strict' || '' }}
+
+      - name: Soak - 10,000 C-ECHO + 5,000 images (500 C-STORE associations), leak check (fix only)
+        if: always() && matrix.variant == 'fix'
+        shell: bash
+        env:
+          STRESS_ARTIFACT_DIR: ${{ runner.temp }}/stress-artifacts
+        run: node harness/test/stress/run.js --lib lib --samples samples --port 11204 --exec 100 --soak 10000 --label fix-soak10k --strict
+
+      - name: Install DCMTK command line tools (independent SCU)
+        if: always() && runner.os != 'Windows'
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "macOS" ]; then brew install dcmtk; else sudo apt-get update -qq && sudo apt-get install -y -qq dcmtk; fi
+          storescu --version | head -1
+
+      - name: Stress with DCMTK echoscu/storescu as SCU (execSync every 100 ms)
+        if: always() && runner.os != 'Windows'
+        shell: bash
+        env:
+          STRESS_ARTIFACT_DIR: ${{ runner.temp }}/stress-artifacts
+        run: node harness/test/stress/run.js --lib lib --samples samples --port 11203 --exec 100 --scu dcmtk --label ${{ matrix.variant }}-dcmtkscu-exec100 ${{ matrix.variant == 'fix' && '--strict' || '' }}
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stress-${{ matrix.os }}-${{ matrix.variant }}
+          path: ${{ runner.temp }}/stress-artifacts
+          if-no-files-found: ignore
+          retention-days: 14
