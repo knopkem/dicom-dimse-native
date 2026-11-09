@@ -15,6 +15,7 @@
 #include <string>
 #include <random>
 #include <sstream>
+#include <mutex>
 
 namespace uuid {
     static std::random_device              rd;
@@ -22,7 +23,10 @@ namespace uuid {
     static std::uniform_int_distribution<> dis(0, 15);
     static std::uniform_int_distribution<> dis2(8, 11);
 
+    static std::mutex                      genMutex;  /* gen/dis are shared between association threads */
+
     std::string generate_uuid_v4() {
+        std::lock_guard<std::mutex> lock(genMutex);
         std::stringstream ss;
         int i;
         ss << std::hex;
@@ -53,6 +57,17 @@ namespace uuid {
 namespace {
 
     static GlobalDcmDataDictionary* DICT = new GlobalDcmDataDictionary();
+
+    /* Associations run in threads of the same process and each opens its own
+     * connection to the same image.db. Concurrent CREATE TABLE / INSERT on
+     * separate connections fail with "database is locked" even with a busy
+     * timeout (read->write lock upgrade), which left whole associations with an
+     * uninitialized database: files stored but NOT indexed, while the modality
+     * was told "Success". Database work is short, so serialize it. */
+    std::recursive_mutex& dbMutex() {
+        static std::recursive_mutex m;
+        return m;
+    }
 
     std::string getTagName(const DcmTagKey& tag) {
         return DICT->rdlock().findEntry(tag, NULL)->getTagName();
@@ -226,7 +241,11 @@ DcmSQLiteDatabase::DcmSQLiteDatabase(const OFFilename& path) : d(new DcmSQLiteDa
      std::string storage(path.getCharPointer());
      storage.append("/image.db");
      d->db = new sqlite3pp::database(storage.c_str());
+     /* several associations may write concurrently (threads or processes):
+      * wait for the lock instead of failing immediately with SQLITE_BUSY */
+     d->db->set_busy_timeout(10000);
      d->definedTags = definedAttribs();
+     std::lock_guard<std::recursive_mutex> lock(dbMutex());
      d->initialized = createTables();
 }
 
@@ -234,6 +253,8 @@ DcmSQLiteDatabase::DcmSQLiteDatabase(const OFFilename& path) : d(new DcmSQLiteDa
 
 DcmSQLiteDatabase::~DcmSQLiteDatabase()
 {
+    delete d->db;   /* sqlite3pp::database destructor closes the connection */
+    d->db = NULL;
     delete d;
     d = NULL;
 }
@@ -243,6 +264,7 @@ DcmSQLiteDatabase::~DcmSQLiteDatabase()
 std::list< std::list<DcmSmallDcmElm> > DcmSQLiteDatabase::find(std::list<DcmSmallDcmElm> findRequestList,
     DB_LEVEL queryLevel, DB_LEVEL qLevel, DB_LEVEL lLevel) const
 {
+    std::lock_guard<std::recursive_mutex> lock(dbMutex());
 
     std::list< std::list<DcmSmallDcmElm> > resultContainer;
 
@@ -579,6 +601,8 @@ std::vector<DB_FindAttrExt> DcmSQLiteDatabase::definedAttributes() const
 
 OFCondition DcmSQLiteDatabase::insertMetaData(DcmDataset* dataset, const OFString& filename)
 {
+    std::lock_guard<std::recursive_mutex> lock(dbMutex());
+
     if (!d->initialized) {
         DCMNET_WARN("database not initialized");
         return EC_IllegalParameter;

@@ -54,6 +54,13 @@ public:
     return pid == processId_;
   }
 
+  /** return the process ID of the child process
+   */
+  int getProcessId() const
+  {
+    return processId_;
+  }
+
   /** check if this instance describes a client with write access
    */
   OFBool isProcessWithWriteAccess(
@@ -178,7 +185,42 @@ OFBool DcmQueryRetrieveProcessTable::haveProcessWithWriteAccess(const char *call
 
 void DcmQueryRetrieveProcessTable::cleanChildren()
 {
-#if defined(HAVE_WAITPID) || defined(HAVE_WAIT3)
+#if defined(HAVE_WAITPID)
+    /* Reap ONLY the children registered in this table (waitpid(pid, WNOHANG)).
+     * dicom-dimse-native runs inside a Node.js process: waitpid(-1) would also
+     * reap children created by Node's child_process (libuv), stealing their
+     * exit status. Waiting on our own PIDs avoids that. */
+    OFListIterator(DcmQueryRetrieveProcessSlot *) it = table_.begin();
+    while (it != table_.end())
+    {
+      const int pid = (*it)->getProcessId();
+      int stat_loc = 0;
+      int child;
+      do {
+        child = OFstatic_cast(int, waitpid(pid, &stat_loc, WNOHANG));
+      } while (child < 0 && errno == EINTR);
+
+      if (child == pid || (child < 0 && errno == ECHILD))
+      {
+        /* finished (or already reaped elsewhere): drop it from the table */
+        if (child == pid)
+          DCMQRDB_INFO("Cleaned up after child (" << pid << ")");
+        else
+          DCMQRDB_WARN("Child (" << pid << ") no longer exists, removing from process table");
+        delete (*it);
+        it = table_.erase(it);
+      }
+      else
+      {
+        if (child < 0)
+        {
+          char buf[256];
+          DCMQRDB_ERROR("wait for child process " << pid << " failed: " << OFStandard::strerror(errno, buf, sizeof(buf)));
+        }
+        ++it; /* still running (child == 0) or transient error */
+      }
+    }
+#elif defined(HAVE_WAIT3)
 
     /* declare local variables for waitpid/wait3 */
 #ifdef HAVE_WAITPID
